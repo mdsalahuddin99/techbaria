@@ -1,0 +1,192 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* POS + Inventory Design System
+ * Modern ERP Style (Teal/Emerald)
+ * Clean light theme throughout
+ */
+
+@layer base {
+  :root {
+    /* Premium SaaS Palette - Crisp, Clean, High Contrast */
+    --background: 210 40% 96.1%; /* Soft grey canvas (slate-100) */
+    --foreground: 222.2 47.4% 11.2%; /* Sharp dark text */
+
+    --card: 0 0% 100%; /* Pure white cards to pop against grey background */
+    --card-foreground: 222.2 47.4% 11.2%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 47.4% 11.2%;
+
+    /* Primary — Modern ERP Style (Teal/Emerald) */
+    --primary: 175 77% 26%; /* #0f766e Tailwind Teal-700 */
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 175 77% 26%;
+
+    /* Secondary - Restored to neutral grey for UI elements like Search Bars */
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    --success: 142.1 76.2% 36.3%;
+    --success-foreground: 355.7 100% 97.3%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 175 77% 26%;
+
+    /* Sharp corners */
+    --radius: 0.5rem; /* rounded-md for a slightly softer premium feel */
+
+    /* Sidebar — Premium Dark Sidebar for High Contrast */
+    --sidebar-background: 222.2 47.4% 11.2%; /* slate-900 */
+    --sidebar-foreground: 210 40% 98%; /* slate-50 */
+    --sidebar-primary: 175 77% 26%; /* Teal */
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 217.2 32.6% 17.5%; /* slate-800 */
+    --sidebar-accent-foreground: 210 40% 98%; 
+    --sidebar-border: 217.2 32.6% 17.5%;
+    --sidebar-ring: 175 77% 26%;
+
+    /* Crisp, clean borders for elevation instead of diffuse shadows */
+    --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --shadow-ring: 0 0 0 1px hsl(var(--border)), 0 1px 2px 0 rgb(0 0 0 / 0.05);
+
+    --transition-base: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: "cv11", "ss01";
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+    overscroll-behavior-y: contain;
+  }
+  html {
+    -webkit-overflow-scrolling: touch;
+  }
+  /* Mobile: enlarge touch targets + prevent iOS input zoom */
+  @media (hover: none) and (pointer: coarse) {
+    button, a[role="button"], [role="button"], a, label, summary {
+      touch-action: manipulation;
+    }
+    /* iOS zooms in on focus when input font-size < 16px — force 16px on mobile */
+    input:not([type="checkbox"]):not([type="radio"]),
+    select,
+    textarea {
+      font-size: 16px !important;
+    }
+    table button,
+    table a,
+    .actions-cell button,
+    .actions-cell a {
+      min-height: 40px;
+      min-width: 40px;
+    }
+    /* Prevent horizontal scroll caused by long words/urls on narrow screens */
+    body {
+      overflow-wrap: break-word;
+      word-wrap: break-word;
+    }
+    /* Android Chrome/WebView can paint noisy bands with stacked blur/backdrop/SVG layers. */
+    .backdrop-blur,
+    .backdrop-blur-sm,
+    .backdrop-blur-md,
+    .backdrop-blur-lg,
+    .backdrop-blur-xl,
+    .backdrop-blur-2xl,
+    .backdrop-blur-3xl {
+      -webkit-backdrop-filter: none !important;
+      backdrop-filter: none !important;
+    }
+    .recharts-wrapper,
+    .recharts-surface {
+      isolation: isolate;
+      -webkit-transform: translateZ(0);
+      transform: translateZ(0);
+    }
+  }
+}
+
+@layer utilities {
+  .hairline {
+    border: 1px solid hsl(var(--border));
+  }
+  .surface-card {
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    box-shadow: var(--shadow-xs);
+    border-radius: var(--radius);
+  }
+  .focus-ring {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+  }
+  .text-balance { text-wrap: balance; }
+  /* Safe-area aware spacing */
+  .pt-safe { padding-top: env(safe-area-inset-top); }
+  .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+  .pl-safe { padding-left: env(safe-area-inset-left); }
+  .pr-safe { padding-right: env(safe-area-inset-right); }
+  .h-safe-bottom { height: env(safe-area-inset-bottom); }
+  .pb-nav { padding-bottom: calc(4rem + env(safe-area-inset-bottom)); }
+  @media (min-width: 768px) {
+    .pb-nav { padding-bottom: 0; }
+  }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+  html, body {
+    background: white !important;
+    color: black !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  body * { visibility: hidden !important; }
+  #invoice-printable, #invoice-printable * { visibility: visible !important; }
+  #invoice-printable {
+    position: absolute !important;
+    left: 0; top: 0;
+    width: 100% !important;
+    max-height: none !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+    background: white !important;
+    color: black !important;
+    padding: 0 !important;
+  }
+  /* Avoid breaking item rows across pages */
+  #invoice-printable table { page-break-inside: auto; }
+  #invoice-printable tr { page-break-inside: avoid; page-break-after: auto; }
+  #invoice-printable thead { display: table-header-group; }
+}

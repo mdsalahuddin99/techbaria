@@ -1,0 +1,12 @@
+export { productsApi as productsService } from "./products";
+export { customersApi as customersService } from "./customers";
+export { suppliersApi as suppliersService } from "./suppliers";
+export { salesApi as salesService } from "./sales";
+export { purchasesApi as purchasesService } from "./purchases";
+export { inventoryApi as inventoryService } from "./inventory";
+export { accountsApi as accountsService } from "./accounts";
+export { expensesApi as expensesService } from "./expenses";
+export { transfersApi as transfersService } from "./transfers";
+export { notificationsApi as notificationsService } from "./notifications";
+export { shiftsApi as shiftsService } from "./shifts";
+export { settingsApi as settingsService } from "./settings";

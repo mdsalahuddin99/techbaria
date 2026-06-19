@@ -1,0 +1,43 @@
+diff --git a/node_modules/@radix-ui/react-select/dist/index.mjs b/node_modules/@radix-ui/react-select/dist/index.mjs
+index f9b94f3..ee65de2 100644
+--- a/node_modules/@radix-ui/react-select/dist/index.mjs
++++ b/node_modules/@radix-ui/react-select/dist/index.mjs
+@@ -299,7 +299,8 @@ var SelectContentImpl = React.forwardRef(
+     const context = useSelectContext(CONTENT_NAME, __scopeSelect);
+     const [content, setContent] = React.useState(null);
+     const [viewport, setViewport] = React.useState(null);
+-    const composedRefs = useComposedRefs(forwardedRef, (node) => setContent(node));
++    const setContentNode = React.useCallback((node) => setContent(node), []);
++    const composedRefs = useComposedRefs(forwardedRef, setContentNode);
+     const [selectedItem, setSelectedItem] = React.useState(null);
+     const [selectedItemText, setSelectedItemText] = React.useState(
+       null
+@@ -513,7 +514,8 @@ var SelectItemAlignedPosition = React.forwardRef((props, forwardedRef) => {
+   const contentContext = useSelectContentContext(CONTENT_NAME, __scopeSelect);
+   const [contentWrapper, setContentWrapper] = React.useState(null);
+   const [content, setContent] = React.useState(null);
+-  const composedRefs = useComposedRefs(forwardedRef, (node) => setContent(node));
++  const setContentNode2 = React.useCallback((node) => setContent(node), []);
++  const composedRefs = useComposedRefs(forwardedRef, setContentNode2);
+   const getItems = useCollection(__scopeSelect);
+   const shouldExpandOnScrollRef = React.useRef(false);
+   const shouldRepositionRef = React.useRef(true);
+@@ -904,11 +906,16 @@ var SelectItemText = React.forwardRef(
+     const itemContext = useSelectItemContext(ITEM_TEXT_NAME, __scopeSelect);
+     const nativeOptionsContext = useSelectNativeOptionsContext(ITEM_TEXT_NAME, __scopeSelect);
+     const [itemTextNode, setItemTextNode] = React.useState(null);
++    const setItemTextNodeCallback = React.useCallback((node) => setItemTextNode(node), []);
++    const itemTextRefCb = React.useCallback(
++      (node) => contentContext.itemTextRefCallback?.(node, itemContext.value, itemContext.disabled),
++      [contentContext.itemTextRefCallback, itemContext.value, itemContext.disabled]
++    );
+     const composedRefs = useComposedRefs(
+       forwardedRef,
+-      (node) => setItemTextNode(node),
++      setItemTextNodeCallback,
+       itemContext.onItemTextChange,
+-      (node) => contentContext.itemTextRefCallback?.(node, itemContext.value, itemContext.disabled)
++      itemTextRefCb
+     );
+     const textContent = itemTextNode?.textContent;
+     const nativeOption = React.useMemo(

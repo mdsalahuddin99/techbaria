@@ -1,0 +1,275 @@
+/**
+ * Categories service — Prisma-backed, framework-agnostic.
+ *
+ * Categories form a self-referencing tree (parent → children).
+ * Every query is scoped by `ctx.shopId` (multi-tenant).
+ */
+import "server-only";
+import { prisma } from "@/server/db/client";
+import { ServiceError } from "@/server/lib/errors";
+import { requireRole } from "@/server/auth/rbac";
+import { cache, cacheKeys, TTL } from "@/lib/cache";
+import type { Ctx } from "@/server/lib/ctx";
+
+// ─── Types ──────────────────────────────────────────────────────────────────
+
+export interface CategoryOutput {
+  id: string;
+  name: string;
+  slug: string;
+  parentId: string | null;
+  productCount: number;
+  children: CategoryOutput[];
+  createdAt: string;
+}
+
+export interface CategoryCreateInput {
+  name: string;
+  slug?: string;
+  parentId?: string | null;
+}
+
+export interface CategoryUpdateInput {
+  name?: string;
+  slug?: string;
+  parentId?: string | null;
+}
+
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
+function slugify(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+/** Recursively collect all child IDs for a given parent category. */
+async function collectDescendantIds(shopId: string, parentId: string): Promise<string[]> {
+  const children = await prisma.category.findMany({
+    where: { shopId, parentId },
+    select: { id: true },
+  });
+  const ids: string[] = [];
+  for (const child of children) {
+    ids.push(child.id);
+    const grandkids = await collectDescendantIds(shopId, child.id);
+    ids.push(...grandkids);
+  }
+  return ids;
+}
+
+async function buildTree(ctx: Ctx): Promise<CategoryOutput[]> {
+  const categories = await prisma.category.findMany({
+    where: { shopId: ctx.shopId },
+    include: { _count: { select: { products: true } } },
+    orderBy: { name: "asc" },
+  });
+
+  const map = new Map<string, CategoryOutput>();
+  const roots: CategoryOutput[] = [];
+
+  for (const c of categories) {
+    map.set(c.id, {
+      id: c.id,
+      name: c.name,
+      slug: c.slug,
+      parentId: c.parentId,
+      productCount: (c as any)._count.products,
+      children: [],
+      createdAt: c.createdAt.toISOString(),
+    });
+  }
+
+  for (const node of map.values()) {
+    if (node.parentId && map.has(node.parentId)) {
+      map.get(node.parentId)!.children.push(node);
+    } else {
+      roots.push(node);
+    }
+  }
+
+  return roots;
+}
+
+// ─── Service ────────────────────────────────────────────────────────────────
+
+export const categoriesService = {
+  /** List all categories as a tree. */
+  async list(ctx: Ctx): Promise<CategoryOutput[]> {
+    return buildTree(ctx);
+  },
+
+  /** Get flat list (no nesting) for dropdowns. */
+  async listFlat(ctx: Ctx) {
+    return cache.fetch(cacheKeys.categories.list(ctx.shopId), TTL.CATEGORY_TREE, async () => {
+      const categories = await prisma.category.findMany({
+        where: { shopId: ctx.shopId },
+        include: { _count: { select: { products: true } } },
+        orderBy: { name: "asc" },
+      });
+
+      return categories.map((c: any) => ({
+        id: c.id,
+        name: c.name,
+        slug: c.slug,
+        parentId: c.parentId,
+        productCount: c._count.products,
+        createdAt: c.createdAt.toISOString(),
+      }));
+    });
+  },
+
+  /** Get a single category by ID. */
+  async getById(ctx: Ctx, id: string) {
+    const c = await prisma.category.findFirst({
+      where: { id, shopId: ctx.shopId },
+      include: { _count: { select: { products: true } } },
+    });
+
+    if (!c) throw new ServiceError("NOT_FOUND", "Category not found", 404);
+
+    const cat = c as any;
+    return {
+      id: cat.id,
+      name: cat.name,
+      slug: cat.slug,
+      parentId: cat.parentId,
+      productCount: cat._count.products,
+      createdAt: cat.createdAt.toISOString(),
+    };
+  },
+
+  /** Create a new category. Requires MANAGER+. */
+  async create(ctx: Ctx, input: CategoryCreateInput) {
+    requireRole(ctx, "MANAGER");
+
+    const slug = input.slug ?? slugify(input.name);
+
+    // Check slug uniqueness within shop
+    const existing = await prisma.category.findUnique({
+      where: { shopId_slug: { shopId: ctx.shopId, slug } },
+    });
+    if (existing) {
+      throw new ServiceError("CONFLICT", `A category with slug "${slug}" already exists`, 409);
+    }
+
+    // Verify parent belongs to shop if provided
+    if (input.parentId) {
+      const parent = await prisma.category.findFirst({
+        where: { id: input.parentId, shopId: ctx.shopId },
+      });
+      if (!parent) {
+        throw new ServiceError("NOT_FOUND", "Parent category not found", 404);
+      }
+    }
+
+    const c = await prisma.category.create({
+      data: {
+        shopId: ctx.shopId,
+        name: input.name,
+        slug,
+        parentId: input.parentId ?? null,
+      },
+    });
+
+    await cache.invalidateCategories(ctx.shopId);
+
+    return {
+      id: c.id,
+      name: c.name,
+      slug: c.slug,
+      parentId: c.parentId,
+      productCount: 0,
+      createdAt: c.createdAt.toISOString(),
+    };
+  },
+
+  /** Update a category. Requires MANAGER+. */
+  async update(ctx: Ctx, id: string, input: CategoryUpdateInput) {
+    requireRole(ctx, "MANAGER");
+
+    const existing = await prisma.category.findFirst({
+      where: { id, shopId: ctx.shopId },
+    });
+    if (!existing) throw new ServiceError("NOT_FOUND", "Category not found", 404);
+
+    // If slug changed, check uniqueness
+    const slug = input.slug ?? (input.name ? slugify(input.name) : undefined);
+    if (slug && slug !== existing.slug) {
+      const conflict = await prisma.category.findUnique({
+        where: { shopId_slug: { shopId: ctx.shopId, slug } },
+      });
+      if (conflict) {
+        throw new ServiceError("CONFLICT", `A category with slug "${slug}" already exists`, 409);
+      }
+    }
+
+    // Verify parent belongs to shop if provided
+    if (input.parentId) {
+      const parent = await prisma.category.findFirst({
+        where: { id: input.parentId, shopId: ctx.shopId },
+      });
+      if (!parent) {
+        throw new ServiceError("NOT_FOUND", "Parent category not found", 404);
+      }
+      // Prevent setting self as parent
+      if (input.parentId === id) {
+        throw new ServiceError("VALIDATION", "A category cannot be its own parent", 400);
+      }
+    }
+
+    const udpated = await prisma.category.update({
+      where: { id },
+      data: {
+        ...(input.name !== undefined && { name: input.name }),
+        ...(slug !== undefined && { slug }),
+        ...(input.parentId !== undefined && { parentId: input.parentId }),
+      },
+      include: { _count: { select: { products: true } } },
+    });
+
+    await cache.invalidateCategories(ctx.shopId);
+
+    const cat = udpated as any;
+    return {
+      id: cat.id,
+      name: cat.name,
+      slug: cat.slug,
+      parentId: cat.parentId,
+      productCount: cat._count.products,
+      createdAt: cat.createdAt.toISOString(),
+    };
+  },
+
+  /** Delete a category and all its children recursively. Requires MANAGER+. */
+  async remove(ctx: Ctx, id: string) {
+    requireRole(ctx, "MANAGER");
+
+    const existing = await prisma.category.findFirst({
+      where: { id, shopId: ctx.shopId },
+      include: { _count: { select: { products: true } } },
+    });
+    if (!existing) throw new ServiceError("NOT_FOUND", "Category not found", 404);
+
+    const cat = existing as any;
+    if (cat._count.products > 0) {
+      throw new ServiceError(
+        "VALIDATION",
+        `Cannot delete "${cat.name}" — ${cat._count.products} product(s) are assigned to it`,
+        400,
+      );
+    }
+
+    // Recursively collect all descendant IDs
+    const allIds = await collectDescendantIds(ctx.shopId, id);
+    allIds.push(id); // include the target itself
+
+    // Delete all descendants + target in one transaction
+    await prisma.$transaction(
+      allIds.map((cid) => prisma.category.delete({ where: { id: cid } })),
+    );
+
+    await cache.invalidateCategories(ctx.shopId);
+  },
+};

@@ -1,0 +1,209 @@
+import "server-only";
+import { prisma } from "@/server/db/client";
+import { ServiceError } from "@/server/lib/errors";
+import { paginate, type PaginationParams, type Paginated } from "@/server/lib/paginate";
+import type { Ctx } from "@/server/lib/ctx";
+import { cache, cacheKeys, TTL } from "@/lib/cache";
+import { serialise, serialiseOne } from "./serialiser";
+import type { ProductListFilter } from "./types";
+
+/** Shared query logic for the products list — used both direct and cached. */
+async function runListQuery(ctx: Ctx, params?: PaginationParams, filter?: ProductListFilter) {
+  const where: any = { shopId: ctx.shopId };
+  if (filter?.isPublished !== undefined) where.isPublished = filter.isPublished;
+  if (filter?.categoryId) where.categoryId = filter.categoryId;
+  if (filter?.lowStock) where.stock = { lte: prisma.product.fields.reorderLevel };
+  if (filter?.search) {
+    where.OR = [
+      { name: { contains: filter.search, mode: "insensitive" as const } },
+      { sku: { contains: filter.search, mode: "insensitive" as const } },
+      { barcode: { contains: filter.search } },
+      { serialNumbers: { some: { serial: { contains: filter.search, mode: "insensitive" as const } } } },
+    ];
+  }
+
+  const result = await paginate<any>(
+    prisma.product,
+    {
+      where,
+      include: {
+        category: true,
+        images: { orderBy: { position: "asc" as const } },
+        serialNumbers: {
+          where: { status: "IN_STOCK" },
+          select: {
+            id: true,
+            serial: true,
+            purchaseItem: {
+              select: {
+                warrantyMonths: true,
+                warrantyStartDate: true,
+              },
+            },
+          },
+        },
+        brand: true,
+        model: true,
+        series: true,
+      },
+    },
+    params,
+    { orderBy: { name: "asc" as const } },
+  );
+
+  return {
+    ...result,
+    items: serialise(result.items),
+  };
+}
+
+/** List products with optional search, category filter & pagination. */
+export async function list(
+  ctx: Ctx,
+  params?: PaginationParams,
+  filter?: ProductListFilter,
+  opts?: { skipCache?: boolean }
+): Promise<Paginated<ReturnType<typeof serialiseOne>>> {
+  // Cache only unfiltered first-page loads (main table view)
+  const noSearch = !filter?.search && !filter?.categoryId && filter?.isPublished === undefined && !filter?.lowStock;
+  const firstPage = !params?.cursor;
+  if (noSearch && firstPage && !opts?.skipCache) {
+    return cache.fetch(cacheKeys.products.list(ctx.shopId), TTL.PRODUCT_LIST, async () => {
+      return runListQuery(ctx, params, filter);
+    });
+  }
+  return runListQuery(ctx, params, filter);
+}
+
+/** Get a single product by ID (scoped to shop). */
+export async function getById(ctx: Ctx, id: string) {
+  const product = await prisma.product.findFirst({
+    where: { id, shopId: ctx.shopId },
+    include: {
+      category: true,
+      images: { orderBy: { position: "asc" } },
+      variants: true,
+      serialNumbers: {
+        where: { status: "IN_STOCK" },
+        select: {
+          id: true,
+          serial: true,
+          purchaseItem: {
+            select: {
+              warrantyMonths: true,
+              warrantyStartDate: true,
+            },
+          },
+        },
+      },
+      brand: true,
+      model: true,
+      series: true,
+    },
+  });
+  if (!product) throw new ServiceError("NOT_FOUND", "Product not found", 404);
+  return serialise(product);
+}
+
+/** Get a product by slug (for storefront). */
+export async function getBySlug(shopId: string, slug: string) {
+  const product = await prisma.product.findFirst({
+    where: { shopId, slug, isPublished: true },
+    include: {
+      category: true,
+      images: { orderBy: { position: "asc" } },
+      variants: true,
+      brand: true,
+      model: true,
+      series: true,
+    },
+  });
+  if (!product) throw new ServiceError("NOT_FOUND", "Product not found", 404);
+  return serialise(product);
+}
+
+/** List published products for public storefront. */
+export async function publicList(shopId: string, filter?: { categoryId?: string; search?: string }) {
+  return serialise(
+    await prisma.product.findMany({
+      where: {
+        shopId,
+        isPublished: true,
+        categoryId: filter?.categoryId ?? undefined,
+        ...(filter?.search && {
+          OR: [
+            { name: { contains: filter.search, mode: "insensitive" as const } },
+            { sku: { contains: filter.search, mode: "insensitive" as const } },
+          ],
+        }),
+      },
+      include: {
+        category: true,
+        images: { orderBy: { position: "asc" } },
+        brand: true,
+        model: true,
+        series: true,
+      },
+      orderBy: { name: "asc" },
+    })
+  );
+}
+
+/** Products where stock ≤ reorderLevel. */
+export async function lowStock(ctx: Ctx) {
+  return prisma.$queryRawUnsafe<any[]>(
+    `SELECT * FROM "Product" WHERE "shopId" = $1 AND "stock" <= "reorderLevel" ORDER BY ("reorderLevel" - "stock") DESC`,
+    ctx.shopId,
+  );
+}
+
+/** Products where stock = 0. */
+export async function outOfStock(ctx: Ctx) {
+  return prisma.product.findMany({
+    where: { shopId: ctx.shopId, stock: { lte: 0 } },
+    orderBy: { name: "asc" },
+  });
+}
+
+/** Distinct non-null values for a given text field across all shop products. */
+export async function distinctFieldValues(ctx: Ctx, field: string, parent?: string): Promise<string[]> {
+  // Whitelist allowed fields to prevent SQL injection
+  const tableFields = ["brand", "model", "series", "color", "storage", "ram"];
+  if (tableFields.includes(field)) {
+    const rows = await prisma.$queryRawUnsafe<Array<Record<string, unknown>>>(
+      `SELECT DISTINCT "${field}" FROM "Product" WHERE "shopId" = $1 AND "${field}" IS NOT NULL AND "${field}" != '' ORDER BY "${field}" ASC`,
+      ctx.shopId,
+    );
+    return rows.map((r) => String(r[field])).filter(Boolean);
+  }
+
+  // "subcategory" — query the Category table for children of a given parent
+  if (field === "subcategory" && parent) {
+    const cats = await prisma.category.findMany({
+      where: {
+        shopId: ctx.shopId,
+        parent: { name: parent },
+        name: { not: "" },
+      },
+      select: { name: true },
+      orderBy: { name: "asc" },
+    });
+    return cats.map((c) => c.name).filter(Boolean);
+  }
+
+  // "category" — query the Category table for parent categories
+  if (field === "category") {
+    const cats = await prisma.category.findMany({
+      where: {
+        shopId: ctx.shopId,
+        parentId: null,
+        name: { not: "" },
+      },
+      select: { name: true },
+      orderBy: { name: "asc" },
+    });
+    return cats.map((c) => c.name).filter(Boolean);
+  }
+
+  return [];
+}

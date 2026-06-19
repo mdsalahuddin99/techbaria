@@ -1,0 +1,214 @@
+import "server-only";
+import { prisma } from "@/server/db/client";
+import { ServiceError } from "@/server/lib/errors";
+import type { Ctx } from "@/server/lib/ctx";
+import { serializeSale, mapPaymentMethodToTenderType } from "@/server/lib/serialize";
+import { auditLogService } from "../auditLogService";
+import { cache } from "@/lib/cache";
+import { salesAccounting } from "./salesAccounting";
+import { salesSerial } from "./salesSerial";
+import type { SaleCreateInput } from "./types";
+
+/** Validate stock availability for all sale items. Throws OUT_OF_STOCK if insufficient. */
+async function __validateItemsStock(
+  tx: any,
+  ctx: Ctx,
+  input: SaleCreateInput,
+  warehouseId: string | null | undefined,
+): Promise<{
+  productMap: Map<string, any>;
+  warehouseStockMap: Map<string, any>;
+  productSnapshots: Map<string, { cost: number; name: string }>;
+}> {
+  const productIds = input.items.map((i) => i.productId);
+  const products: any[] = await tx.product.findMany({
+    where: { id: { in: productIds }, shopId: ctx.shopId },
+  });
+  const productMap = new Map(products.map((p: any) => [p.id, p]));
+
+  const trackedProductIds = products.filter((p: any) => p.trackSerials).map((p: any) => p.id);
+  const [warehouseStocks, serialCountRows] = await Promise.all([
+    warehouseId ? tx.warehouseStock.findMany({ where: { warehouseId, productId: { in: productIds } } }) : [],
+    trackedProductIds.length > 0
+      ? tx.serialNumber.groupBy({
+          by: ["productId"],
+          where: {
+            productId: { in: trackedProductIds },
+            status: "IN_STOCK",
+            ...(warehouseId && { warehouseId }),
+          },
+          _count: { productId: true },
+        })
+      : [],
+  ]);
+
+  const warehouseStockMap = new Map<string, any>(warehouseStocks.map((ws: any) => [ws.productId, ws]));
+  const serialCounts = new Map<string, number>(serialCountRows.map((c: any) => [c.productId, c._count.productId]));
+  const productSnapshots = new Map<string, { cost: number; name: string }>();
+
+  for (const item of input.items) {
+    const product = productMap.get(item.productId);
+    if (!product) throw new ServiceError("NOT_FOUND", `Product ${item.productId} not found`);
+
+    if (product.trackSerials) {
+      const serialCount = Number(serialCounts.get(item.productId) ?? 0);
+      if (serialCount < item.qty) {
+        throw new ServiceError("OUT_OF_STOCK", `${product.name} has insufficient serial stock (${serialCount} serials available, ${item.qty} requested)`);
+      }
+      if (Number(product.stock) < item.qty) {
+        await tx.product.update({ where: { id: product.id }, data: { stock: serialCount } });
+      }
+    } else if (warehouseId) {
+      const warehouseStock = warehouseStockMap.get(item.productId);
+      if (!warehouseStock || Number(warehouseStock.qty) < item.qty) {
+        throw new ServiceError("OUT_OF_STOCK", `${product.name} has insufficient stock in selected warehouse (${warehouseStock?.qty ?? 0} available, ${item.qty} requested)`);
+      }
+    } else {
+      if (Number(product.stock) < item.qty) {
+        throw new ServiceError("OUT_OF_STOCK", `${product.name} has insufficient stock (${product.stock} available, ${item.qty} requested)`);
+      }
+    }
+    productSnapshots.set(item.productId, { cost: Number(product.cost), name: product.name });
+  }
+  return { productMap, warehouseStockMap, productSnapshots };
+}
+
+/** Post-create: audit log + cache invalidation. */
+async function __postProcess(ctx: Ctx, raw: any, productIds: string[]) {
+  await auditLogService.log(ctx, {
+    entity: "Sale",
+    entityId: raw.id,
+    action: "CREATE",
+    diff: { items: raw.items?.length ?? 0, total: Number(raw.total), tenders: raw.tenders?.length ?? 0 },
+  });
+  await cache.invalidateSales(ctx.shopId);
+  await cache.invalidateSpecificProducts(ctx.shopId, productIds);
+}
+
+/** Create a new sale — validates stock → creates records → assigns serials → logs. */
+export async function create(ctx: Ctx, input: SaleCreateInput) {
+  if (!input.items?.length) {
+    throw new ServiceError("EMPTY_CART", "Cart is empty");
+  }
+  const branchId = input.branchId ?? ctx.branchId;
+  const warehouseId = input.warehouseId;
+
+  // Validate that selected warehouse belongs to the same branch
+  if (warehouseId) {
+    const selectedWarehouse = await prisma.warehouse.findUnique({
+      where: { id: warehouseId },
+      select: { branchId: true },
+    });
+    if (selectedWarehouse && selectedWarehouse.branchId !== branchId) {
+      throw new ServiceError('VALIDATION', 'Warehouse-Branch Mismatch');
+    }
+  }
+
+  // Scoping validations for customer and accounts
+  await salesAccounting.validateCustomerAndAccounts(ctx, input.customerId, input.tenders);
+
+  // Step 1: Validate stock + prepare data (inside transaction)
+  const raw = await prisma.$transaction(async (tx): Promise<any> => {
+    const { warehouseStockMap, productSnapshots } = await __validateItemsStock(tx, ctx, input, warehouseId);
+
+    // Calculate totals — DUE tenders are credit, not actual payment
+    const count = await tx.sale.count({
+      where: { shopId: ctx.shopId },
+    });
+    const shop = await tx.shop.findUnique({
+      where: { id: ctx.shopId },
+      select: { settings: true },
+    });
+    const stored = (shop?.settings ?? {}) as Record<string, any>;
+    const prefix = (stored.invoiceNumberPrefix as string) ?? "STAN";
+    const startSeq = (stored.invoiceNumberStartSeq as number) ?? 500;
+    const currentYear = new Date().getFullYear().toString();
+    const invoiceNo = `${prefix}${currentYear}${startSeq + count}`;
+
+    const subtotal = input.items.reduce((sum, i) => sum + i.price * i.qty - (i.discount ?? 0), 0);
+    const total = subtotal - (input.discount ?? 0) + (input.vat ?? 0) + (input.extraCharges ?? 0);
+    const paid = input.tenders
+      .filter((t) => t.type !== "Due")
+      .reduce((sum, t) => sum + t.amount, 0);
+    const due = Math.max(0, total - paid);
+
+    // Create sale with items and tenders
+    const sale = await tx.sale.create({
+      data: {
+        shopId: ctx.shopId,
+        userId: ctx.userId,
+        branchId,
+        warehouseId,
+        customerId: input.customerId,
+        channel: input.channel ?? "POS",
+        status: "COMPLETED",
+        subtotal, discount: input.discount ?? 0, total, paid, due,
+        notes: input.notes,
+        data: {
+          invoiceNo,
+          vat: input.vat ?? 0,
+          extraCharges: input.extraCharges ?? 0,
+          salesPerson: input.salesPerson,
+        },
+
+        items: {
+          create: input.items.map((item) => {
+            const snap = productSnapshots.get(item.productId);
+            return {
+              productId: item.productId, name: snap?.name ?? "", qty: item.qty,
+              price: item.price, cost: snap?.cost ?? 0, discount: item.discount ?? 0,
+              warrantyMonths: item.warrantyMonths ?? null,
+            };
+          }),
+        },
+        tenders: {
+          create: input.tenders.map((t) => ({
+            type: mapPaymentMethodToTenderType(t.type), amount: t.amount,
+            accountId: t.accountId, ref: t.ref,
+          })),
+        },
+      },
+      include: { items: { include: { serialNumbers: true } } as any, tenders: true, customer: true, editedBy: true, user: true },
+    });
+
+    // Decrement stock (sequential to avoid race conditions)
+    for (const item of input.items) {
+      await tx.product.update({ where: { id: item.productId }, data: { stock: { decrement: item.qty } } });
+      if (warehouseId) {
+        const warehouseStock = warehouseStockMap.get(item.productId);
+        if (warehouseStock) {
+          await tx.warehouseStock.update({ where: { id: warehouseStock.id }, data: { qty: { decrement: item.qty } } });
+        } else {
+          await tx.warehouseStock.create({ data: { warehouseId, productId: item.productId, qty: -item.qty } });
+        }
+      }
+    }
+
+    // Update customer due + record ledger transaction
+    if (input.customerId) {
+      await salesAccounting.applyCustomerDue(tx, ctx, sale, input.customerId, due, false);
+    }
+
+    // Handle Wallet/Advance tenders — customer pays from advance balance
+    if (input.customerId) {
+      await salesAccounting.applyWalletTenders(tx, ctx, sale.id, input.customerId, input.tenders, false);
+    }
+
+    // Assign serials + sync stock (if tracked)
+    await salesSerial.assignSerials(
+      tx,
+      ctx.shopId,
+      warehouseId,
+      sale.items,
+      input.items.map((i) => ({ productId: i.productId, qty: i.qty, serials: i.serials }))
+    );
+
+    return sale;
+  }, { timeout: 30000 });
+
+  // Post-process (audit + cache)
+  const productIds = [...new Set(input.items.map(item => item.productId))];
+  await __postProcess(ctx, raw, productIds);
+
+  return serializeSale(raw as any);
+}
