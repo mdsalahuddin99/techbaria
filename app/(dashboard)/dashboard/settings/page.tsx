@@ -20,7 +20,6 @@ import { downloadCsv } from "@/shared/lib/csv";
 import ImageUpload from "@/components/ImageUpload";
 import { PageHeader } from "@/shared/components";
 import { useT, LANGS, useLanguageStore } from "@/features/i18n";
-import BranchesTab from "@/features/branches/BranchesTab";
 import StaffTab from "@/features/settings/components/StaffTab";
 import { FEATURES } from "@/config/featureFlags";
 import { wipeAllCloudData, exportFullJson } from "@/services/backupService";
@@ -107,9 +106,7 @@ export default function SettingsPage() {
         <div className="-mx-3 sm:mx-0 overflow-x-auto no-scrollbar">
           <TabsList className="w-max">
             <TabsTrigger value="shop"><Store className="h-3.5 w-3.5 mr-1" />{t("settings.tab.shop")}</TabsTrigger>
-            {FEATURES.multiBranch && (
-              <TabsTrigger value="branches"><Building2 className="h-3.5 w-3.5 mr-1" />Branches</TabsTrigger>
-            )}
+
             <TabsTrigger value="staff"><Users className="h-3.5 w-3.5 mr-1" />Staff</TabsTrigger>
             <TabsTrigger value="receipt"><Receipt className="h-3.5 w-3.5 mr-1" />{t("settings.tab.receipt")}</TabsTrigger>
             <TabsTrigger value="invoice"><FileText className="h-3.5 w-3.5 mr-1" />Invoice Template</TabsTrigger>
@@ -173,12 +170,7 @@ export default function SettingsPage() {
           </Card>
         </TabsContent>
 
-        {/* Branches */}
-        {FEATURES.multiBranch && (
-          <TabsContent value="branches" className="mt-4">
-            <BranchesTab />
-          </TabsContent>
-        )}
+
 
         {/* Staff */}
         <TabsContent value="staff" className="mt-4">

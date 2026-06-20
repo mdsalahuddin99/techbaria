@@ -59,27 +59,15 @@ function PurchasesInner() {
     queryFn: async () => { const res = await fetch("/api/pos/init"); return res.json(); },
     staleTime: 5 * 60 * 1000,
   });
-  const branches = (initData?.branches || []) as any[];
   const warehouses = (initData?.warehouses || []) as any[];
 
-  const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null);
   const [selectedWarehouseId, setSelectedWarehouseId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (branches.length > 0 && !selectedBranchId) {
-      const hq = branches.find((b: any) => b.isHeadOffice) ?? branches[0];
-      setSelectedBranchId(hq.id);
+    if (warehouses.length > 0 && !selectedWarehouseId) {
+      setSelectedWarehouseId(warehouses[0].id);
     }
-  }, [branches, selectedBranchId]);
-
-  useEffect(() => {
-    if (selectedBranchId && warehouses.length > 0) {
-      const branchWarehouses = warehouses.filter((w: any) => w.branchId === selectedBranchId);
-      if (branchWarehouses.length > 0 && (!selectedWarehouseId || !branchWarehouses.some((w: any) => w.id === selectedWarehouseId))) {
-        setSelectedWarehouseId(branchWarehouses[0].id);
-      }
-    }
-  }, [selectedBranchId, warehouses, selectedWarehouseId]);
+  }, [warehouses, selectedWarehouseId]);
 
   // UI State
   const [open, setOpen] = useState(false);
@@ -179,10 +167,7 @@ function PurchasesInner() {
         accountsTree={accountsTree}
         balances={balances}
         defaultAccountId={defaultAccountId}
-        branches={branches}
         warehouses={warehouses}
-        selectedBranchId={selectedBranchId}
-        setSelectedBranchId={setSelectedBranchId}
         selectedWarehouseId={selectedWarehouseId}
         setSelectedWarehouseId={setSelectedWarehouseId}
         initialProductId={initialProductId || undefined}

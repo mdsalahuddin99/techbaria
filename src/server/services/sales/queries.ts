@@ -9,7 +9,7 @@ import type { SaleListFilter } from "./types";
 
 /** Shared query logic for the sales list — used both direct and cached. */
 async function runSaleListQuery(ctx: Ctx, params?: PaginationParams, filter?: SaleListFilter) {
-  const where: any = { shopId: ctx.shopId };
+  const where: any = {};
   if (filter?.channel) where.channel = filter.channel;
   if (filter?.customerId) where.customerId = filter.customerId;
   if (filter?.from || filter?.to) {
@@ -38,7 +38,7 @@ export async function list(ctx: Ctx, params?: PaginationParams, filter?: SaleLis
   const noFilter = !filter?.channel && !filter?.customerId && !filter?.from && !filter?.to;
   const firstPage = !params?.cursor;
   if (noFilter && firstPage) {
-    return cache.fetch(cacheKeys.sales.list(ctx.shopId), TTL.SALES_LIST, async () => {
+    return cache.fetch(cacheKeys.sales.list("default"), TTL.SALES_LIST, async () => {
       return runSaleListQuery(ctx, params, filter);
     });
   }
@@ -48,7 +48,7 @@ export async function list(ctx: Ctx, params?: PaginationParams, filter?: SaleLis
 /** Get a single sale by ID. */
 export async function getById(ctx: Ctx, id: string) {
   const raw = await prisma.sale.findFirst({
-    where: { id, shopId: ctx.shopId },
+    where: { id },
     include: {
       items: { include: { serialNumbers: true } } as any,
       tenders: true,
@@ -63,7 +63,7 @@ export async function getById(ctx: Ctx, id: string) {
 /** Get sales for a specific customer. */
 export async function byCustomer(ctx: Ctx, customerId: string) {
   const raw = await prisma.sale.findMany({
-    where: { shopId: ctx.shopId, customerId },
+    where: { customerId },
     include: { items: { include: { serialNumbers: true } }, tenders: true, customer: true, editedBy: true, user: true },
     orderBy: { createdAt: "desc" },
   });

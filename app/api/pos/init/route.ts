@@ -21,18 +21,12 @@ export const GET = apiHandler(async (ctx: Ctx, req: Request) => {
   const url = new URL(req.url);
   const warehouseId = url.searchParams.get("warehouseId") ?? null;
 
-  const [rawProducts, customers, accounts, branches, warehouses, shop, categories, users] = await Promise.all([
+  const [rawProducts, customers, accounts, warehouses, shop, categories, users] = await Promise.all([
     warehouseId
-      ? // ── Warehouse-scoped: only products present in this warehouse's WarehouseStock ──
+      ? // ── Warehouse-scoped: fetch all published products ──
         prisma.product.findMany({
           where: {
-            shopId: ctx.shopId,
-            warehouseStocks: {
-              some: {
-                warehouseId,
-                qty: { gt: 0 },
-              },
-            },
+            isPublished: true,
           },
           select: {
             id: true,
@@ -80,9 +74,7 @@ export const GET = apiHandler(async (ctx: Ctx, req: Request) => {
       : // ── Fallback: global stock (no branch selected) ──
         prisma.product.findMany({
           where: {
-            shopId: ctx.shopId,
-            stock: { gt: 0 },
-            purchaseItems: { some: {} },
+            isPublished: true,
           },
           select: {
             id: true,
@@ -125,29 +117,22 @@ export const GET = apiHandler(async (ctx: Ctx, req: Request) => {
           take: 500,
         }),
     prisma.customer.findMany({
-      where: { shopId: ctx.shopId },
       select: { id: true, name: true, phone: true, balance: true, due: true, group: true },
       orderBy: { createdAt: "desc" },
     }),
     accountsService.list(ctx),
-    prisma.branch.findMany({
-      where: { shopId: ctx.shopId, isActive: true },
-      orderBy: [{ isHeadOffice: "desc" }, { name: "asc" }],
-    }),
     prisma.warehouse.findMany({
-      where: { shopId: ctx.shopId, isActive: true },
+      where: { isActive: true },
       orderBy: { name: "asc" },
     }),
-    prisma.shop.findUnique({
-      where: { id: ctx.shopId },
+    prisma.shop.findFirst({
       select: { name: true },
     }),
     prisma.category.findMany({
-      where: { shopId: ctx.shopId },
       orderBy: { createdAt: "asc" },
     }),
     prisma.user.findMany({
-      where: { shopId: ctx.shopId, active: true, role: { not: "VIEWER" } },
+      where: { active: true, role: { not: "VIEWER" } },
       select: { id: true, name: true, email: true, role: true },
       orderBy: { name: "asc" },
     }),
@@ -156,7 +141,7 @@ export const GET = apiHandler(async (ctx: Ctx, req: Request) => {
   // Serialise products — use WarehouseStock qty if warehouseId provided, else aggregate stock
   const products = rawProducts.map((p: any) => {
     const warehouseQty = warehouseId
-      ? (p.warehouseStocks?.[0]?.qty ?? 0)
+      ? (p.warehouseStocks?.[0]?.qty ?? p.stock ?? 0)
       : p.stock;
 
     return {
@@ -202,7 +187,6 @@ export const GET = apiHandler(async (ctx: Ctx, req: Request) => {
     products: { items: products, nextCursor: null, hasMore: false },
     customers,
     accounts,
-    branches,
     warehouses,
     categories,
     users,

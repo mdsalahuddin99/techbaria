@@ -9,7 +9,7 @@ import type { ProductListFilter } from "./types";
 
 /** Shared query logic for the products list — used both direct and cached. */
 async function runListQuery(ctx: Ctx, params?: PaginationParams, filter?: ProductListFilter) {
-  const where: any = { shopId: ctx.shopId };
+  const where: any = {};
   if (filter?.isPublished !== undefined) where.isPublished = filter.isPublished;
   if (filter?.categoryId) where.categoryId = filter.categoryId;
   if (filter?.lowStock) where.stock = { lte: prisma.product.fields.reorderLevel };
@@ -68,7 +68,7 @@ export async function list(
   const noSearch = !filter?.search && !filter?.categoryId && filter?.isPublished === undefined && !filter?.lowStock;
   const firstPage = !params?.cursor;
   if (noSearch && firstPage && !opts?.skipCache) {
-    return cache.fetch(cacheKeys.products.list(ctx.shopId), TTL.PRODUCT_LIST, async () => {
+    return cache.fetch(cacheKeys.products.list("default"), TTL.PRODUCT_LIST, async () => {
       return runListQuery(ctx, params, filter);
     });
   }
@@ -77,8 +77,8 @@ export async function list(
 
 /** Get a single product by ID (scoped to shop). */
 export async function getById(ctx: Ctx, id: string) {
-  const product = await prisma.product.findFirst({
-    where: { id, shopId: ctx.shopId },
+  const product = await prisma.product.findUnique({
+    where: { id },
     include: {
       category: true,
       images: { orderBy: { position: "asc" } },
@@ -107,8 +107,8 @@ export async function getById(ctx: Ctx, id: string) {
 
 /** Get a product by slug (for storefront). */
 export async function getBySlug(shopId: string, slug: string) {
-  const product = await prisma.product.findFirst({
-    where: { shopId, slug, isPublished: true },
+  const product = await prisma.product.findUnique({
+    where: { slug },
     include: {
       category: true,
       images: { orderBy: { position: "asc" } },
@@ -127,7 +127,6 @@ export async function publicList(shopId: string, filter?: { categoryId?: string;
   return serialise(
     await prisma.product.findMany({
       where: {
-        shopId,
         isPublished: true,
         categoryId: filter?.categoryId ?? undefined,
         ...(filter?.search && {
@@ -152,15 +151,14 @@ export async function publicList(shopId: string, filter?: { categoryId?: string;
 /** Products where stock ≤ reorderLevel. */
 export async function lowStock(ctx: Ctx) {
   return prisma.$queryRawUnsafe<any[]>(
-    `SELECT * FROM "Product" WHERE "shopId" = $1 AND "stock" <= "reorderLevel" ORDER BY ("reorderLevel" - "stock") DESC`,
-    ctx.shopId,
+    `SELECT * FROM "Product" WHERE "stock" <= "reorderLevel" ORDER BY ("reorderLevel" - "stock") DESC`
   );
 }
 
 /** Products where stock = 0. */
 export async function outOfStock(ctx: Ctx) {
   return prisma.product.findMany({
-    where: { shopId: ctx.shopId, stock: { lte: 0 } },
+    where: { stock: { lte: 0 } },
     orderBy: { name: "asc" },
   });
 }
@@ -171,8 +169,7 @@ export async function distinctFieldValues(ctx: Ctx, field: string, parent?: stri
   const tableFields = ["brand", "model", "series", "color", "storage", "ram"];
   if (tableFields.includes(field)) {
     const rows = await prisma.$queryRawUnsafe<Array<Record<string, unknown>>>(
-      `SELECT DISTINCT "${field}" FROM "Product" WHERE "shopId" = $1 AND "${field}" IS NOT NULL AND "${field}" != '' ORDER BY "${field}" ASC`,
-      ctx.shopId,
+      `SELECT DISTINCT "${field}" FROM "Product" WHERE "${field}" IS NOT NULL AND "${field}" != '' ORDER BY "${field}" ASC`
     );
     return rows.map((r) => String(r[field])).filter(Boolean);
   }
@@ -181,7 +178,6 @@ export async function distinctFieldValues(ctx: Ctx, field: string, parent?: stri
   if (field === "subcategory" && parent) {
     const cats = await prisma.category.findMany({
       where: {
-        shopId: ctx.shopId,
         parent: { name: parent },
         name: { not: "" },
       },
@@ -195,7 +191,6 @@ export async function distinctFieldValues(ctx: Ctx, field: string, parent?: stri
   if (field === "category") {
     const cats = await prisma.category.findMany({
       where: {
-        shopId: ctx.shopId,
         parentId: null,
         name: { not: "" },
       },

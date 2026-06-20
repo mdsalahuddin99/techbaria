@@ -32,7 +32,7 @@ export const expensesService = {
   async list(ctx: Ctx, params?: PaginationParams) {
     const raw = await paginate<any>(
       prisma.expense,
-      { where: { shopId: ctx.shopId }, include: { account: { select: { name: true } } } },
+      { include: { account: { select: { name: true } } } },
       params,
       { orderBy: { date: "desc" as const } },
     );
@@ -54,7 +54,7 @@ export const expensesService = {
   /** Get single expense. */
   async getById(ctx: Ctx, id: string) {
     const e = await prisma.expense.findFirst({
-      where: { id, shopId: ctx.shopId },
+      where: { id },
     });
 
     if (!e) throw new ServiceError("NOT_FOUND", "Expense not found", 404);
@@ -82,7 +82,7 @@ export const expensesService = {
       // 1. If account is provided, verify it exists and has sufficient balance
       if (input.accountId) {
         const account = await tx.financialAccount.findFirst({
-          where: { id: input.accountId, shopId: ctx.shopId },
+          where: { id: input.accountId },
         });
         if (!account) {
           throw new ServiceError("NOT_FOUND", "Account not found", 404);
@@ -101,7 +101,6 @@ export const expensesService = {
       // 2. Create the expense
       const expense = await tx.expense.create({
         data: {
-          shopId: ctx.shopId,
           category: input.category,
           amount: input.amount,
           accountId: input.accountId || null,
@@ -135,7 +134,7 @@ export const expensesService = {
 
     return prisma.$transaction(async (tx) => {
       const existing = await tx.expense.findFirst({
-        where: { id, shopId: ctx.shopId },
+        where: { id },
       });
       if (!existing) {
         throw new ServiceError("NOT_FOUND", "Expense not found", 404);
@@ -157,7 +156,7 @@ export const expensesService = {
         // Apply new account balance
         if (newAccountId) {
           const account = await tx.financialAccount.findFirst({
-            where: { id: newAccountId, shopId: ctx.shopId },
+            where: { id: newAccountId },
           });
           if (!account) {
             throw new ServiceError("NOT_FOUND", "New account not found", 404);
@@ -190,7 +189,6 @@ export const expensesService = {
         category: updated.category,
         amount: Number(updated.amount),
         description: updated.notes || "",
-        accountId: updated.accountId || undefined,
         recordedBy: "Admin",
       };
     });
@@ -202,7 +200,7 @@ export const expensesService = {
 
     return prisma.$transaction(async (tx) => {
       const existing = await tx.expense.findFirst({
-        where: { id, shopId: ctx.shopId },
+        where: { id },
       });
       if (!existing) {
         throw new ServiceError("NOT_FOUND", "Expense not found", 404);

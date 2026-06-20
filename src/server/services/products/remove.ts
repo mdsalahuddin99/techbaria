@@ -11,8 +11,8 @@ import { cache } from "@/lib/cache";
  *  to prevent data integrity loss.  */
 export async function remove(ctx: Ctx, id: string) {
   requireRole(ctx, "OWNER");
-  const product = await prisma.product.findFirst({
-    where: { id, shopId: ctx.shopId },
+  const product = await prisma.product.findUnique({
+    where: { id },
     select: {
       id: true, name: true, sku: true,
       _count: {
@@ -41,11 +41,11 @@ export async function remove(ctx: Ctx, id: string) {
     );
   }
 
-  await prisma.product.deleteMany({
-    where: { id, shopId: ctx.shopId },
+  await prisma.product.delete({
+    where: { id },
   });
 
-  await cache.invalidateSpecificProducts(ctx.shopId, [id]);
+  await cache.invalidateSpecificProducts("default", [id]);
 
   await auditLogService.log(ctx, {
     entity: "Product",

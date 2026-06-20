@@ -3,8 +3,16 @@
 > **Generated:** 2026-06-16  
 > **Last Updated:** 2026-06-18  
 > **Project:** POS 360 (shebatech360-nextjs)  
-> **Mode:** Single-DB Multi-Tenant (shopId isolation) — currently deployed in single-shop mode via `DEFAULT_SHOP_ID`  
+> **Mode:** Single-Tenant Architecture (global scoping)
 > **Stack:** Next.js 16 · Prisma 6 · PostgreSQL (Neon) · Auth.js v5 · Tailwind v3 · shadcn/ui · Vitest
+
+> [!NOTE]
+> **2026-06-19 Architecture Evolution:**
+> This audit document reflects the historic multi-tenant and branch structure as of June 18.
+> The architecture has since been evolved to a **Single-Tenant and Branch-less model**.
+> - All `shopId` references and dynamic isolation logic have been removed.
+> - The `Branch` model has been dropped, shifting multi-location inventory directly to the `Warehouse` structure.
+> - For the updated schema and details, please refer to [docs/DATABASE.md](file:///g:/CLIENT%20PROJECT/pos99-main/pos99-main/docs/DATABASE.md).
 
 ---
 

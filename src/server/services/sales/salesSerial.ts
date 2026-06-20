@@ -31,7 +31,6 @@ export const salesSerial = {
 
     const allAvailable = await tx.serialNumber.findMany({
       where: {
-        shopId,
         productId: { in: productQtys.map((x) => x.productId) },
         status: "IN_STOCK",
         ...(warehouseId && { warehouseId }),
@@ -92,7 +91,7 @@ export const salesSerial = {
     }).filter(Boolean))] as string[];
     if (soldProductIds.length > 0) {
       for (const productId of soldProductIds) {
-        await inventoryService.syncStockCount(tx, shopId, warehouseId, productId);
+        await inventoryService.syncStockCount(tx, warehouseId, productId);
       }
     }
   },
@@ -114,7 +113,7 @@ export const salesSerial = {
 
     if (productIds.length > 0) {
       for (const productId of productIds) {
-        await inventoryService.syncStockCount(tx, shopId, warehouseId, productId);
+        await inventoryService.syncStockCount(tx, warehouseId, productId);
       }
     }
   }

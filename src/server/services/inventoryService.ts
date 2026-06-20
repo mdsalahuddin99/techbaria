@@ -14,7 +14,6 @@ import { cache, cacheKeys, TTL } from "@/lib/cache";
 
 export interface AdjustmentInput {
   productId: string;
-  branchId?: string;
   warehouseId?: string;
   qtyDelta: number; // positive = add, negative = subtract
   reason: "DAMAGE" | "LOSS" | "THEFT" | "CORRECTION" | "RECEIVED" | "OTHER";
@@ -26,9 +25,8 @@ export interface AdjustmentInput {
 export const inventoryService = {
   /** Snapshot of current stock levels for all products. */
   async snapshot(ctx: Ctx) {
-    return cache.fetch(cacheKeys.inventory.snapshot(ctx.shopId), TTL.INVENTORY_SNAPSHOT, async () => {
+    return cache.fetch(cacheKeys.inventory.snapshot("default"), TTL.INVENTORY_SNAPSHOT, async () => {
       return prisma.product.findMany({
-        where: { shopId: ctx.shopId },
         select: {
           id: true,
           name: true,
@@ -46,7 +44,7 @@ export const inventoryService = {
   async listAdjustments(ctx: Ctx, params?: PaginationParams) {
     return paginate(
       prisma.stockAdjustment,
-      { where: { shopId: ctx.shopId } },
+      {},
       params,
       { orderBy: { createdAt: "desc" as const } },
     );
@@ -60,9 +58,9 @@ export const inventoryService = {
       throw new ServiceError("VALIDATION", "Quantity delta must be non-zero");
     }
 
-    // Verify product belongs to shop
-    const product = await prisma.product.findFirst({
-      where: { id: input.productId, shopId: ctx.shopId },
+    // Verify product exists
+    const product = await prisma.product.findUnique({
+      where: { id: input.productId },
     });
     if (!product) {
       throw new ServiceError("NOT_FOUND", "Product not found", 404);
@@ -72,9 +70,7 @@ export const inventoryService = {
       // Create the adjustment record (immutable audit trail)
       const adjustment = await tx.stockAdjustment.create({
         data: {
-          shopId: ctx.shopId,
           productId: input.productId,
-          branchId: input.branchId,
           warehouseId: input.warehouseId,
           qtyDelta: input.qtyDelta,
           reason: input.reason,
@@ -112,7 +108,7 @@ export const inventoryService = {
       }
 
       // Sync physical serial count (Fix #4)
-      await inventoryService.syncStockCount(tx, ctx.shopId, input.warehouseId, input.productId);
+      await inventoryService.syncStockCount(tx, input.warehouseId, input.productId);
 
       await auditLogService.log(ctx, {
         entity: "StockAdjustment",
@@ -124,8 +120,8 @@ export const inventoryService = {
       return adjustment;
     });
 
-    await cache.invalidateInventory(ctx.shopId);
-    await cache.invalidateSpecificProducts(ctx.shopId, [input.productId]);
+    await cache.invalidateInventory("default");
+    await cache.invalidateSpecificProducts("default", [input.productId]);
 
     return adjustment;
   },
@@ -133,15 +129,14 @@ export const inventoryService = {
   /** Products where stock ≤ reorderLevel. */
   async lowStock(ctx: Ctx) {
     return prisma.$queryRawUnsafe<any[]>(
-      `SELECT * FROM "Product" WHERE "shopId" = $1 AND "stock" <= "reorderLevel" ORDER BY ("reorderLevel" - "stock") DESC`,
-      ctx.shopId,
+      `SELECT * FROM "Product" WHERE "stock" <= "reorderLevel" ORDER BY ("reorderLevel" - "stock") DESC`
     );
   },
 
   /** Products where stock = 0. */
   async outOfStock(ctx: Ctx) {
     return prisma.product.findMany({
-      where: { shopId: ctx.shopId, stock: { lte: 0 } },
+      where: { stock: { lte: 0 } },
       orderBy: { name: "asc" },
     });
   },
@@ -149,22 +144,22 @@ export const inventoryService = {
   /** Warehouse-level stock (multi-warehouse support). */
   async warehouseStock(ctx: Ctx, warehouseId: string) {
     return prisma.warehouseStock.findMany({
-      where: { warehouse: { shopId: ctx.shopId }, warehouseId },
+      where: { warehouseId },
       include: { product: { select: { name: true, sku: true, unit: true } } },
     });
   },
 
   /** Reconcile physical serial count in a warehouse/shop with WarehouseStock and Product aggregates. */
-  async syncStockCount(tx: any, shopId: string, warehouseId: string | null | undefined, productId: string) {
-    const product = await tx.product.findFirst({
-      where: { id: productId, shopId },
+  async syncStockCount(tx: any, warehouseId: string | null | undefined, productId: string) {
+    const product = await tx.product.findUnique({
+      where: { id: productId },
       select: { trackSerials: true },
     });
     if (!product || !product.trackSerials) return;
 
     if (warehouseId) {
       const serialCountInWarehouse = await tx.serialNumber.count({
-        where: { productId, warehouseId, status: "IN_STOCK", shopId },
+        where: { productId, warehouseId, status: "IN_STOCK" },
       });
 
       await tx.warehouseStock.upsert({
@@ -175,7 +170,7 @@ export const inventoryService = {
     }
 
     const totalSerialCount = await tx.serialNumber.count({
-      where: { productId, status: "IN_STOCK", shopId },
+      where: { productId, status: "IN_STOCK" },
     });
 
     await tx.product.update({

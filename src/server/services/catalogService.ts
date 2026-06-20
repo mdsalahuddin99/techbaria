@@ -19,13 +19,12 @@ export interface BrandOutput {
 export async function listBrands(ctx: Ctx, categoryId: string): Promise<BrandOutput[]> {
   if (categoryId === "all") {
     const items = await prisma.categoryBrand.findMany({
-      where: { shopId: ctx.shopId },
       orderBy: { name: "asc" },
     });
     return items.map((b) => ({ id: b.id, name: b.name, categoryId: b.categoryId }));
   }
   const items = await prisma.categoryBrand.findMany({
-    where: { shopId: ctx.shopId, categoryId },
+    where: { categoryId },
     orderBy: { name: "asc" },
   });
   return items.map((b) => ({ id: b.id, name: b.name, categoryId: b.categoryId }));
@@ -34,21 +33,21 @@ export async function listBrands(ctx: Ctx, categoryId: string): Promise<BrandOut
 export async function createBrand(ctx: Ctx, name: string, categoryId: string): Promise<BrandOutput> {
   requireRole(ctx, "MANAGER");
   const existing = await prisma.categoryBrand.findUnique({
-    where: { shopId_categoryId_name: { shopId: ctx.shopId, categoryId, name } },
+    where: { categoryId_name: { categoryId, name } },
   });
   if (existing) throw new ServiceError("CONFLICT", `Brand "${name}" already exists`, 409);
-  const b = await prisma.categoryBrand.create({ data: { shopId: ctx.shopId, name, categoryId } });
+  const b = await prisma.categoryBrand.create({ data: { name, categoryId } });
   return { id: b.id, name: b.name, categoryId: b.categoryId };
 }
 
 export async function updateBrand(ctx: Ctx, id: string, name: string): Promise<BrandOutput> {
   requireRole(ctx, "MANAGER");
   const b = await prisma.categoryBrand.findFirst({
-    where: { id, shopId: ctx.shopId },
+    where: { id },
   });
   if (!b) throw new ServiceError("NOT_FOUND", "Brand not found", 404);
   const existing = await prisma.categoryBrand.findUnique({
-    where: { shopId_categoryId_name: { shopId: ctx.shopId, categoryId: b.categoryId, name } },
+    where: { categoryId_name: { categoryId: b.categoryId, name } },
   });
   if (existing && existing.id !== id) throw new ServiceError("CONFLICT", `Brand "${name}" already exists`, 409);
   const updated = await prisma.categoryBrand.update({
@@ -61,7 +60,7 @@ export async function updateBrand(ctx: Ctx, id: string, name: string): Promise<B
 export async function deleteBrand(ctx: Ctx, id: string): Promise<void> {
   requireRole(ctx, "MANAGER");
   await prisma.categoryBrand.deleteMany({
-    where: { id, shopId: ctx.shopId },
+    where: { id },
   });
 }
 
@@ -76,13 +75,12 @@ export interface ProductNameOutput {
 export async function listProductNames(ctx: Ctx, brandId: string): Promise<ProductNameOutput[]> {
   if (brandId === "all") {
     const items = await prisma.subcategoryProduct.findMany({
-      where: { shopId: ctx.shopId },
       orderBy: { name: "asc" },
     });
     return items.map((p) => ({ id: p.id, name: p.name, brandId: p.brandId }));
   }
   const items = await prisma.subcategoryProduct.findMany({
-    where: { shopId: ctx.shopId, brandId },
+    where: { brandId },
     orderBy: { name: "asc" },
   });
   return items.map((p) => ({ id: p.id, name: p.name, brandId: p.brandId }));
@@ -91,21 +89,21 @@ export async function listProductNames(ctx: Ctx, brandId: string): Promise<Produ
 export async function createProductName(ctx: Ctx, name: string, brandId: string): Promise<ProductNameOutput> {
   requireRole(ctx, "MANAGER");
   const existing = await prisma.subcategoryProduct.findUnique({
-    where: { shopId_brandId_name: { shopId: ctx.shopId, brandId, name } },
+    where: { brandId_name: { brandId, name } },
   });
   if (existing) throw new ServiceError("CONFLICT", `Product name "${name}" already exists`, 409);
-  const p = await prisma.subcategoryProduct.create({ data: { shopId: ctx.shopId, name, brandId } });
+  const p = await prisma.subcategoryProduct.create({ data: { name, brandId } });
   return { id: p.id, name: p.name, brandId: p.brandId };
 }
 
 export async function updateProductName(ctx: Ctx, id: string, name: string): Promise<ProductNameOutput> {
   requireRole(ctx, "MANAGER");
   const p = await prisma.subcategoryProduct.findFirst({
-    where: { id, shopId: ctx.shopId },
+    where: { id },
   });
   if (!p) throw new ServiceError("NOT_FOUND", "Product name not found", 404);
   const existing = await prisma.subcategoryProduct.findUnique({
-    where: { shopId_brandId_name: { shopId: ctx.shopId, brandId: p.brandId, name } },
+    where: { brandId_name: { brandId: p.brandId, name } },
   });
   if (existing && existing.id !== id) throw new ServiceError("CONFLICT", `Product name "${name}" already exists`, 409);
   const updated = await prisma.subcategoryProduct.update({
@@ -118,7 +116,7 @@ export async function updateProductName(ctx: Ctx, id: string, name: string): Pro
 export async function deleteProductName(ctx: Ctx, id: string): Promise<void> {
   requireRole(ctx, "MANAGER");
   await prisma.subcategoryProduct.deleteMany({
-    where: { id, shopId: ctx.shopId },
+    where: { id },
   });
 }
 
@@ -133,13 +131,12 @@ export interface ModelOutput {
 export async function listModels(ctx: Ctx, productId: string): Promise<ModelOutput[]> {
   if (productId === "all") {
     const items = await prisma.subcategoryModel.findMany({
-      where: { shopId: ctx.shopId },
       orderBy: { name: "asc" },
     });
     return items.map((m) => ({ id: m.id, name: m.name, productId: m.productId }));
   }
   const items = await prisma.subcategoryModel.findMany({
-    where: { shopId: ctx.shopId, productId },
+    where: { productId },
     orderBy: { name: "asc" },
   });
   return items.map((m) => ({ id: m.id, name: m.name, productId: m.productId }));
@@ -148,21 +145,21 @@ export async function listModels(ctx: Ctx, productId: string): Promise<ModelOutp
 export async function createModel(ctx: Ctx, name: string, productId: string): Promise<ModelOutput> {
   requireRole(ctx, "MANAGER");
   const existing = await prisma.subcategoryModel.findUnique({
-    where: { shopId_productId_name: { shopId: ctx.shopId, productId, name } },
+    where: { productId_name: { productId, name } },
   });
   if (existing) throw new ServiceError("CONFLICT", `Model "${name}" already exists`, 409);
-  const m = await prisma.subcategoryModel.create({ data: { shopId: ctx.shopId, name, productId } });
+  const m = await prisma.subcategoryModel.create({ data: { name, productId } });
   return { id: m.id, name: m.name, productId: m.productId };
 }
 
 export async function updateModel(ctx: Ctx, id: string, name: string): Promise<ModelOutput> {
   requireRole(ctx, "MANAGER");
   const m = await prisma.subcategoryModel.findFirst({
-    where: { id, shopId: ctx.shopId },
+    where: { id },
   });
   if (!m) throw new ServiceError("NOT_FOUND", "Model not found", 404);
   const existing = await prisma.subcategoryModel.findUnique({
-    where: { shopId_productId_name: { shopId: ctx.shopId, productId: m.productId, name } },
+    where: { productId_name: { productId: m.productId, name } },
   });
   if (existing && existing.id !== id) throw new ServiceError("CONFLICT", `Model "${name}" already exists`, 409);
   const updated = await prisma.subcategoryModel.update({
@@ -175,7 +172,7 @@ export async function updateModel(ctx: Ctx, id: string, name: string): Promise<M
 export async function deleteModel(ctx: Ctx, id: string): Promise<void> {
   requireRole(ctx, "MANAGER");
   await prisma.subcategoryModel.deleteMany({
-    where: { id, shopId: ctx.shopId },
+    where: { id },
   });
 }
 
@@ -190,13 +187,12 @@ export interface SeriesOutput {
 export async function listSeries(ctx: Ctx, modelId: string): Promise<SeriesOutput[]> {
   if (modelId === "all") {
     const items = await prisma.subcategorySeries.findMany({
-      where: { shopId: ctx.shopId },
       orderBy: { name: "asc" },
     });
     return items.map((s) => ({ id: s.id, name: s.name, modelId: s.modelId }));
   }
   const items = await prisma.subcategorySeries.findMany({
-    where: { shopId: ctx.shopId, modelId },
+    where: { modelId },
     orderBy: { name: "asc" },
   });
   return items.map((s) => ({ id: s.id, name: s.name, modelId: s.modelId }));
@@ -205,21 +201,21 @@ export async function listSeries(ctx: Ctx, modelId: string): Promise<SeriesOutpu
 export async function createSeries(ctx: Ctx, name: string, modelId: string): Promise<SeriesOutput> {
   requireRole(ctx, "MANAGER");
   const existing = await prisma.subcategorySeries.findUnique({
-    where: { shopId_modelId_name: { shopId: ctx.shopId, modelId, name } },
+    where: { modelId_name: { modelId, name } },
   });
   if (existing) throw new ServiceError("CONFLICT", `Series "${name}" already exists`, 409);
-  const s = await prisma.subcategorySeries.create({ data: { shopId: ctx.shopId, name, modelId } });
+  const s = await prisma.subcategorySeries.create({ data: { name, modelId } });
   return { id: s.id, name: s.name, modelId: s.modelId };
 }
 
 export async function updateSeries(ctx: Ctx, id: string, name: string): Promise<SeriesOutput> {
   requireRole(ctx, "MANAGER");
   const s = await prisma.subcategorySeries.findFirst({
-    where: { id, shopId: ctx.shopId },
+    where: { id },
   });
   if (!s) throw new ServiceError("NOT_FOUND", "Series not found", 404);
   const existing = await prisma.subcategorySeries.findUnique({
-    where: { shopId_modelId_name: { shopId: ctx.shopId, modelId: s.modelId, name } },
+    where: { modelId_name: { modelId: s.modelId, name } },
   });
   if (existing && existing.id !== id) throw new ServiceError("CONFLICT", `Series "${name}" already exists`, 409);
   const updated = await prisma.subcategorySeries.update({
@@ -232,6 +228,6 @@ export async function updateSeries(ctx: Ctx, id: string, name: string): Promise<
 export async function deleteSeries(ctx: Ctx, id: string): Promise<void> {
   requireRole(ctx, "MANAGER");
   await prisma.subcategorySeries.deleteMany({
-    where: { id, shopId: ctx.shopId },
+    where: { id },
   });
 }

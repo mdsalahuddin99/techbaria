@@ -10,9 +10,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/shared/ui/select";
-import { Plus, Minus, X, Receipt } from "lucide-react";
+import { Plus, Minus, X, Receipt, Eye } from "lucide-react";
 import { formatCurrency } from "@/shared/lib/format";
 import { toast } from "sonner";
+import { Popover, PopoverContent, PopoverTrigger } from "@/shared/ui/popover";
 
 export interface VoucherRow {
   id: string;
@@ -20,6 +21,7 @@ export interface VoucherRow {
   name: string;
   qty: number;
   price: number;
+  discount?: number;
   serials: string[];
   warrantyMonths?: number;
 }
@@ -29,6 +31,7 @@ interface Product {
   name: string;
   trackSerials?: boolean;
   stock: number;
+  cost?: number | string | any;
   serials?: Array<{ serialNumber?: string; imei?: string; [k: string]: any }>;
   serialNumbers?: Array<{ serial?: string; [k: string]: any }>;
   warrantyMonths?: number;
@@ -125,6 +128,7 @@ interface InvoiceLineItemsProps {
   onChangeQty: (rowId: string, qty: number) => void;
   onChangeSerials: (rowId: string, serials: string[]) => void;
   onChangeWarranty: (rowId: string, months: number) => void;
+  onChangeDiscount?: (rowId: string, discount: number) => void;
   onRemoveRow: (rowId: string) => void;
   /** Used to calculate effective available stock (total - qty in other rows for same product) */
   effectiveStockOf: (productId: string) => number;
@@ -137,13 +141,14 @@ export function InvoiceLineItems({
   onChangeQty,
   onChangeSerials,
   onChangeWarranty,
+  onChangeDiscount,
   onRemoveRow,
   effectiveStockOf,
   searchInputRef,
 }: InvoiceLineItemsProps) {
   if (rows.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/50 text-slate-400">
+      <div className="flex flex-col items-center justify-center py-16 rounded-[4px] border-2 border-dashed border-border bg-secondary/15 text-slate-400">
         <Receipt className="h-12 w-12 mb-3 opacity-20" />
         <p className="text-sm font-medium text-slate-500">No items added yet</p>
         <p className="text-xs mt-1">
@@ -154,32 +159,35 @@ export function InvoiceLineItems({
   }
 
   return (
-    <div className="rounded-xl border border-slate-200 overflow-hidden">
+    <div className="rounded-[4px] border border-border overflow-hidden">
       <table className="w-full text-sm">
         <thead>
-          <tr className="bg-slate-50 border-b border-slate-200">
-            <th className="text-left px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400 w-8">
+          <tr className="bg-secondary/40 border-b border-border">
+            <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500 w-8">
               #
             </th>
-            <th className="text-left px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+            <th className="text-left px-3 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500">
               Product
             </th>
-            <th className="text-left px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400 w-40">
+            <th className="text-left px-3 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500 w-20">
               Warranty
             </th>
-            <th className="text-center px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400 w-36">
+            <th className="text-center px-3 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500 w-36">
               Qty
             </th>
-            <th className="text-right px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400 w-28">
+            <th className="text-right px-3 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500 w-24">
+              Discount
+            </th>
+            <th className="text-right px-3 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500 w-28">
               Unit Price
             </th>
-            <th className="text-right px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400 w-28">
+            <th className="text-right px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500 w-28">
               Total
             </th>
-            <th className="w-10" />
+            <th className="w-20" />
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100">
+        <tbody className="divide-y divide-border bg-card">
           {rows.map((row, idx) => {
             const product = products.find((p) => p.id === row.productId);
             const isTracked = product?.trackSerials ?? true;
@@ -188,7 +196,7 @@ export function InvoiceLineItems({
             const defaultWarranty = product?.warrantyMonths ?? (product as any)?.serials?.find((s: any) => s.warrantyMonths && s.warrantyMonths > 0)?.warrantyMonths ?? 0;
 
             return (
-              <tr key={row.id} className="hover:bg-slate-50/60 transition-colors">
+              <tr key={row.id} className="hover:bg-secondary/15 transition-colors">
                 {/* Row number */}
                 <td className="px-4 py-3 text-xs text-slate-400 font-medium">
                   {idx + 1}
@@ -199,18 +207,14 @@ export function InvoiceLineItems({
                   <p className="font-medium text-slate-700 text-[13px] leading-tight">
                     {row.name}
                   </p>
-                  {!isTracked && (
-                    <p className="text-[10px] text-slate-400 mt-0.5">
-                      {formatCurrency(row.price)} × {row.qty}
-                    </p>
-                  )}
+
                   {isTracked && (
                     <div className="mt-1.5">
                       <div className="flex flex-wrap gap-1">
                         {row.serials.map((serial, i) => (
                           <span
                             key={i}
-                            className="inline-flex items-center gap-1 bg-slate-100 text-slate-600 text-[10px] font-medium pl-1.5 pr-1 py-0.5 rounded border border-slate-200"
+                            className="inline-flex items-center gap-1 bg-secondary/25 text-slate-800 text-[10px] font-semibold pl-1.5 pr-1 py-0.5 rounded-[4px] border border-border"
                           >
                             {serial}
                             <button
@@ -237,38 +241,18 @@ export function InvoiceLineItems({
 
                 {/* Warranty months */}
                 <td className="px-3 py-3">
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="number"
-                      min={0}
-                      max={120}
-                      value={row.warrantyMonths ?? 0}
-                      onChange={(e) => {
-                        const val = parseInt(e.target.value);
-                        onChangeWarranty(row.id, isNaN(val) ? 0 : val);
-                      }}
-                      className="w-12 h-7 text-xs border-slate-200 text-center px-1 shrink-0"
-                      title="Customer Warranty (Months)"
-                    />
-                    {(() => {
-                      const remaining = getRemainingWarranty(product, row.serials);
-                      if (remaining === "No Warranty" || remaining === "Unknown") {
-                        return (
-                          <div className="text-[10px] px-1.5 py-0.5 rounded border inline-flex items-center whitespace-nowrap font-medium bg-slate-50 text-slate-500 border-slate-200" title="Vendor Warranty Remaining">
-                            No Vendor Warranty
-                          </div>
-                        );
-                      }
-                      const isExpired = remaining === "Expired";
-                      return (
-                        <div className={`text-[10px] px-1.5 py-0.5 rounded border inline-flex items-center whitespace-nowrap font-medium ${
-                          isExpired ? "bg-red-50 text-red-600 border-red-100" : "bg-emerald-50 text-emerald-600 border-emerald-100"
-                        }`} title="Vendor Warranty Remaining">
-                          {isExpired ? "Expired" : `${remaining} left`}
-                        </div>
-                      );
-                    })()}
-                  </div>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={120}
+                    value={row.warrantyMonths ?? 0}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value);
+                      onChangeWarranty(row.id, isNaN(val) ? 0 : val);
+                    }}
+                    className="w-12 h-7 text-xs border-border bg-card rounded-[4px] text-center px-1 shrink-0"
+                    title="Customer Warranty (Months)"
+                  />
                 </td>
 
                 {/* Qty stepper */}
@@ -278,7 +262,7 @@ export function InvoiceLineItems({
                       type="button"
                       size="icon"
                       variant="ghost"
-                      className="h-7 w-7 border border-slate-200 hover:border-slate-300"
+                      className="h-7 w-7 border border-border hover:border-border/85 rounded-[4px]"
                       onClick={() => {
                         if (row.qty <= 1) onRemoveRow(row.id);
                         else onChangeQty(row.id, row.qty - 1);
@@ -291,7 +275,7 @@ export function InvoiceLineItems({
                       value={row.qty}
                       min={1}
                       max={stock}
-                      className="w-14 text-center h-7 text-sm border-slate-200 px-1"
+                      className="w-14 text-center h-7 text-sm border-border bg-card rounded-[4px] px-1"
                       onChange={(e) => {
                         const qty = Math.max(1, parseInt(e.target.value) || 1);
                         if (qty > stock) {
@@ -318,7 +302,7 @@ export function InvoiceLineItems({
                       type="button"
                       size="icon"
                       variant="ghost"
-                      className="h-7 w-7 border border-slate-200 hover:border-slate-300"
+                      className="h-7 w-7 border border-border hover:border-border/85 rounded-[4px]"
                       onClick={() => {
                         if (row.qty + 1 > stock) {
                           toast.error(
@@ -340,6 +324,21 @@ export function InvoiceLineItems({
                   </div>
                 </td>
 
+                {/* Discount */}
+                <td className="px-3 py-3">
+                  <Input
+                    type="number"
+                    min={0}
+                    value={row.discount === 0 || !row.discount ? "" : row.discount}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value);
+                      onChangeDiscount?.(row.id, isNaN(val) ? 0 : val);
+                    }}
+                    placeholder="0.00"
+                    className="w-20 h-7 text-xs border-border bg-card rounded-[4px] text-right px-2"
+                  />
+                </td>
+
                 {/* Unit price */}
                 <td className="px-3 py-3 text-right">
                   <span className="text-sm text-slate-700 tabular-nums">
@@ -350,20 +349,74 @@ export function InvoiceLineItems({
                 {/* Line total */}
                 <td className="px-4 py-3 text-right">
                   <span className="font-semibold text-slate-700 tabular-nums">
-                    {formatCurrency(row.price * row.qty)}
+                    {formatCurrency(row.price * row.qty - (row.discount || 0))}
                   </span>
                 </td>
 
-                {/* Remove button */}
+                {/* Action column (Quick-View & Delete) */}
                 <td className="px-2 py-3 text-center">
-                  <button
-                    type="button"
-                    onClick={() => onRemoveRow(row.id)}
-                    className="h-7 w-7 rounded-lg grid place-items-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                    title="Remove item"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
+                  <div className="flex items-center justify-center gap-1">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button
+                          type="button"
+                          className="h-7 w-7 rounded-[4px] grid place-items-center text-slate-400 hover:text-primary hover:bg-primary/10 transition-colors"
+                          title="Quick View Margin"
+                        >
+                          <Eye className="h-3.5 w-3.5" />
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent align="end" className="w-56 p-3 bg-card border border-border rounded-[4px] shadow-none z-50">
+                        <div className="space-y-2 text-xs">
+                          <p className="font-bold text-slate-700 border-b border-border pb-1">Cost & Margin Info</p>
+                          <div className="flex justify-between">
+                            <span className="text-slate-500">Sell Price:</span>
+                            <span className="font-medium text-slate-800">{formatCurrency(row.price)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-slate-500">Purchase Cost:</span>
+                            <span className="font-medium text-slate-800">{formatCurrency(Number(product?.cost ?? 0))}</span>
+                          </div>
+                          <div className="flex justify-between border-t border-border pt-1.5 font-semibold">
+                            <span className="text-slate-700">Margin:</span>
+                            <span className={Number(product?.cost ?? 0) <= row.price ? "text-emerald-600" : "text-destructive"}>
+                              {formatCurrency(row.price - Number(product?.cost ?? 0))}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-slate-500">Margin %:</span>
+                            <span className={Number(product?.cost ?? 0) <= row.price ? "text-emerald-600 font-medium" : "text-destructive font-medium"}>
+                              {row.price > 0 ? (((row.price - Number(product?.cost ?? 0)) / row.price) * 100).toFixed(1) + "%" : "0%"}
+                            </span>
+                          </div>
+                          <div className="flex justify-between border-t border-border pt-1.5">
+                            <span className="text-slate-500">Vendor Warranty:</span>
+                            {(() => {
+                              const remaining = getRemainingWarranty(product, row.serials);
+                              if (remaining === "No Warranty" || remaining === "Unknown") {
+                                return <span className="font-medium text-slate-600">No Warranty</span>;
+                              }
+                              const isExpired = remaining === "Expired";
+                              return (
+                                <span className={`font-semibold ${isExpired ? "text-destructive" : "text-emerald-600"}`}>
+                                  {isExpired ? "Expired" : `${remaining} left`}
+                                </span>
+                              );
+                            })()}
+                          </div>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+
+                    <button
+                      type="button"
+                      onClick={() => onRemoveRow(row.id)}
+                      className="h-7 w-7 rounded-[4px] grid place-items-center text-slate-400 hover:text-destructive hover:bg-destructive/10 transition-colors"
+                      title="Remove item"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
                 </td>
               </tr>
             );

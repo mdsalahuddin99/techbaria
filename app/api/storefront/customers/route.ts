@@ -12,7 +12,7 @@ import type { Ctx } from "@/server/lib/ctx";
  */
 export const GET = apiHandler(async (ctx: Ctx) => {
   const users = await prisma.user.findMany({
-    where: { shopId: ctx.shopId, role: "VIEWER" },
+    where: { role: "VIEWER" },
     select: {
       id: true,
       name: true,

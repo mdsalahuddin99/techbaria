@@ -4,7 +4,7 @@
  * Domain data (products, customers, sales, etc.) now comes from
  * TanStack Query + API Route Handlers. This store keeps only the
  * in-progress POS session: cart, held sales, selected customer,
- * discount, and active branch.
+ * and discount.
  *
  * Persisted to localStorage so a page refresh doesn't lose the cart.
  */
@@ -25,7 +25,6 @@ export const usePosStore = create<PosStore>()(
         cart: state.cart,
         discount: state.discount,
         selectedCustomerId: state.selectedCustomerId,
-        activeBranchId: state.activeBranchId,
       }),
     }
   )

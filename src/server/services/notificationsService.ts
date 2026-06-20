@@ -22,7 +22,7 @@ export const notificationsService = {
   async list(ctx: Ctx, params?: PaginationParams) {
     const raw = await paginate<any>(
       prisma.notification,
-      { where: { shopId: ctx.shopId } },
+      {},
       params,
       { orderBy: { createdAt: "desc" as const } },
     );
@@ -44,7 +44,7 @@ export const notificationsService = {
   /** Get unread count. */
   async unreadCount(ctx: Ctx) {
     return prisma.notification.count({
-      where: { shopId: ctx.shopId, read: false },
+      where: { read: false },
     });
   },
 
@@ -52,7 +52,6 @@ export const notificationsService = {
   async push(ctx: Ctx, input: NotificationCreateInput) {
     const n = await prisma.notification.create({
       data: {
-        shopId: ctx.shopId,
         type: input.type,
         title: input.title,
         message: input.message,
@@ -75,7 +74,7 @@ export const notificationsService = {
   /** Mark a notification as read. */
   async markRead(ctx: Ctx, id: string) {
     const updated = await prisma.notification.updateMany({
-      where: { id, shopId: ctx.shopId },
+      where: { id },
       data: { read: true },
     });
 
@@ -87,16 +86,14 @@ export const notificationsService = {
   /** Mark all notifications for the shop as read. */
   async markAllRead(ctx: Ctx) {
     await prisma.notification.updateMany({
-      where: { shopId: ctx.shopId, read: false },
+      where: { read: false },
       data: { read: true },
     });
   },
 
   /** Clear all notifications for the shop. */
   async clear(ctx: Ctx) {
-    await prisma.notification.deleteMany({
-      where: { shopId: ctx.shopId },
-    });
+    await prisma.notification.deleteMany({});
   },
 
   /** Adapter compatibility methods. */
@@ -106,7 +103,7 @@ export const notificationsService = {
 
   async update(ctx: Ctx, id: string, patch: { read?: boolean }) {
     const updated = await prisma.notification.updateMany({
-      where: { id, shopId: ctx.shopId },
+      where: { id },
       data: patch,
     });
 
@@ -130,7 +127,7 @@ export const notificationsService = {
 
   async remove(ctx: Ctx, id: string) {
     const res = await prisma.notification.deleteMany({
-      where: { id, shopId: ctx.shopId },
+      where: { id },
     });
 
     if (res.count === 0) {

@@ -14,7 +14,7 @@ export async function refund(ctx: Ctx, id: string, input: RefundInput) {
 
   const raw = await prisma.$transaction(async (tx) => {
     const sale = await tx.sale.findFirst({
-      where: { id, shopId: ctx.shopId },
+      where: { id },
       include: { items: true },
     });
     if (!sale) throw new ServiceError("NOT_FOUND", "Sale not found", 404);
@@ -37,7 +37,7 @@ export async function refund(ctx: Ctx, id: string, input: RefundInput) {
 
     const restockedProductIds = input.items.filter((i) => i.restock).map((i) => i.productId);
     if (refundItemIds.length > 0) {
-      await salesSerial.releaseSerials(tx, ctx.shopId, warehouseId, refundItemIds, restockedProductIds);
+      await salesSerial.releaseSerials(tx, "default", warehouseId, refundItemIds, restockedProductIds);
     }
 
     // Restock items in parallel (only those marked for restock)
@@ -89,7 +89,7 @@ export async function refund(ctx: Ctx, id: string, input: RefundInput) {
   }, { timeout: 30000 });
 
   const productIds = [...new Set(input.items.map(item => item.productId))];
-  await cache.invalidateSales(ctx.shopId);
-  await cache.invalidateSpecificProducts(ctx.shopId, productIds);
+  await cache.invalidateSales("default");
+  await cache.invalidateSpecificProducts("default", productIds);
   return raw;
 }

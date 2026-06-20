@@ -17,8 +17,6 @@ export interface UiSessionSlice {
   cart: CartItem[];
   discount: number;
   selectedCustomerId: string | null;
-  activeBranchId: string | null;
-
   addToCart: (productId: string, name?: string, price?: number, imageUrl?: string) => void;
   setQty: (productId: string, qty: number) => void;
   setCartItemWarranty: (productId: string, months: number | undefined) => void;
@@ -29,7 +27,6 @@ export interface UiSessionSlice {
   restoreCart: (state: { cart: CartItem[]; discount: number; selectedCustomerId: string | null }) => void;
   setDiscount: (n: number) => void;
   setSelectedCustomer: (id: string | null) => void;
-  setActiveBranch: (id: string | null) => void;
 }
 
 export type PosStore = UiSessionSlice;

@@ -16,21 +16,10 @@ export async function update(ctx: Ctx, id: string, input: PurchaseUpdateInput) {
     throw new ServiceError("VALIDATION", "At least one item is required");
   }
 
-  const branchId = input.branchId ?? ctx.branchId;
   const warehouseId = input.warehouseId;
 
-  if (warehouseId) {
-    const selectedWarehouse = await prisma.warehouse.findUnique({
-      where: { id: warehouseId },
-      select: { branchId: true },
-    });
-    if (selectedWarehouse && selectedWarehouse.branchId !== branchId) {
-      throw new ServiceError('VALIDATION', 'Warehouse-Branch Mismatch');
-    }
-  }
-
   const existing = await prisma.purchase.findFirst({
-    where: { id, shopId: ctx.shopId },
+    where: { id },
     select: {
       id: true,
       invoiceNo: true,
@@ -43,7 +32,7 @@ export async function update(ctx: Ctx, id: string, input: PurchaseUpdateInput) {
 
   if (input.supplierId) {
     const supplier = await prisma.supplier.findFirst({
-      where: { id: input.supplierId, shopId: ctx.shopId },
+      where: { id: input.supplierId },
       select: { id: true },
     });
     if (!supplier) {
@@ -56,7 +45,7 @@ export async function update(ctx: Ctx, id: string, input: PurchaseUpdateInput) {
     .filter((id): id is string => !!id);
   if (accountIds.length > 0) {
     const accounts = await prisma.financialAccount.findMany({
-      where: { id: { in: accountIds }, shopId: ctx.shopId },
+      where: { id: { in: accountIds } },
       select: { id: true },
     });
     if (accounts.length !== new Set(accountIds).size) {
@@ -74,7 +63,7 @@ export async function update(ctx: Ctx, id: string, input: PurchaseUpdateInput) {
   const raw = await prisma.$transaction(async (tx) => {
     // 1. Collect old serials for this purchase
     const oldSerials = await tx.serialNumber.findMany({
-      where: { purchaseItem: { purchaseId: id }, shopId: ctx.shopId },
+      where: { purchaseItem: { purchaseId: id } },
       select: { id: true, serial: true, productId: true },
     });
     const oldSerialsSet = new Map<string, Set<string>>();
@@ -148,7 +137,6 @@ export async function update(ctx: Ctx, id: string, input: PurchaseUpdateInput) {
         if (newSerials.length > 0) {
           await tx.serialNumber.createMany({
             data: newSerials.map((serial) => ({
-              shopId: ctx.shopId,
               productId: item.productId,
               serial,
               status: "IN_STOCK" as const,
@@ -242,9 +230,9 @@ export async function update(ctx: Ctx, id: string, input: PurchaseUpdateInput) {
     diff: { total, items: input.items.length },
   });
 
-  await cache.invalidatePurchases(ctx.shopId);
+  await cache.invalidatePurchases("default");
   const productIds = [...new Set(input.items.map(item => item.productId))];
-  await cache.invalidateSpecificProducts(ctx.shopId, productIds);
+  await cache.invalidateSpecificProducts("default", productIds);
 
   return serializePurchase(raw);
 }

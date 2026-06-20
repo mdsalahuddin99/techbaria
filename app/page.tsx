@@ -1,12 +1,6 @@
-"use client";
-
-import MarketingShell from "./(marketing)/MarketingShell";
-import Landing from "./(marketing)/landing/page";
+import { redirect } from "next/navigation";
 
 export default function HomePage() {
-  return (
-    <MarketingShell>
-      <Landing />
-    </MarketingShell>
-  );
+  redirect("/shop");
 }
+

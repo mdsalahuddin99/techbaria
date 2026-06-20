@@ -7,7 +7,6 @@ import { Prisma } from "@prisma/client";
 
 export interface AuditLogEntry {
   id: string;
-  shopId: string;
   userId: string | null;
   entity: string;
   entityId: string;
@@ -30,7 +29,7 @@ export interface AuditLogFilter {
 export const auditLogService = {
   /** List audit log entries with optional filters */
   async list(ctx: Ctx, filter?: AuditLogFilter): Promise<{ entries: AuditLogEntry[]; total: number }> {
-    const where: Prisma.AuditLogWhereInput = { shopId: ctx.shopId };
+    const where: Prisma.AuditLogWhereInput = {};
 
     if (filter?.entity) where.entity = filter.entity;
     if (filter?.entityId) where.entityId = filter.entityId;
@@ -51,7 +50,6 @@ export const auditLogService = {
 
     const entries: AuditLogEntry[] = rows.map((r) => ({
       id: r.id,
-      shopId: r.shopId,
       userId: r.userId,
       entity: r.entity,
       entityId: r.entityId,
@@ -66,7 +64,7 @@ export const auditLogService = {
 
   /** Create an audit log entry (called by other services internally) */
   async log(
-    ctx: Pick<Ctx, "shopId" | "userId">,
+    ctx: Pick<Ctx, "userId">,
     data: {
       entity: string;
       entityId: string;
@@ -76,7 +74,6 @@ export const auditLogService = {
   ) {
     return prisma.auditLog.create({
       data: {
-        shopId: ctx.shopId,
         userId: ctx.userId ?? null,
         entity: data.entity,
         entityId: data.entityId,

@@ -3,6 +3,7 @@ export interface CartItem {
   name: string;
   price: number;
   qty: number;
+  discount?: number;
   /** Warranty in months attached at sale time. Defaults from product.warrantyMonths. */
   warrantyMonths?: number;
   /** Serial/IMEI numbers captured during POS checkout. */

@@ -32,10 +32,7 @@ interface PurchaseFormDialogProps {
   accountsTree: any[];
   balances: Record<string, number>;
   defaultAccountId: string;
-  branches: any[];
   warehouses: any[];
-  selectedBranchId: string | null;
-  setSelectedBranchId: (id: string | null) => void;
   selectedWarehouseId: string | null;
   setSelectedWarehouseId: (id: string | null) => void;
   initialSupplierId?: string;
@@ -199,7 +196,7 @@ function SupplierSidebar({ supplierId }: { supplierId: string }) {
 export function PurchaseFormDialog({
   open, onOpenChange, editId, onSuccess,
   products, suppliers, accounts, accountsTree, balances, defaultAccountId,
-  branches, warehouses, selectedBranchId, setSelectedBranchId, selectedWarehouseId, setSelectedWarehouseId,
+  warehouses, selectedWarehouseId, setSelectedWarehouseId,
   initialSupplierId, initialProductId, initialQty
 }: PurchaseFormDialogProps) {
   const [addSupplierOpen, setAddSupplierOpen] = useState(false);
@@ -211,7 +208,7 @@ export function PurchaseFormDialog({
       onOpenChange(false);
       onSuccess();
     },
-    products, accounts, defaultAccountId, selectedBranchId, selectedWarehouseId
+    products, accounts, defaultAccountId, selectedWarehouseId
   });
 
   // Auto-initialize from props (URL params)
@@ -224,10 +221,10 @@ export function PurchaseFormDialog({
           {
             productId: product.id,
             name: productDisplayName(product),
-            baseCost: product.costPrice || 0,
+            baseCost: 0,
             extraCost: 0,
             saleMode: "amount",
-            saleInput: product.price ? String(Math.max(0, product.price - (product.costPrice || 0))) : "",
+            saleInput: "",
             warrantyStartDate: undefined,
             warrantyMonths: undefined,
             expectedDate: undefined,
@@ -250,14 +247,15 @@ export function PurchaseFormDialog({
         }
         onOpenChange(val);
       }}>
-        <DialogContent className="sm:max-w-[95vw] lg:max-w-5xl max-h-[92vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-[95vw] lg:max-w-5xl max-h-[92vh] flex flex-col p-0">
+          <DialogHeader className="p-6 pb-2 shrink-0">
             <DialogTitle>{editId ? "Edit Purchase Order" : "New Purchase Order"}</DialogTitle>
             <DialogDescription>
               একই Supplier থেকে একাধিক প্রোডাক্ট একসাথে পারচেজ করুন। প্রতিটি প্রোডাক্টের জন্য আলাদা কস্ট, সিরিয়াল এবং ওয়ারেন্টি সেট করতে পারবেন।
             </DialogDescription>
           </DialogHeader>
-          <div className="flex flex-col lg:flex-row gap-6 items-start mt-4">
+          <div className="flex-1 overflow-y-auto px-6 pb-6 space-y-4 min-h-0">
+            <div className="flex flex-col lg:flex-row gap-6 items-start">
             {/* Supplier Profile Panel */}
             {form.supplierId && (
               <div className="w-full lg:w-72 shrink-0 border border-slate-250 bg-slate-50/40 rounded-lg p-4 max-h-[72vh] overflow-y-auto sticky top-0">
@@ -408,14 +406,14 @@ export function PurchaseFormDialog({
                         </div>
                         <div>
                           <label className="text-xs text-muted-foreground">Final Sale ৳</label>
-                          <div className="flex items-center gap-2">
-                            <Input type="text" readOnly tabIndex={-1} value={finalSale > 0 ? formatCurrency(finalSale) : ""} placeholder="—" className="bg-muted/50 font-medium text-primary" />
-                            {totalCost > 0 && finalSale > totalCost && (
-                              <Badge variant="outline" className="text-success bg-success/10 shrink-0">
+                          <Input type="text" readOnly tabIndex={-1} value={finalSale > 0 ? formatCurrency(finalSale) : ""} placeholder="—" className="bg-muted/50 font-medium text-primary w-full" />
+                          {totalCost > 0 && finalSale > totalCost && (
+                            <div className="mt-1">
+                              <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 inline-block">
                                 {(((finalSale - totalCost) / totalCost) * 100).toFixed(1)}% margin
-                              </Badge>
-                            )}
-                          </div>
+                              </span>
+                            </div>
+                          )}
                         </div>
                       </div>
 
@@ -499,17 +497,7 @@ export function PurchaseFormDialog({
               </div>
             )}
 
-            {form.lines.length > 0 && (
-              <div className="flex justify-center">
-                <Button variant="outline" className="gap-2 border-dashed" onClick={() => {
-                  form.setCollapsedSet(new Set(form.lines.map((l) => l.productId)));
-                  const picker = document.querySelector('[data-product-picker]');
-                  picker?.scrollIntoView({ behavior: "smooth", block: "center" });
-                }}>
-                  <Plus className="h-4 w-4" /> Add Another Product
-                </Button>
-              </div>
-            )}
+
 
             <div className="grid grid-cols-1 sm:grid-cols-1 gap-3">
               <div>
@@ -576,45 +564,66 @@ export function PurchaseFormDialog({
               )}
             </Card>
 
+            </div>
+          </div>
+        </div>
+          <DialogFooter className="p-6 py-4 border-t border-border bg-secondary/15 flex flex-col gap-4 shrink-0 w-full">
             {(() => {
               const totalProducts = form.lines.length;
               const totalUnits = form.lines.reduce((s, l) => s + form.lineUnits(l), 0);
               const paid = form.totalPaid;
               const due = Math.max(0, form.subtotal - paid);
-              const Cell = ({ label, value, accent }: { label: string; value: string; accent?: "primary" | "success" | "warning" }) => (
-                <div className="rounded-md bg-background/60 border border-border/60 p-2.5">
-                  <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</div>
-                  <div className={`text-base font-bold ${accent === "primary" ? "text-primary" : accent === "success" ? "text-accent" : accent === "warning" ? "text-warning" : ""}`}>
-                    {value}
-                  </div>
-                </div>
-              );
               return (
-                <div className="bg-primary/5 border border-primary/20 rounded-md p-3">
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    <Cell label="মোট প্রডাক্ট" value={String(totalProducts)} />
-                    <Cell label="মোট ইউনিট" value={String(totalUnits)} />
-                    <Cell label="মোট কস্ট" value={formatCurrency(form.subtotal)} accent="primary" />
-                    <Cell label="মোট বিক্রয়" value={formatCurrency(form.saleTotal)} accent="success" />
-                    <Cell label="সম্ভাব্য লাভ" value={formatCurrency(Math.max(0, form.saleTotal - form.subtotal))} accent="success" />
-                    <Cell label="জমা" value={formatCurrency(paid)} accent="success" />
-                    <Cell label="বাকি" value={formatCurrency(due)} accent={due > 0 ? "warning" : undefined} />
+                <div className="w-full border border-border/80 bg-card rounded-[4px] p-3 text-xs space-y-2.5">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-2">
+                    <div className="flex items-center gap-3">
+                      <span className="text-slate-500 font-semibold">প্রডাক্ট ও ইউনিট:</span>
+                      <span className="font-bold text-slate-700 bg-secondary/30 px-2 py-0.5 rounded border border-border/60">
+                        {totalProducts} Items / {totalUnits} Units
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 font-semibold mr-1.5">সম্ভাব্য লাভ:</span>
+                      <span className="font-extrabold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">
+                        {formatCurrency(Math.max(0, form.saleTotal - form.subtotal))}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5 text-slate-650">
+                    <div>
+                      <span className="text-slate-500 font-semibold mr-1">মোট কস্ট:</span>
+                      <span className="font-bold text-slate-800">{formatCurrency(form.subtotal)}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 font-semibold mr-1">মোট বিক্রয়:</span>
+                      <span className="font-bold text-slate-800">{formatCurrency(form.saleTotal)}</span>
+                    </div>
+                    <div className="w-px h-3 bg-border hidden sm:block" />
+                    <div>
+                      <span className="text-slate-500 font-semibold mr-1">জমা:</span>
+                      <span className="font-bold text-emerald-700">{formatCurrency(paid)}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 font-semibold mr-1">বাকি:</span>
+                      <span className={`font-bold ${due > 0 ? "text-destructive" : "text-slate-700"}`}>
+                        {formatCurrency(due)}
+                      </span>
+                    </div>
                   </div>
                 </div>
               );
             })()}
+            <div className="flex items-center justify-end gap-2 w-full">
+              <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+              <LoadingButton className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={async () => {
+                const poId = await form.submit();
+                if (poId) {
+                  // Success is already handled in hook, but we can pass the ID up
+                }
+              }} loading={form.saving}>
+                <ShoppingCart className="h-4 w-4 mr-2" />Save Purchase
+              </LoadingButton>
             </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <LoadingButton className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={async () => {
-              const poId = await form.submit();
-              if (poId) {
-                // Success is already handled in hook, but we can pass the ID up
-              }
-            }} loading={form.saving}>
-              <ShoppingCart className="h-4 w-4 mr-2" />Save Purchase
-            </LoadingButton>
           </DialogFooter>
         </DialogContent>
       </Dialog>

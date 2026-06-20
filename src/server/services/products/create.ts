@@ -21,7 +21,7 @@ export async function create(ctx: Ctx, input: ProductCreateInput) {
   let slug = input.slug ?? slugify(input.name);
   // Ensure unique slug by appending counter if needed
   const existing = await prisma.product.findFirst({
-    where: { shopId: ctx.shopId, slug },
+    where: { slug },
     select: { id: true },
   });
   if (existing) {
@@ -34,7 +34,6 @@ export async function create(ctx: Ctx, input: ProductCreateInput) {
 
   const product = await prisma.product.create({
     data: {
-      shopId: ctx.shopId,
       sku: input.sku,
       barcode: input.barcode,
       name: input.name,
@@ -84,6 +83,6 @@ export async function create(ctx: Ctx, input: ProductCreateInput) {
     diff: { name: input.name, sku: input.sku, price: input.price },
   });
   // Invalidate product caches so storefront picks up the new product
-  await cache.invalidateProducts(ctx.shopId);
+  await cache.invalidateProducts("default");
   return serialise(product);
 }

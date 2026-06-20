@@ -153,7 +153,7 @@ Each level is linked via foreign keys. Selecting a parent filters the next dropd
 | Step | Requirement |
 |------|-------------|
 | 1 | Select **Supplier** |
-| 2 | Select **Branch** and **Warehouse** (stock destination) |
+| 2 | Select **Warehouse** (stock destination) |
 | 3 | Add one or more products (multi-line PO) |
 | 4 | Per line: cost price, extra cost, sale margin/price, warranty months, expected date |
 | 5 | Serial products: auto-open scanner / manual serial entry (qty = serial count) |
@@ -487,7 +487,7 @@ CustomerSidebar reuse     →      same
 ### 9.1 Inventory
 
 - Stock lives at **Product** (aggregate) + **WarehouseStock** (per warehouse) + **SerialNumber** (per unit)
-- Transfers between branches/warehouses supported
+- Transfers between warehouses supported
 - Low-stock alerts
 - Stock adjustments with reason codes
 
@@ -508,11 +508,11 @@ CustomerSidebar reuse     →      same
 | VIEWER | Read-only |
 | CUSTOMER (future) | Storefront account only — **not CASHIER** |
 
-### 9.4 Multi-tenant
+### 9.4 Single-Tenant Setup
 
-- All data scoped by `shopId`
-- Current deployment: single shop via `DEFAULT_SHOP_ID`
-- Future: subdomain-based shop resolution for SaaS
+- Transitioned from a multi-tenant structure to a clean single-tenant architecture. All records are stored globally.
+- No `shopId` scoping is performed on data queries or business calculations.
+- A single Shop metadata record is retained in the database for storing system-wide global variables and settings.
 
 ### 9.5 Security (non-functional)
 

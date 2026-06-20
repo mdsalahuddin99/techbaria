@@ -18,8 +18,8 @@ test.describe("Products Page", () => {
   test("products page loads with data table", async ({ page }) => {
     // First login (assumes demo credentials work)
     await page.goto("/login");
-    await page.fill('input[name="email"]', "admin@demo.com");
-    await page.fill('input[name="password"]', "password");
+    await page.fill('input[name="email"]', "onlinetaiba@gmail.com");
+    await page.fill('input[name="password"]', "Mizan2026");
     await page.click('button[type="submit"]');
 
     // Navigate to products

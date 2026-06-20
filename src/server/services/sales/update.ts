@@ -18,24 +18,13 @@ export async function update(ctx: Ctx, id: string, input: SaleUpdateInput) {
     throw new ServiceError("EMPTY_CART", "At least one item is required");
   }
 
-  const branchId = input.branchId ?? ctx.branchId;
   const warehouseId = input.warehouseId;
-
-  if (warehouseId) {
-    const selectedWarehouse = await prisma.warehouse.findUnique({
-      where: { id: warehouseId },
-      select: { branchId: true },
-    });
-    if (selectedWarehouse && selectedWarehouse.branchId !== branchId) {
-      throw new ServiceError('VALIDATION', 'Warehouse-Branch Mismatch');
-    }
-  }
 
   await salesAccounting.validateCustomerAndAccounts(ctx, input.customerId, input.tenders);
 
   await prisma.$transaction(async (tx) => {
     const sale = await tx.sale.findFirst({
-      where: { id, shopId: ctx.shopId },
+      where: { id },
       include: { items: true },
     });
     if (!sale) throw new ServiceError("NOT_FOUND", "Sale not found", 404);
@@ -54,7 +43,7 @@ export async function update(ctx: Ctx, id: string, input: SaleUpdateInput) {
     // Step 2: Release old serials
     const oldItemIds = sale.items.map((i) => i.id);
     const oldProductIds = [...new Set(sale.items.map(item => item.productId))];
-    await salesSerial.releaseSerials(tx, ctx.shopId, sale.warehouseId, oldItemIds, oldProductIds);
+    await salesSerial.releaseSerials(tx, "default", sale.warehouseId, oldItemIds, oldProductIds);
 
     // Step 3: Validate new items stock
     const warehouseStockMap = new Map<string, any>();
@@ -65,7 +54,7 @@ export async function update(ctx: Ctx, id: string, input: SaleUpdateInput) {
       for (const bs of warehouseStocks) warehouseStockMap.set(bs.productId, bs);
     }
     const products = await tx.product.findMany({
-      where: { id: { in: input.items.map((i) => i.productId) }, shopId: ctx.shopId },
+      where: { id: { in: input.items.map((i) => i.productId) } },
     });
     const productMap = new Map(products.map((p: any) => [p.id, p]));
     const productSnapshots = new Map<string, { cost: number; name: string }>();
@@ -147,7 +136,7 @@ export async function update(ctx: Ctx, id: string, input: SaleUpdateInput) {
     if (serialItems.length > 0) {
       await salesSerial.assignSerials(
         tx,
-        ctx.shopId,
+        "default",
         sale.warehouseId,
         updated.items,
         serialItems.map((si) => ({ productId: si.productId, qty: si.qty, serials: si.serials }))
@@ -171,11 +160,11 @@ export async function update(ctx: Ctx, id: string, input: SaleUpdateInput) {
   }, { timeout: 30000 });
 
   const productIds = [...new Set(input.items.map(item => item.productId))];
-  await cache.invalidateSales(ctx.shopId);
-  await cache.invalidateSpecificProducts(ctx.shopId, productIds);
+  await cache.invalidateSales("default");
+  await cache.invalidateSpecificProducts("default", productIds);
 
   const raw = await prisma.sale.findFirst({
-    where: { id, shopId: ctx.shopId },
+    where: { id },
     include: { items: { include: { serialNumbers: true } } as any, tenders: true, customer: true, editedBy: true, user: true },
   });
   return serializeSale(raw as any);

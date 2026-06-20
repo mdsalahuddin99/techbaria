@@ -1,29 +1,14 @@
 "use client";
 
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/shared/ui/select";
 import { Badge } from "@/shared/ui/badge";
+import { CustomerSearch } from "./CustomerSearch";
 import { formatCurrency } from "@/shared/lib/format";
 import { History, User, Phone, Mail, FileText, ChevronRight } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/shared/ui/popover";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/shared/api-client/fetch";
 import { Button } from "@/shared/ui/button";
-
-interface Customer {
-  id: string;
-  name: string;
-  phone?: string;
-  email?: string;
-  balance?: number;
-  due?: number;
-  group?: string;
-}
+import { Customer } from "@/features/customers/types";
 
 interface CustomerSidebarProps {
   customers: Customer[];
@@ -47,29 +32,17 @@ export function CustomerSidebar({
   });
 
   return (
-    <div className="bg-card rounded-md border border-slate-200 shadow-sm flex flex-col h-full sticky top-4">
+    <div className="bg-card rounded-[4px] border border-border flex flex-col h-full sticky top-4">
       {/* Header */}
-      <div className="p-4 border-b border-slate-100 bg-slate-50/50 rounded-t-md">
+      <div className="p-4 border-b border-border bg-secondary/15 rounded-t-[4px]">
         <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-3">
           Customer Info
         </h3>
-        <Select
-          value={customerId ?? "walk-in"}
-          onValueChange={(v) => onCustomerChange(v === "walk-in" ? null : v)}
-        >
-          <SelectTrigger className="h-10 bg-white border-slate-200 text-sm font-medium">
-            <SelectValue placeholder="Walk-in Customer" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="walk-in">Walk-in Customer</SelectItem>
-            {customers.map((c) => (
-              <SelectItem key={c.id} value={c.id}>
-                {c.name}
-                {c.phone ? ` — ${c.phone}` : ""}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <CustomerSearch
+          customers={customers}
+          selectedCustomerId={customerId}
+          onChange={(id) => onCustomerChange(id === "" ? null : id)}
+        />
       </div>
 
       {/* Customer Details */}
@@ -77,7 +50,7 @@ export function CustomerSidebar({
         <div className="p-4 space-y-5 flex-1">
           {/* Avatar & Basic Info */}
           <div className="flex items-start gap-3">
-            <div className="h-12 w-12 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0">
+            <div className="h-12 w-12 rounded-[4px] bg-secondary/35 border border-border flex items-center justify-center shrink-0">
               <User className="h-6 w-6 text-slate-400" />
             </div>
             <div className="min-w-0">
@@ -105,7 +78,7 @@ export function CustomerSidebar({
             )}
           </div>
 
-          <div className="border-t border-slate-100 pt-5 space-y-4">
+          <div className="border-t border-border pt-5 space-y-4">
             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">
               Outstanding Dues
             </h4>
@@ -126,7 +99,7 @@ export function CustomerSidebar({
             </div>
           </div>
 
-          <div className="border-t border-slate-100 pt-5">
+          <div className="border-t border-border pt-5">
              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-3">
               Recent Invoices
             </h4>
@@ -138,7 +111,7 @@ export function CustomerSidebar({
             ) : (
               <ul className="space-y-2">
                 {history.slice(0, 3).map((h: any) => (
-                  <li key={h.id} className="flex justify-between items-center bg-slate-50 border border-slate-100 rounded p-2.5">
+                  <li key={h.id} className="flex justify-between items-center bg-secondary/15 border border-border rounded-[4px] p-2.5">
                     <div>
                       <p className="text-xs font-semibold text-slate-700">{h.invoiceNo}</p>
                       <p className="text-[10px] text-slate-400">
@@ -150,7 +123,7 @@ export function CustomerSidebar({
                       </p>
                     </div>
                     <div className="text-right">
-                       <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${h.dueAmount > 0 ? "bg-orange-50 text-orange-600" : "bg-emerald-50 text-emerald-600"}`}>
+                       <span className={`text-[10px] px-1.5 py-0.5 rounded-[4px] font-medium ${h.dueAmount > 0 ? "bg-orange-50 text-orange-600" : "bg-emerald-50 text-emerald-600"}`}>
                         {h.dueAmount > 0 ? "Due" : "Paid"}
                       </span>
                       <p className="text-xs font-bold text-slate-700 mt-1">
@@ -165,7 +138,7 @@ export function CustomerSidebar({
             {history.length > 0 && (
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-full mt-3 h-8 text-xs font-medium bg-white">
+                  <Button variant="outline" className="w-full mt-3 h-8 text-xs font-medium bg-card border-border rounded-[4px]">
                     View All Invoices
                   </Button>
                 </PopoverTrigger>

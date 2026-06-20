@@ -10,3 +10,4 @@ export { transfersApi as transfersService } from "./transfers";
 export { notificationsApi as notificationsService } from "./notifications";
 export { shiftsApi as shiftsService } from "./shifts";
 export { settingsApi as settingsService } from "./settings";
+export { warehousesApi as warehousesService } from "./warehouses";

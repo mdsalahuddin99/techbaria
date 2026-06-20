@@ -59,8 +59,8 @@ async function main() {
 
     // 2a. Upsert CategoryBrand
     const brand = await prisma.categoryBrand.upsert({
-      where: { shopId_categoryId_name: { shopId: p.shopId, categoryId: p.categoryId, name: p.brand } },
-      create: { shopId: p.shopId, categoryId: p.categoryId, name: p.brand },
+      where: { categoryId_name: { categoryId: p.categoryId, name: p.brand } },
+      create: { categoryId: p.categoryId, name: p.brand },
       update: {},
     });
     console.log(`  ✓ Brand: "${p.brand}" → ${brand.id}`);
@@ -74,14 +74,14 @@ async function main() {
       // We'll create a SubcategoryProduct with the product name if needed.
       const productName = await prisma.product.findUnique({ where: { id: p.id }, select: { name: true } });
       const subProduct = await prisma.subcategoryProduct.upsert({
-        where: { shopId_brandId_name: { shopId: p.shopId, brandId: brand.id, name: productName?.name ?? p.id } },
-        create: { shopId: p.shopId, brandId: brand.id, name: productName?.name ?? p.id },
+        where: { brandId_name: { brandId: brand.id, name: productName?.name ?? p.id } },
+        create: { brandId: brand.id, name: productName?.name ?? p.id },
         update: {},
       });
 
       const subModel = await prisma.subcategoryModel.upsert({
-        where: { shopId_productId_name: { shopId: p.shopId, productId: subProduct.id, name: p.model } },
-        create: { shopId: p.shopId, productId: subProduct.id, name: p.model },
+        where: { productId_name: { productId: subProduct.id, name: p.model } },
+        create: { productId: subProduct.id, name: p.model },
         update: {},
       });
       modelId = subModel.id;
@@ -89,8 +89,8 @@ async function main() {
 
       if (p.series) {
         const subSeries = await prisma.subcategorySeries.upsert({
-          where: { shopId_modelId_name: { shopId: p.shopId, modelId: subModel.id, name: p.series } },
-          create: { shopId: p.shopId, modelId: subModel.id, name: p.series },
+          where: { modelId_name: { modelId: subModel.id, name: p.series } },
+          create: { modelId: subModel.id, name: p.series },
           update: {},
         });
         seriesId = subSeries.id;

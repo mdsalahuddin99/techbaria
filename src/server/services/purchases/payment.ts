@@ -16,7 +16,7 @@ export async function addPayment(ctx: Ctx, id: string, payment: {
   requireRole(ctx, "MANAGER");
 
   const purchase = await prisma.purchase.findFirst({
-    where: { id, shopId: ctx.shopId },
+    where: { id },
     select: { id: true, paid: true, total: true },
   });
   if (!purchase) {
@@ -25,7 +25,7 @@ export async function addPayment(ctx: Ctx, id: string, payment: {
 
   if (payment.accountId) {
     const account = await prisma.financialAccount.findFirst({
-      where: { id: payment.accountId, shopId: ctx.shopId },
+      where: { id: payment.accountId },
       select: { id: true },
     });
     if (!account) {
@@ -48,7 +48,7 @@ export async function addPayment(ctx: Ctx, id: string, payment: {
     // Deduct from account balance
     if (payment.accountId) {
       await tx.financialAccount.update({
-        where: { id: payment.accountId, shopId: ctx.shopId },
+        where: { id: payment.accountId },
         data: { balance: { decrement: payment.amount } },
       });
     }

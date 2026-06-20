@@ -13,7 +13,7 @@ export async function voidSale(ctx: Ctx, id: string, reason: string) {
 
   const { updatedSale, productIds } = await prisma.$transaction(async (tx) => {
     const sale = await tx.sale.findFirst({
-      where: { id, shopId: ctx.shopId },
+      where: { id },
       include: { items: true, tenders: true },
     });
     if (!sale) throw new ServiceError("NOT_FOUND", "Sale not found", 404);
@@ -61,7 +61,7 @@ export async function voidSale(ctx: Ctx, id: string, reason: string) {
     // Release serial numbers back to IN_STOCK via salesSerial sub-service
     const saleItemIds = sale.items.map((i) => i.id);
     const productIds = [...new Set(sale.items.map(item => item.productId))];
-    await salesSerial.releaseSerials(tx, ctx.shopId, warehouseId, saleItemIds, productIds);
+    await salesSerial.releaseSerials(tx, "default", warehouseId, saleItemIds, productIds);
 
     // Reverse customer due + restore wallet balance + record ledger (void)
     if (sale.customerId) {
@@ -79,7 +79,7 @@ export async function voidSale(ctx: Ctx, id: string, reason: string) {
     return { updatedSale, productIds };
   }, { timeout: 30000 });
 
-  await cache.invalidateSales(ctx.shopId);
-  await cache.invalidateSpecificProducts(ctx.shopId, productIds);
+  await cache.invalidateSales("default");
+  await cache.invalidateSpecificProducts("default", productIds);
   return updatedSale;
 }

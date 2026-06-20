@@ -18,7 +18,6 @@ const fetchPosInit = (warehouseId?: string | null) => {
       products: { items: any[]; nextCursor?: string; hasMore: boolean };
       customers: { items: any[]; nextCursor?: string; hasMore: boolean };
       accounts: any[];
-      branches: any[];
       warehouses: any[];
       categories: any[];
       users: any[];
@@ -123,7 +122,6 @@ export function usePosScreenData(warehouseId?: string | null) {
 
   const products = (data?.products?.items ?? []) as any[];
   const customers = (Array.isArray(data?.customers) ? data?.customers : data?.customers?.items) ?? [];
-  const branches = (data?.branches ?? []) as any[];
   const warehouses = (data?.warehouses ?? []) as any[];
   const categories = (data?.categories ?? []) as any[];
   const users = (data?.users ?? []) as any[];
@@ -139,5 +137,5 @@ export function usePosScreenData(warehouseId?: string | null) {
     loyaltyRedeemRate: 1,
     paymentMethodsEnabled: { Cash: true, Card: true, "Mobile Banking": true, Due: true, Wallet: true },
   };
-  return { products, customers, branches, warehouses, categories, users, settings, isLoading };
+  return { products, customers, warehouses, categories, users, settings, isLoading };
 }

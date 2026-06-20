@@ -34,7 +34,6 @@ const SEGMENT_LABELS: Record<string, string> = {
   "warranty-lookup": "Warranty Lookup",
   dues: "Dues",
   billing: "Billing",
-  branches: "Branches",
 };
 
 function segmentToLabel(segment: string): string {

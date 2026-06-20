@@ -18,6 +18,7 @@ export {
   notificationsService,
   transfersService,
   accountsService,
+  warehousesService,
 } from "@/shared/api-client";
 
 // auditService — stock-count audit operations

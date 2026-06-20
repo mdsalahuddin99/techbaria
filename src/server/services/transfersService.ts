@@ -1,20 +1,20 @@
 /**
  * Stock transfer service — Prisma-backed, framework-agnostic.
  *
- * Scoped by `ctx.shopId` (multi-tenant).
+ * Scoped directly by Warehouses.
  */
 import "server-only";
 import { prisma } from "@/server/db/client";
 import { ServiceError } from "@/server/lib/errors";
 import { requireRole } from "@/server/auth/rbac";
-import { paginate, type PaginationParams, type Paginated } from "@/server/lib/paginate";
+import { paginate, type PaginationParams } from "@/server/lib/paginate";
 import type { Ctx } from "@/server/lib/ctx";
 import { auditLogService } from "./auditLogService";
 import { inventoryService } from "./inventoryService";
 
 export interface TransferInput {
-  fromBranchId: string;
-  toBranchId: string;
+  fromWarehouseId: string;
+  toWarehouseId: string;
   notes?: string;
   items: Array<{
     productId: string;
@@ -23,24 +23,22 @@ export interface TransferInput {
 }
 
 export const transfersService = {
-  /** List all transfers for the shop (paginated). */
+  /** List all transfers (paginated). */
   async list(ctx: Ctx, params?: PaginationParams) {
     const raw = await paginate<any>(
       prisma.transfer,
-      { where: { shopId: ctx.shopId }, include: { items: true } },
+      { include: { items: true } },
       params,
       { orderBy: { createdAt: "desc" as const } },
     );
 
-    // Fetch branch names for frontend convenience
-    const branches = await prisma.branch.findMany({
-      where: { shopId: ctx.shopId },
+    // Fetch warehouse names for frontend convenience
+    const warehouses = await prisma.warehouse.findMany({
       select: { id: true, name: true },
     });
-    const branchMap = new Map(branches.map((b) => [b.id, b.name]));
+    const warehouseMap = new Map(warehouses.map((w) => [w.id, w.name]));
 
     const products = await prisma.product.findMany({
-      where: { shopId: ctx.shopId },
       select: { id: true, name: true },
     });
     const productMap = new Map(products.map((p) => [p.id, p.name]));
@@ -49,10 +47,10 @@ export const transfersService = {
       ...raw,
       items: raw.items.map((t: any) => ({
         id: t.id,
-        fromBranchId: t.fromBranchId,
-        fromBranchName: branchMap.get(t.fromBranchId) || "Unknown",
-        toBranchId: t.toBranchId,
-        toBranchName: branchMap.get(t.toBranchId) || "Unknown",
+        fromWarehouseId: t.fromWarehouseId,
+        fromWarehouseName: warehouseMap.get(t.fromWarehouseId) || "Unknown",
+        toWarehouseId: t.toWarehouseId,
+        toWarehouseName: warehouseMap.get(t.toWarehouseId) || "Unknown",
         status: t.status,
         note: t.notes || "",
         createdAt: t.createdAt.toISOString(),
@@ -69,30 +67,28 @@ export const transfersService = {
   /** Get transfer by ID. */
   async getById(ctx: Ctx, id: string) {
     const t = await prisma.transfer.findFirst({
-      where: { id, shopId: ctx.shopId },
+      where: { id },
       include: { items: true },
     });
 
     if (!t) throw new ServiceError("NOT_FOUND", "Transfer not found", 404);
 
-    const branches = await prisma.branch.findMany({
-      where: { shopId: ctx.shopId },
+    const warehouses = await prisma.warehouse.findMany({
       select: { id: true, name: true },
     });
-    const branchMap = new Map(branches.map((b) => [b.id, b.name]));
+    const warehouseMap = new Map(warehouses.map((w) => [w.id, w.name]));
 
     const products = await prisma.product.findMany({
-      where: { shopId: ctx.shopId },
       select: { id: true, name: true },
     });
     const productMap = new Map(products.map((p) => [p.id, p.name]));
 
     return {
       id: t.id,
-      fromBranchId: t.fromBranchId,
-      fromBranchName: branchMap.get(t.fromBranchId) || "Unknown",
-      toBranchId: t.toBranchId,
-      toBranchName: branchMap.get(t.toBranchId) || "Unknown",
+      fromWarehouseId: t.fromWarehouseId,
+      fromWarehouseName: warehouseMap.get(t.fromWarehouseId) || "Unknown",
+      toWarehouseId: t.toWarehouseId,
+      toWarehouseName: warehouseMap.get(t.toWarehouseId) || "Unknown",
       status: t.status,
       note: t.notes || "",
       createdAt: t.createdAt.toISOString(),
@@ -109,10 +105,10 @@ export const transfersService = {
   async create(ctx: Ctx, input: TransferInput) {
     requireRole(ctx, "MANAGER");
 
-    if (!input.fromBranchId || !input.toBranchId) {
-      throw new ServiceError("VALIDATION", "Source and destination branches required", 400);
+    if (!input.fromWarehouseId || !input.toWarehouseId) {
+      throw new ServiceError("VALIDATION", "Source and destination warehouses required", 400);
     }
-    if (input.fromBranchId === input.toBranchId) {
+    if (input.fromWarehouseId === input.toWarehouseId) {
       throw new ServiceError("VALIDATION", "Source and destination must differ", 400);
     }
     if (!input.items?.length) {
@@ -120,20 +116,19 @@ export const transfersService = {
     }
 
     return prisma.$transaction(async (tx) => {
-      // 1. Verify branches belong to shop
-      const fromBranch = await tx.branch.findFirst({ where: { id: input.fromBranchId, shopId: ctx.shopId } });
-      const toBranch = await tx.branch.findFirst({ where: { id: input.toBranchId, shopId: ctx.shopId } });
+      // 1. Verify warehouses exist
+      const fromWarehouse = await tx.warehouse.findUnique({ where: { id: input.fromWarehouseId } });
+      const toWarehouse = await tx.warehouse.findUnique({ where: { id: input.toWarehouseId } });
 
-      if (!fromBranch || !toBranch) {
-        throw new ServiceError("NOT_FOUND", "One or both branches not found", 404);
+      if (!fromWarehouse || !toWarehouse) {
+        throw new ServiceError("NOT_FOUND", "One or both warehouses not found", 404);
       }
 
       // 2. Create transfer in database (default status: PENDING)
       const t = await tx.transfer.create({
         data: {
-          shopId: ctx.shopId,
-          fromBranchId: input.fromBranchId,
-          toBranchId: input.toBranchId,
+          fromWarehouseId: input.fromWarehouseId,
+          toWarehouseId: input.toWarehouseId,
           status: "PENDING",
           notes: input.notes || null,
           items: {
@@ -148,26 +143,26 @@ export const transfersService = {
 
       return {
         id: t.id,
-        fromBranchId: t.fromBranchId,
-        fromBranchName: fromBranch.name,
-        toBranchId: t.toBranchId,
-        toBranchName: toBranch.name,
+        fromWarehouseId: t.fromWarehouseId,
+        fromWarehouseName: fromWarehouse.name,
+        toWarehouseId: t.toWarehouseId,
+        toWarehouseName: toWarehouse.name,
         status: t.status,
         note: t.notes || "",
         createdAt: t.createdAt.toISOString(),
         completedAt: null,
-        items: input.items, // Simplification or resolve product names
+        items: input.items,
       };
     });
   },
 
-  /** Dispatch a transfer (sets status to IN_TRANSIT, deducts stock from source branch). Requires MANAGER+. */
+  /** Dispatch a transfer (sets status to IN_TRANSIT, deducts stock from source warehouse). Requires MANAGER+. */
   async dispatch(ctx: Ctx, id: string) {
     requireRole(ctx, "MANAGER");
 
     return prisma.$transaction(async (tx) => {
       const transfer = await tx.transfer.findFirst({
-        where: { id, shopId: ctx.shopId },
+        where: { id },
         include: { items: true },
       });
 
@@ -175,10 +170,9 @@ export const transfersService = {
       if (transfer.status !== "PENDING") {
         throw new ServiceError("CONFLICT", "Only pending transfers can be dispatched", 400);
       }
-
-      // Verify and deduct stock from source warehouse
-      const fromWarehouse = await tx.warehouse.findFirst({ where: { branchId: transfer.fromBranchId } });
-      if (!fromWarehouse) throw new ServiceError("NOT_FOUND", "Source warehouse not found", 404);
+      if (!transfer.fromWarehouseId) {
+        throw new ServiceError("VALIDATION", "Source warehouse is missing on transfer", 400);
+      }
 
       const productIds = transfer.items.map((i) => i.productId);
       const trackedProducts = await tx.product.findMany({
@@ -189,7 +183,7 @@ export const transfersService = {
 
       for (const item of transfer.items) {
         const stock = await tx.warehouseStock.findUnique({
-          where: { warehouseId_productId: { warehouseId: fromWarehouse.id, productId: item.productId } },
+          where: { warehouseId_productId: { warehouseId: transfer.fromWarehouseId, productId: item.productId } },
         });
 
         if (!stock || stock.qty < item.qty) {
@@ -199,10 +193,9 @@ export const transfersService = {
         if (trackedIds.has(item.productId)) {
           const serialCount = await tx.serialNumber.count({
             where: {
-              shopId: ctx.shopId,
               productId: item.productId,
               status: "IN_STOCK",
-              warehouseId: fromWarehouse.id,
+              warehouseId: transfer.fromWarehouseId,
             },
           });
           if (serialCount < item.qty) {
@@ -227,13 +220,13 @@ export const transfersService = {
     });
   },
 
-  /** Receive a transfer (sets status to COMPLETED, adds stock to destination branch). Requires MANAGER+. */
+  /** Receive a transfer (sets status to COMPLETED, adds stock to destination warehouse). Requires MANAGER+. */
   async receive(ctx: Ctx, id: string) {
     requireRole(ctx, "MANAGER");
 
     return prisma.$transaction(async (tx) => {
       const transfer = await tx.transfer.findFirst({
-        where: { id, shopId: ctx.shopId },
+        where: { id },
         include: { items: true },
       });
 
@@ -241,15 +234,15 @@ export const transfersService = {
       if (transfer.status !== "IN_TRANSIT" && transfer.status !== "PENDING") {
         throw new ServiceError("CONFLICT", "Only pending or in-transit transfers can be received", 400);
       }
+      if (!transfer.fromWarehouseId || !transfer.toWarehouseId) {
+        throw new ServiceError("VALIDATION", "Source or destination warehouse is missing on transfer", 400);
+      }
 
-      // If it was still pending, deduct from fromBranchId first
+      // If it was still pending, deduct from fromWarehouseId first
       if (transfer.status === "PENDING") {
-        const fromWarehouse = await tx.warehouse.findFirst({ where: { branchId: transfer.fromBranchId } });
-        if (!fromWarehouse) throw new ServiceError("NOT_FOUND", "Source warehouse not found", 404);
-
         for (const item of transfer.items) {
           const stock = await tx.warehouseStock.findUnique({
-            where: { warehouseId_productId: { warehouseId: fromWarehouse.id, productId: item.productId } },
+            where: { warehouseId_productId: { warehouseId: transfer.fromWarehouseId, productId: item.productId } },
           });
 
           if (!stock || stock.qty < item.qty) {
@@ -264,14 +257,11 @@ export const transfersService = {
       }
 
       // Add stock to destination warehouse
-      const toWarehouse = await tx.warehouse.findFirst({ where: { branchId: transfer.toBranchId } });
-      if (!toWarehouse) throw new ServiceError("NOT_FOUND", "Destination warehouse not found", 404);
-
       for (const item of transfer.items) {
         await tx.warehouseStock.upsert({
-          where: { warehouseId_productId: { warehouseId: toWarehouse.id, productId: item.productId } },
+          where: { warehouseId_productId: { warehouseId: transfer.toWarehouseId, productId: item.productId } },
           create: {
-            warehouseId: toWarehouse.id,
+            warehouseId: transfer.toWarehouseId,
             productId: item.productId,
             qty: item.qty,
           },
@@ -282,9 +272,6 @@ export const transfersService = {
       }
 
       // Transfer serial numbers (FIFO) for serial-tracked products
-      const fromWarehouse = await tx.warehouse.findFirst({ where: { branchId: transfer.fromBranchId } });
-      if (!fromWarehouse) throw new ServiceError("NOT_FOUND", "Source warehouse not found", 404);
-
       const productIds = transfer.items.map((i) => i.productId);
       const trackedProducts = await tx.product.findMany({
         where: { id: { in: productIds }, trackSerials: true },
@@ -298,10 +285,9 @@ export const transfersService = {
         // Fetch FIFO serials in the source warehouse
         const serials = await tx.serialNumber.findMany({
           where: {
-            shopId: ctx.shopId,
             productId: item.productId,
             status: "IN_STOCK",
-            warehouseId: fromWarehouse.id,
+            warehouseId: transfer.fromWarehouseId,
           },
           orderBy: { createdAt: "asc" },
           take: item.qty,
@@ -320,14 +306,12 @@ export const transfersService = {
         const serialIds = serials.map((s) => s.id);
         await tx.serialNumber.updateMany({
           where: { id: { in: serialIds } },
-          data: { warehouseId: toWarehouse.id },
+          data: { warehouseId: transfer.toWarehouseId },
         });
 
-        // Sync physical serial counts (Fix #4)
-        // Sync source warehouse stock
-        await inventoryService.syncStockCount(tx, ctx.shopId, fromWarehouse.id, item.productId);
-        // Sync destination warehouse stock
-        await inventoryService.syncStockCount(tx, ctx.shopId, toWarehouse.id, item.productId);
+        // Sync physical serial counts
+        await inventoryService.syncStockCount(tx, transfer.fromWarehouseId, item.productId);
+        await inventoryService.syncStockCount(tx, transfer.toWarehouseId, item.productId);
       }
 
       await tx.transfer.update({
@@ -344,13 +328,13 @@ export const transfersService = {
     });
   },
 
-  /** Cancel a transfer (restores stock to source branch if it was already in transit). Requires MANAGER+. */
+  /** Cancel a transfer (restores stock to source warehouse if it was already in transit). Requires MANAGER+. */
   async cancel(ctx: Ctx, id: string) {
     requireRole(ctx, "MANAGER");
 
     return prisma.$transaction(async (tx) => {
       const transfer = await tx.transfer.findFirst({
-        where: { id, shopId: ctx.shopId },
+        where: { id },
         include: { items: true },
       });
 
@@ -358,17 +342,17 @@ export const transfersService = {
       if (transfer.status === "COMPLETED" || transfer.status === "CANCELLED") {
         throw new ServiceError("CONFLICT", `Cannot cancel a ${transfer.status} transfer`, 400);
       }
+      if (!transfer.fromWarehouseId) {
+        throw new ServiceError("VALIDATION", "Source warehouse is missing on transfer", 400);
+      }
 
       // If it was already in transit, restore the stock back to the source warehouse
       if (transfer.status === "IN_TRANSIT") {
-        const fromWarehouse = await tx.warehouse.findFirst({ where: { branchId: transfer.fromBranchId } });
-        if (!fromWarehouse) throw new ServiceError("NOT_FOUND", "Source warehouse not found", 404);
-
         for (const item of transfer.items) {
           await tx.warehouseStock.upsert({
-            where: { warehouseId_productId: { warehouseId: fromWarehouse.id, productId: item.productId } },
+            where: { warehouseId_productId: { warehouseId: transfer.fromWarehouseId, productId: item.productId } },
             create: {
-              warehouseId: fromWarehouse.id,
+              warehouseId: transfer.fromWarehouseId,
               productId: item.productId,
               qty: item.qty,
             },
@@ -398,7 +382,7 @@ export const transfersService = {
     requireRole(ctx, "OWNER");
 
     const transfer = await prisma.transfer.findFirst({
-      where: { id, shopId: ctx.shopId },
+      where: { id },
     });
 
     if (!transfer) throw new ServiceError("NOT_FOUND", "Transfer not found", 404);
@@ -416,7 +400,7 @@ export const transfersService = {
     requireRole(ctx, "MANAGER");
 
     const transfer = await prisma.transfer.findFirst({
-      where: { id, shopId: ctx.shopId },
+      where: { id },
     });
 
     if (!transfer) throw new ServiceError("NOT_FOUND", "Transfer not found", 404);

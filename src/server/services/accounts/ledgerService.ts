@@ -16,20 +16,17 @@ export const ledgerService = {
    */
   async listLedger(ctx: Ctx): Promise<LedgerTransaction[]> {
     // 1. Fetch all financial accounts for the shop
-    const accounts = await prisma.financialAccount.findMany({
-      where: { shopId: ctx.shopId },
-    });
+    const accounts = await prisma.financialAccount.findMany();
     const accountIds = accounts.map((a) => a.id);
 
     // 2. Fetch related data sources
     const [transfers, expenses, supplierPayments, saleTenders, purchaseTenders, customerWalletTxs, auditLogs] =
       await Promise.all([
         prisma.accountTransfer.findMany({
-          where: { shopId: ctx.shopId },
           orderBy: { date: "asc" },
         }),
         prisma.expense.findMany({
-          where: { shopId: ctx.shopId, accountId: { in: accountIds } },
+          where: { accountId: { in: accountIds } },
           orderBy: { date: "asc" },
         }),
         prisma.supplierPayment.findMany({
@@ -46,7 +43,6 @@ export const ledgerService = {
         }),
         prisma.customerTransaction.findMany({
           where: {
-            shopId: ctx.shopId,
             accountId: { in: accountIds },
             type: { in: ["PAYMENT", "REFUND"] },
           },
@@ -55,7 +51,6 @@ export const ledgerService = {
         }),
         prisma.auditLog.findMany({
           where: {
-            shopId: ctx.shopId,
             entity: "FinancialAccount",
             action: { in: ["DEPOSIT", "WITHDRAW"] },
           },

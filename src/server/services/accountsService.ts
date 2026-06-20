@@ -36,7 +36,7 @@ export const accountsService = {
   async list(ctx: Ctx, params?: PaginationParams) {
     const raw = await paginate<any>(
       prisma.financialAccount,
-      { where: { shopId: ctx.shopId } },
+      {},
       params,
       { orderBy: { name: "asc" as const } },
     );
@@ -59,7 +59,7 @@ export const accountsService = {
   /** Get an account by ID. */
   async getById(ctx: Ctx, id: string) {
     const a = await prisma.financialAccount.findFirst({
-      where: { id, shopId: ctx.shopId },
+      where: { id },
     });
     if (!a) throw new ServiceError("NOT_FOUND", "Account not found", 404);
 
@@ -92,7 +92,6 @@ export const accountsService = {
 
       const account = await tx.financialAccount.create({
         data: {
-          shopId: ctx.shopId,
           name: input.name,
           type: mapTypeToDb(input.type),
           parentId: input.parentId || null,
@@ -124,7 +123,7 @@ export const accountsService = {
     if (patch.parentId !== undefined) updateData.parentId = patch.parentId;
 
     const account = await prisma.financialAccount.update({
-      where: { id, shopId: ctx.shopId },
+      where: { id },
       data: updateData,
     });
 
@@ -143,7 +142,7 @@ export const accountsService = {
   async archive(ctx: Ctx, id: string) {
     requireRole(ctx, "MANAGER");
     await prisma.financialAccount.update({
-      where: { id, shopId: ctx.shopId },
+      where: { id },
       data: { archived: true },
     });
     await auditLogService.log(ctx, {

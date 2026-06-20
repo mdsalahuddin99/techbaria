@@ -35,7 +35,7 @@ interface Product {
 
 interface ProductFilterBarProps {
   categories: Category[];
-  /** Products already pre-filtered to the selected branch's BranchStock (qty > 0) */
+  /** Products already pre-filtered to the selected warehouse's WarehouseStock (qty > 0) */
   availableProducts: Product[];
   /** Current rows in the invoice (to subtract already-added qty from available stock) */
   invoiceRows: Array<{ productId: string; qty: number }>;
@@ -89,7 +89,8 @@ export function ProductFilterBar({
   const filteredProducts = availableProducts.filter((p) => {
     // Exclude products where available qty would be 0 after accounting for invoice rows
     const inInvoice = invoiceRows.find((r) => r.productId === p.id)?.qty ?? 0;
-    if (p.stock - inInvoice <= 0) return false;
+    const stock = Number(p.stock ?? 0);
+    if (stock - inInvoice <= 0) return false;
 
     if (category !== "all") {
       const matches =
@@ -101,13 +102,19 @@ export function ProductFilterBar({
       if (p.subcategory !== subcategory) return false;
     }
     if (searchQuery) {
-      const q = searchQuery.toLowerCase();
+      const q = searchQuery.toLowerCase().trim();
+      const name = String(p.name ?? "").toLowerCase();
+      const sku = String(p.sku ?? "").toLowerCase();
+      const barcode = String(p.barcode ?? "").toLowerCase();
+      const brand = String(p.brand ?? "").toLowerCase();
+      const model = String(p.model ?? "").toLowerCase();
+
       const hit =
-        p.name.toLowerCase().includes(q) ||
-        p.sku.toLowerCase().includes(q) ||
-        (p.barcode ?? "").toLowerCase().includes(q) ||
-        (p.brand ?? "").toLowerCase().includes(q) ||
-        (p.model ?? "").toLowerCase().includes(q);
+        name.includes(q) ||
+        sku.includes(q) ||
+        barcode.includes(q) ||
+        brand.includes(q) ||
+        model.includes(q);
       if (!hit) return false;
     }
     return true;
@@ -149,68 +156,18 @@ export function ProductFilterBar({
 
   return (
     <div ref={containerRef} className="flex gap-2 items-start">
-      {/* Category */}
-      <Select
-        value={category}
-        onValueChange={(v) => {
-          onCategoryChange(v);
-          onSubcategoryChange("all");
-          onSearchChange("", false);
-        }}
-      >
-        <SelectTrigger className="h-10 w-44 shrink-0 bg-card border-slate-200 text-sm">
-          <SelectValue placeholder="Category" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All Categories</SelectItem>
-          {parentCategories.map((c) => (
-            <SelectItem key={c.id} value={c.name}>
-              {c.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
 
-      {/* Subcategory */}
-      <Select
-        value={subcategory}
-        onValueChange={(v) => {
-          onSubcategoryChange(v);
-          onSearchChange("", v !== "all");
-          if (v !== "all") {
-            setTimeout(() => searchInputRef.current?.focus(), 80);
-          }
-        }}
-        disabled={category === "all"}
-      >
-        <SelectTrigger className="h-10 w-44 shrink-0 bg-card border-slate-200 text-sm">
-          <SelectValue placeholder="Subcategory" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All Subcategories</SelectItem>
-          {subcategories.map((c) => (
-            <SelectItem key={c.id} value={c.name}>
-              {c.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
 
       {/* Search / Barcode input + suggestions popover */}
       <div className="relative flex-1">
         <ScanLine className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
         <Input
           ref={searchInputRef}
-          disabled={subcategory === "all"}
-          placeholder={
-            subcategory === "all"
-              ? "Select a subcategory to unlock search…"
-              : "Scan barcode or search product…"
-          }
-          className="pl-9 h-10 bg-card border-slate-200 text-sm"
+          placeholder="Scan barcode or search product by name, brand, SKU…"
+          className="pl-9 h-10 bg-card border-border rounded-[4px] text-sm"
           value={searchQuery}
           onChange={(e) => {
-            onSearchChange(e.target.value, e.target.value.length > 0);
+            onSearchChange(e.target.value, true);
           }}
           onFocus={() => {
             onShowSuggestions(true);
@@ -220,51 +177,57 @@ export function ProductFilterBar({
         />
 
         {/* ── Suggestion dropdown ─────────────────────────────────────────── */}
-        {showSuggestions && filteredProducts.length > 0 && (
-          <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-card border border-slate-200 rounded-xl shadow-lg overflow-hidden">
-            <div className="max-h-64 overflow-y-auto divide-y divide-slate-50">
-              {filteredProducts.slice(0, 12).map((p) => {
-                const inInvoice = invoiceRows.find((r) => r.productId === p.id)?.qty ?? 0;
-                const available = p.stock - inInvoice;
-                return (
-                  <button
-                    key={p.id}
-                    type="button"
-                    className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-slate-50 transition-colors text-left group"
-                    onMouseDown={(e) => {
-                      e.preventDefault(); // keep focus in input
-                      onAddProduct(p.id);
-                      onSearchChange("", false);
-                      setTimeout(() => searchInputRef.current?.focus(), 50);
-                    }}
-                  >
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-slate-700 truncate">
-                        {p.name}
-                      </p>
-                      <p className="text-[11px] text-slate-400">
-                        {[p.brand, p.model].filter(Boolean).join(" ")} &bull; SKU:{" "}
-                        {p.sku}
-                      </p>
-                    </div>
-                    <div className="text-right shrink-0 ml-3">
-                      <p className="text-sm font-semibold text-slate-700">
-                        {formatCurrency(p.price)}
-                      </p>
-                      <p
-                        className={`text-[10px] font-medium ${
-                          available <= 3 ? "text-orange-500" : "text-slate-400"
-                        }`}
-                      >
-                        {available} left
-                      </p>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
+        {showSuggestions && (
+          <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-card border border-border rounded-[4px] overflow-hidden shadow-md">
+            {filteredProducts.length > 0 ? (
+              <div className="max-h-64 overflow-y-auto divide-y divide-border">
+                {filteredProducts.slice(0, 12).map((p) => {
+                  const inInvoice = invoiceRows.find((r) => r.productId === p.id)?.qty ?? 0;
+                  const available = p.stock - inInvoice;
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-secondary/20 transition-colors text-left group"
+                      onMouseDown={(e) => {
+                        e.preventDefault(); // keep focus in input
+                        onAddProduct(p.id);
+                        onSearchChange("", false);
+                        setTimeout(() => searchInputRef.current?.focus(), 50);
+                      }}
+                    >
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-slate-700 truncate">
+                          {p.name}
+                        </p>
+                        <p className="text-[11px] text-slate-400">
+                          {[p.brand, p.model].filter(Boolean).join(" ")} &bull; SKU:{" "}
+                          {p.sku}
+                        </p>
+                      </div>
+                      <div className="text-right shrink-0 ml-3">
+                        <p className="text-sm font-semibold text-slate-700">
+                          {formatCurrency(p.price)}
+                        </p>
+                        <p
+                          className={`text-[10px] font-medium ${
+                            available <= 3 ? "text-orange-500" : "text-slate-400"
+                          }`}
+                        >
+                          {available} left
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : searchQuery ? (
+              <div className="px-4 py-3 text-center text-xs text-slate-400 font-medium">
+                🔍 No matching products found with stock in this warehouse
+              </div>
+            ) : null}
             {filteredProducts.length > 12 && (
-              <div className="px-4 py-2 bg-slate-50 border-t border-slate-100 text-[11px] text-slate-400">
+              <div className="px-4 py-2 bg-secondary/15 border-t border-border text-[11px] text-slate-500">
                 +{filteredProducts.length - 12} more — type to narrow down
               </div>
             )}
@@ -277,7 +240,7 @@ export function ProductFilterBar({
         type="button"
         variant="outline"
         size="icon"
-        className="h-10 w-10 shrink-0 border-slate-200"
+        className="h-10 w-10 shrink-0 border-border rounded-[4px]"
         onClick={onOpenCamera}
         title="Camera Scan"
       >
@@ -289,7 +252,7 @@ export function ProductFilterBar({
         type="button"
         variant="ghost"
         size="sm"
-        className="h-10 text-red-500 hover:text-red-600 hover:bg-red-50 shrink-0 text-xs"
+        className="h-10 text-destructive hover:text-destructive hover:bg-destructive/10 rounded-[4px] shrink-0 text-xs"
         onClick={onClear}
         disabled={!hasRows}
       >

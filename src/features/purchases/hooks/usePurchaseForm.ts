@@ -47,7 +47,6 @@ export function usePurchaseForm({
   products,
   accounts,
   defaultAccountId,
-  selectedBranchId,
   selectedWarehouseId,
 }: {
   editId: string | null;
@@ -55,7 +54,6 @@ export function usePurchaseForm({
   products: any[];
   accounts: any[];
   defaultAccountId: string;
-  selectedBranchId: string | null;
   selectedWarehouseId: string | null;
 }) {
   const { create: createPurchase, update: updatePurchase, addPayment } = usePurchaseActions();
@@ -151,19 +149,14 @@ export function usePurchaseForm({
     if (lines.some((l) => l.productId === product.id))
       return toast.error("Product already added");
     
-    const baseCost = product.costPrice || 0;
-    const defaultSaleInput = product.price && product.price > baseCost
-      ? String(product.price - baseCost)
-      : "";
-      
     setLines((prev) => [
       {
         productId: product.id,
         name: productDisplayName(product),
-        baseCost,
+        baseCost: 0,
         extraCost: 0,
         saleMode: "amount",
-        saleInput: defaultSaleInput,
+        saleInput: "",
         warrantyStartDate: undefined,
         warrantyMonths: undefined,
         expectedDate: undefined,
@@ -360,7 +353,6 @@ export function usePurchaseForm({
 
       const po = await createPurchase({
         supplierId,
-        branchId: selectedBranchId || undefined,
         warehouseId: selectedWarehouseId || undefined,
         items: itemsPayload.map((i) => ({
           productId: i.productId,

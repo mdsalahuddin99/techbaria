@@ -5,9 +5,6 @@
  * code (store slices, services, types) stays compiled even when the
  * flag is off so re-enabling is a one-line change.
  */
-export const FEATURES = {
-  /** Multi-branch UI (BranchSwitcher, Settings → Branches tab). */
-  multiBranch: true,
-} as const;
+export const FEATURES = {} as const;
 
 export type FeatureKey = keyof typeof FEATURES;

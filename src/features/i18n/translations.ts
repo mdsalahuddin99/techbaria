@@ -19,6 +19,10 @@ export const translations = {
   "nav.group.storefront": { en: "Storefront", bn: "অনলাইন শপ" },
   "nav.group.commerce": { en: "Commerce", bn: "বিক্রয়" },
   "nav.group.ecommerce": { en: "E-Commerce", bn: "ই-কমার্স" },
+  "nav.group.inventory": { en: "Inventory", bn: "ইনভেন্টরি" },
+  "nav.group.people": { en: "Contacts", bn: "যোগাযোগ" },
+  "nav.group.finance": { en: "Finance", bn: "অর্থায়ন" },
+  "nav.group.system": { en: "System", bn: "সিস্টেম" },
   "nav.onlineOrders": { en: "Online Orders", bn: "অনলাইন অর্ডার" },
   "nav.storefrontCustomers": { en: "Users", bn: "ইউজার" },
 

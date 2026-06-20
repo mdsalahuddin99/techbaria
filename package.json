@@ -15,6 +15,9 @@
     "db:migrate": "prisma migrate deploy",
     "db:seed": "prisma db seed",
     "guard:no-tax": "node scripts/check-no-tax-references.mjs",
+    "validate-cleanup": "tsx scripts/validate-cleanup.ts",
+    "cleanup-db": "tsx scripts/cleanup-db.ts",
+    "db:delete-seed": "tsx scripts/delete-seed-data.ts",
     "ci": "bun run lint && bun run guard:no-tax && bun run test && bun run build"
   },
   "prisma": {
@@ -92,6 +95,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.32.0",
+    "@playwright/test": "^1.49.1",
     "@tailwindcss/typography": "^0.5.16",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.6.0",

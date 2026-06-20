@@ -20,7 +20,7 @@ export interface ValuationRow {
   name: string;
   sku?: string;
   category: string;
-  branch?: string;
+  warehouse?: string;
   stock: number;
   unitCost: number;
   value: number;
@@ -31,7 +31,7 @@ interface Args {
   purchases: PurchaseOrder[];
   sales: Sale[];
   method: ValuationMethod;
-  branchName?: string;
+  warehouseName?: string;
 }
 
 interface Layer {
@@ -72,7 +72,7 @@ export function valuateInventory({
   purchases,
   sales,
   method,
-  branchName,
+  warehouseName,
 }: Args): ValuationRow[] {
   const layers = method === "latest" ? null : buildReceiptLayers(purchases);
   const sold = method === "fifo" ? totalSold(sales) : null;
@@ -111,7 +111,7 @@ export function valuateInventory({
         name: p.name,
         sku: p.sku,
         category: p.category,
-        branch: branchName,
+        warehouse: warehouseName,
         stock: p.stock,
         unitCost,
         value,

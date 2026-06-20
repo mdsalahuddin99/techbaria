@@ -3,7 +3,6 @@ import type { StorefrontOrderCreateInput, StorefrontOrderStatus } from "./storef
 export interface SaleCreateInput {
   customerId?: string;
   channel?: "POS" | "STOREFRONT";
-  branchId?: string;
   warehouseId?: string;
   discount?: number;
   notes?: string;

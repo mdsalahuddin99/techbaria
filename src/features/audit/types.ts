@@ -22,8 +22,8 @@ export interface AuditLine {
 export interface StockAudit {
   id: string;
   auditNumber: string;
-  branchId: string | null;
-  branchName: string;
+  warehouseId: string | null;
+  warehouseName: string;
   categoryFilter?: string | null;
   status: AuditStatus;
   lines: AuditLine[];
@@ -35,7 +35,7 @@ export interface StockAudit {
 }
 
 export interface AuditCreateInput {
-  branchId: string | null;
+  warehouseId: string | null;
   categoryFilter?: string | null;
   note?: string;
 }

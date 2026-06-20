@@ -44,8 +44,8 @@ export function useFilteredTransfers({
       if (!q) return true;
       return (
         t.transferNumber.toLowerCase().includes(q) ||
-        t.fromBranchName.toLowerCase().includes(q) ||
-        t.toBranchName.toLowerCase().includes(q)
+        t.fromWarehouseName.toLowerCase().includes(q) ||
+        t.toWarehouseName.toLowerCase().includes(q)
       );
     });
   }, [transfers, search, status]);

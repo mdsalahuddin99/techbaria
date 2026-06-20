@@ -12,7 +12,7 @@ export async function remove(ctx: Ctx, id: string) {
   requireRole(ctx, "MANAGER");
 
   const purchase = await prisma.purchase.findFirst({
-    where: { id, shopId: ctx.shopId },
+    where: { id },
     select: {
       id: true, invoiceNo: true, total: true,
       _count: { select: { items: true } },
@@ -32,10 +32,10 @@ export async function remove(ctx: Ctx, id: string) {
   }
 
   await prisma.purchase.deleteMany({
-    where: { id, shopId: ctx.shopId },
+    where: { id },
   });
 
-  await cache.invalidatePurchases(ctx.shopId);
+  await cache.invalidatePurchases("default");
 
   await auditLogService.log(ctx, {
     entity: "Purchase",

@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const auditCreateSchema = z.object({
-  branchId: z.string().nullable(),
+  warehouseId: z.string().nullable(),
   categoryFilter: z.string().nullable().optional(),
   note: z.string().optional(),
 });

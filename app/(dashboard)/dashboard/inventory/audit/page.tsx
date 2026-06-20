@@ -20,12 +20,12 @@ import { ClipboardCheck, Plus, Search, Trash2, X, CheckCircle2 } from "lucide-re
 import { toast } from "sonner";
 import { PageHeader, EmptyState } from "@/shared/components";
 import { useAudits, useAuditActions, summarizeAudit } from "@/features/audit/hooks";
-import { useBranches } from "@/features/branches/hooks";
+import { useWarehouses } from "@/features/warehouses/hooks";
 import { listCategories } from "@/shared/api-client/categories";
 import { formatCurrency, formatDateTime } from "@/shared/lib/format";
 
 export default function StockAuditPage() {
-  const branches = useBranches();
+  const warehouses = useWarehouses();
   const { data: categories = [] } = useQuery({
     queryKey: ["categories", "flat"],
     queryFn: () => listCategories(true) as Promise<{ id: string; name: string }[]>,
@@ -34,7 +34,7 @@ export default function StockAuditPage() {
   const { create, setCount, complete, cancel, remove } = useAuditActions();
 
   const [open, setOpen] = useState(false);
-  const [branchId, setBranchId] = useState<string>(branches[0]?.id ?? "");
+  const [warehouseId, setWarehouseId] = useState<string>(warehouses[0]?.id ?? "");
   const [categoryFilter, setCategoryFilter] = useState<string>("All");
   const [createNote, setCreateNote] = useState("");
 
@@ -52,7 +52,7 @@ export default function StockAuditPage() {
       if (!q) return true;
       return (
         a.auditNumber.toLowerCase().includes(q) ||
-        a.branchName.toLowerCase().includes(q)
+        a.warehouseName.toLowerCase().includes(q)
       );
     });
   }, [audits, search, statusFilter]);
@@ -60,7 +60,7 @@ export default function StockAuditPage() {
   const handleCreate = async () => {
     try {
       const a = await create({
-        branchId: branchId || null,
+        warehouseId: warehouseId || null,
         categoryFilter: categoryFilter === "All" ? null : categoryFilter,
         note: createNote.trim() || undefined,
       });
@@ -114,7 +114,7 @@ export default function StockAuditPage() {
         <div className="relative flex-1">
           <Search className="h-4 w-4 absolute left-3 top-2.5 text-muted-foreground" />
           <Input
-            placeholder="Audit number, branch..."
+            placeholder="Audit number, warehouse..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9"
@@ -136,7 +136,7 @@ export default function StockAuditPage() {
           <TableHeader>
             <TableRow>
               <TableHead>Audit #</TableHead>
-              <TableHead>Branch</TableHead>
+              <TableHead>Warehouse</TableHead>
               <TableHead>Scope</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Counted</TableHead>
@@ -155,7 +155,7 @@ export default function StockAuditPage() {
                   onClick={() => setActiveId(a.id)}
                 >
                   <TableCell className="font-mono text-xs">{a.auditNumber}</TableCell>
-                  <TableCell>{a.branchName}</TableCell>
+                  <TableCell>{a.warehouseName}</TableCell>
                   <TableCell>
                     <Badge variant="secondary">{a.categoryFilter ?? "All Categories"}</Badge>
                   </TableCell>
@@ -223,12 +223,12 @@ export default function StockAuditPage() {
           </DialogHeader>
           <div className="space-y-3">
             <div>
-              <label className="text-xs text-muted-foreground block mb-1">Branch</label>
-              <Select value={branchId} onValueChange={setBranchId}>
+              <label className="text-xs text-muted-foreground block mb-1">Warehouse</label>
+              <Select value={warehouseId} onValueChange={setWarehouseId}>
                 <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                 <SelectContent>
-                  {branches.map((b) => (
-                    <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                  {warehouses.map((w) => (
+                    <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -270,7 +270,7 @@ export default function StockAuditPage() {
                   </Badge>
                 </SheetTitle>
                 <SheetDescription>
-                  {active.branchName} · {active.categoryFilter ?? "All Categories"}
+                  {active.warehouseName} · {active.categoryFilter ?? "All Categories"}
                 </SheetDescription>
               </SheetHeader>
 

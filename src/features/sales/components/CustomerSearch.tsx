@@ -73,7 +73,7 @@ export function CustomerSearch({
               <span className="truncate text-left">
                 {selected
                   ? `${selected.name}${selected.phone && selected.phone !== "—" ? ` · ${selected.phone}` : ""}`
-                  : "Select customer"}
+                  : "Walk-in Customer"}
               </span>
               {selected && balanceBadge(selected)}
               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -88,6 +88,23 @@ export function CustomerSearch({
               <CommandList className="max-h-[60vh]">
                 <CommandEmpty>No customer found.</CommandEmpty>
                 <CommandGroup>
+                  <CommandItem
+                    value="Walk-in Customer"
+                    onSelect={() => {
+                      onChange("");
+                      setOpen(false);
+                    }}
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4 shrink-0",
+                        !selected ? "opacity-100" : "opacity-0",
+                      )}
+                    />
+                    <span className="truncate flex-1 font-semibold text-slate-700">
+                      Walk-in Customer
+                    </span>
+                  </CommandItem>
                   {customers.map((c) => (
                     <CommandItem
                       key={c.id}

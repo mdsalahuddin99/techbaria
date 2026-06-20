@@ -7,7 +7,6 @@
 import "server-only";
 import { prisma } from "@/server/db/client";
 import { ServiceError } from "@/server/lib/errors";
-import { requireRole } from "@/server/auth/rbac";
 import type { Ctx } from "@/server/lib/ctx";
 
 export const serialStatus = {
@@ -30,7 +29,6 @@ export const serialService = {
   /** Add serial numbers to inventory (from purchase). */
   async addFromPurchase(ctx: Ctx, serials: SerialEntry[], purchaseItemId: string) {
     const data = serials.map((s) => ({
-      shopId: ctx.shopId,
       productId: s.productId,
       serial: s.serial,
       status: "IN_STOCK" as SerialStatus,
@@ -45,7 +43,6 @@ export const serialService = {
     for (const s of serials) {
       const record = await prisma.serialNumber.findFirst({
         where: {
-          shopId: ctx.shopId,
           productId: s.productId,
           serial: s.serial,
           status: "IN_STOCK",
@@ -68,7 +65,7 @@ export const serialService = {
   /** Release serials back to IN_STOCK (void/refund). */
   async releaseFromSale(ctx: Ctx, saleItemId: string) {
     await prisma.serialNumber.updateMany({
-      where: { shopId: ctx.shopId, saleItemId },
+      where: { saleItemId },
       data: { status: "IN_STOCK", saleItemId: null, soldAt: null },
     });
   },
@@ -76,7 +73,7 @@ export const serialService = {
   /** List available (IN_STOCK) serials for a product. */
   async listAvailable(ctx: Ctx, productId: string): Promise<string[]> {
     const records = await prisma.serialNumber.findMany({
-      where: { shopId: ctx.shopId, productId, status: "IN_STOCK" },
+      where: { productId, status: "IN_STOCK" },
       select: { serial: true },
       orderBy: { createdAt: "asc" },
     });

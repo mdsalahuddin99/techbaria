@@ -1,13 +1,14 @@
 /**
  * Customers service — Prisma-backed, framework-agnostic.
+ *
+ * Scoped directly for a single tenant.
  */
 import "server-only";
 import { prisma } from "@/server/db/client";
 import { ServiceError } from "@/server/lib/errors";
-import { paginate, type PaginationParams, type Paginated } from "@/server/lib/paginate";
+import { paginate, type PaginationParams } from "@/server/lib/paginate";
 import type { Ctx } from "@/server/lib/ctx";
 import { auditLogService } from "./auditLogService";
-import { cache } from "@/lib/cache";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -34,9 +35,9 @@ export interface CustomerUpdateInput {
 // ─── Service ────────────────────────────────────────────────────────────────
 
 export const customersService = {
-  /** List all customers for the shop (paginated). */
+  /** List all customers (paginated). */
   async list(ctx: Ctx, params?: PaginationParams, search?: string) {
-    const where: any = { shopId: ctx.shopId };
+    const where: any = {};
     if (search) {
       where.OR = [
         { name: { contains: search, mode: "insensitive" as const } },
@@ -54,8 +55,8 @@ export const customersService = {
 
   /** Get a single customer by ID. */
   async getById(ctx: Ctx, id: string) {
-    const customer = await prisma.customer.findFirst({
-      where: { id, shopId: ctx.shopId },
+    const customer = await prisma.customer.findUnique({
+      where: { id },
       include: { sales: { orderBy: { createdAt: "desc" }, take: 10 } },
     });
     if (!customer) throw new ServiceError("NOT_FOUND", "Customer not found", 404);
@@ -66,7 +67,6 @@ export const customersService = {
   async create(ctx: Ctx, input: CustomerCreateInput) {
     return prisma.customer.create({
       data: {
-        shopId: ctx.shopId,
         name: input.name,
         phone: input.phone,
         email: input.email,
@@ -80,13 +80,18 @@ export const customersService = {
 
   /** Update a customer. */
   async update(ctx: Ctx, id: string, input: CustomerUpdateInput) {
-    const updated = await prisma.customer.updateMany({
-      where: { id, shopId: ctx.shopId },
-      data: input,
+    const existing = await prisma.customer.findUnique({
+      where: { id },
+      select: { id: true },
     });
-    if (updated.count === 0) {
+    if (!existing) {
       throw new ServiceError("NOT_FOUND", "Customer not found", 404);
     }
+
+    await prisma.customer.update({
+      where: { id },
+      data: input,
+    });
 
     await auditLogService.log(ctx, {
       entity: "Customer",
@@ -100,16 +105,16 @@ export const customersService = {
 
   /** Delete a customer. */
   async remove(ctx: Ctx, id: string) {
-    const customer = await prisma.customer.findFirst({
-      where: { id, shopId: ctx.shopId },
+    const customer = await prisma.customer.findUnique({
+      where: { id },
       select: { id: true, name: true },
     });
     if (!customer) {
       throw new ServiceError("NOT_FOUND", "Customer not found", 404);
     }
 
-    await prisma.customer.deleteMany({
-      where: { id, shopId: ctx.shopId },
+    await prisma.customer.delete({
+      where: { id },
     });
 
     await auditLogService.log(ctx, {
@@ -123,7 +128,7 @@ export const customersService = {
   /** Get customers with outstanding dues. */
   async withDues(ctx: Ctx) {
     return prisma.customer.findMany({
-      where: { shopId: ctx.shopId, due: { gt: 0 } },
+      where: { due: { gt: 0 } },
       orderBy: { due: "desc" },
     });
   },

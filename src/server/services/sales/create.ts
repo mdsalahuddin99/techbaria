@@ -22,7 +22,7 @@ async function __validateItemsStock(
 }> {
   const productIds = input.items.map((i) => i.productId);
   const products: any[] = await tx.product.findMany({
-    where: { id: { in: productIds }, shopId: ctx.shopId },
+    where: { id: { in: productIds } },
   });
   const productMap = new Map(products.map((p: any) => [p.id, p]));
 
@@ -81,8 +81,8 @@ async function __postProcess(ctx: Ctx, raw: any, productIds: string[]) {
     action: "CREATE",
     diff: { items: raw.items?.length ?? 0, total: Number(raw.total), tenders: raw.tenders?.length ?? 0 },
   });
-  await cache.invalidateSales(ctx.shopId);
-  await cache.invalidateSpecificProducts(ctx.shopId, productIds);
+  await cache.invalidateSales("default");
+  await cache.invalidateSpecificProducts("default", productIds);
 }
 
 /** Create a new sale — validates stock → creates records → assigns serials → logs. */
@@ -90,19 +90,7 @@ export async function create(ctx: Ctx, input: SaleCreateInput) {
   if (!input.items?.length) {
     throw new ServiceError("EMPTY_CART", "Cart is empty");
   }
-  const branchId = input.branchId ?? ctx.branchId;
   const warehouseId = input.warehouseId;
-
-  // Validate that selected warehouse belongs to the same branch
-  if (warehouseId) {
-    const selectedWarehouse = await prisma.warehouse.findUnique({
-      where: { id: warehouseId },
-      select: { branchId: true },
-    });
-    if (selectedWarehouse && selectedWarehouse.branchId !== branchId) {
-      throw new ServiceError('VALIDATION', 'Warehouse-Branch Mismatch');
-    }
-  }
 
   // Scoping validations for customer and accounts
   await salesAccounting.validateCustomerAndAccounts(ctx, input.customerId, input.tenders);
@@ -112,11 +100,8 @@ export async function create(ctx: Ctx, input: SaleCreateInput) {
     const { warehouseStockMap, productSnapshots } = await __validateItemsStock(tx, ctx, input, warehouseId);
 
     // Calculate totals — DUE tenders are credit, not actual payment
-    const count = await tx.sale.count({
-      where: { shopId: ctx.shopId },
-    });
-    const shop = await tx.shop.findUnique({
-      where: { id: ctx.shopId },
+    const count = await tx.sale.count();
+    const shop = await tx.shop.findFirst({
       select: { settings: true },
     });
     const stored = (shop?.settings ?? {}) as Record<string, any>;
@@ -135,9 +120,7 @@ export async function create(ctx: Ctx, input: SaleCreateInput) {
     // Create sale with items and tenders
     const sale = await tx.sale.create({
       data: {
-        shopId: ctx.shopId,
         userId: ctx.userId,
-        branchId,
         warehouseId,
         customerId: input.customerId,
         channel: input.channel ?? "POS",
@@ -197,7 +180,7 @@ export async function create(ctx: Ctx, input: SaleCreateInput) {
     // Assign serials + sync stock (if tracked)
     await salesSerial.assignSerials(
       tx,
-      ctx.shopId,
+      "default",
       warehouseId,
       sale.items,
       input.items.map((i) => ({ productId: i.productId, qty: i.qty, serials: i.serials }))

@@ -1,16 +1,15 @@
 /**
  * Suppliers service — Prisma-backed, framework-agnostic.
  *
- * Scoped by `ctx.shopId` (multi-tenant).
+ * Scoped directly for a single tenant.
  */
 import "server-only";
 import { prisma } from "@/server/db/client";
 import { ServiceError } from "@/server/lib/errors";
 import { requireRole } from "@/server/auth/rbac";
-import { paginate, type PaginationParams, type Paginated } from "@/server/lib/paginate";
+import { paginate, type PaginationParams } from "@/server/lib/paginate";
 import type { Ctx } from "@/server/lib/ctx";
 import { auditLogService } from "./auditLogService";
-import { cache } from "@/lib/cache";
 
 export interface SupplierCreateInput {
   name: string;
@@ -37,7 +36,6 @@ export const suppliersService = {
     const raw = await paginate<any>(
       prisma.supplier,
       {
-        where: { shopId: ctx.shopId },
         include: { purchases: { select: { total: true } } },
       },
       params,
@@ -66,8 +64,8 @@ export const suppliersService = {
 
   /** Get a single supplier by ID. */
   async getById(ctx: Ctx, id: string) {
-    const s = await prisma.supplier.findFirst({
-      where: { id, shopId: ctx.shopId },
+    const s = await prisma.supplier.findUnique({
+      where: { id },
       include: {
         purchases: {
           select: { total: true },
@@ -103,7 +101,6 @@ export const suppliersService = {
 
     const s = await prisma.supplier.create({
       data: {
-        shopId: ctx.shopId,
         name: input.name,
         contactPerson: input.contactPerson || null,
         phone: input.phone || null,
@@ -132,8 +129,16 @@ export const suppliersService = {
   async update(ctx: Ctx, id: string, input: SupplierUpdateInput) {
     requireRole(ctx, "MANAGER");
 
-    const updated = await prisma.supplier.updateMany({
-      where: { id, shopId: ctx.shopId },
+    const existing = await prisma.supplier.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!existing) {
+      throw new ServiceError("NOT_FOUND", "Supplier not found", 404);
+    }
+
+    await prisma.supplier.update({
+      where: { id },
       data: {
         ...(input.name !== undefined && { name: input.name }),
         ...(input.contactPerson !== undefined && { contactPerson: input.contactPerson || null }),
@@ -144,10 +149,6 @@ export const suppliersService = {
         ...(input.payable !== undefined && { payable: input.payable }),
       },
     });
-
-    if (updated.count === 0) {
-      throw new ServiceError("NOT_FOUND", "Supplier not found", 404);
-    }
 
     await auditLogService.log(ctx, {
       entity: "Supplier",
@@ -162,13 +163,13 @@ export const suppliersService = {
   /** Get supplier profile (aggregated summary). Requires MANAGER+. */
   async getProfile(ctx: Ctx, id: string) {
     requireRole(ctx, "MANAGER");
-    const s = await prisma.supplier.findFirst({
-      where: { id, shopId: ctx.shopId },
+    const s = await prisma.supplier.findUnique({
+      where: { id },
     });
     if (!s) throw new ServiceError("NOT_FOUND", "Supplier not found", 404);
 
     const recentPurchases = await prisma.purchase.findMany({
-      where: { supplierId: id, shopId: ctx.shopId },
+      where: { supplierId: id },
       orderBy: { createdAt: "desc" },
       take: 10,
     });
@@ -215,16 +216,16 @@ export const suppliersService = {
   async remove(ctx: Ctx, id: string) {
     requireRole(ctx, "OWNER");
 
-    const supplier = await prisma.supplier.findFirst({
-      where: { id, shopId: ctx.shopId },
+    const supplier = await prisma.supplier.findUnique({
+      where: { id },
       select: { id: true, name: true },
     });
     if (!supplier) {
       throw new ServiceError("NOT_FOUND", "Supplier not found", 404);
     }
 
-    await prisma.supplier.deleteMany({
-      where: { id, shopId: ctx.shopId },
+    await prisma.supplier.delete({
+      where: { id },
     });
 
     await auditLogService.log(ctx, {

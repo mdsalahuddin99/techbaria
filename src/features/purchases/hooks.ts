@@ -63,7 +63,6 @@ export function useCreatePurchase() {
   return useMutation({
     mutationFn: (input: {
       supplierId: string;
-      branchId?: string;
       warehouseId?: string;
       items: Array<Omit<PurchaseItem, "receivedQty">>;
       amountPaid: number;

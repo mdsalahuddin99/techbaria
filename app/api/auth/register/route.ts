@@ -78,7 +78,6 @@ export async function POST(req: Request) {
         name,
         passwordHash,
         role: "VIEWER",
-        shopId,
       },
       select: {
         id: true,

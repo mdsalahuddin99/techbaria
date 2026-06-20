@@ -18,7 +18,6 @@ export const heldSalesService = {
   async list(ctx: Ctx) {
     requireRole(ctx, "CASHIER");
     const sales = await prisma.heldSale.findMany({
-      where: { shopId: ctx.shopId },
       orderBy: { heldAt: "desc" },
     });
     return sales.map(s => ({
@@ -35,7 +34,6 @@ export const heldSalesService = {
     
     const sale = await prisma.heldSale.create({
       data: {
-        shopId: ctx.shopId,
         userId: ctx.userId, // optionally record who held it
         customerId: input.customerId,
         customerName: input.customerName,
@@ -58,7 +56,7 @@ export const heldSalesService = {
     
     // Check if it exists and belongs to the shop
     const existing = await prisma.heldSale.findFirst({
-      where: { id, shopId: ctx.shopId },
+      where: { id },
     });
 
     if (!existing) {

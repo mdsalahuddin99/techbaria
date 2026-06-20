@@ -22,20 +22,18 @@ export const GET = apiHandler(async (ctx: Ctx) => {
     purchases,
     expenses,
   ] = await Promise.all([
-    prisma.category.findMany({ where: { shopId } }),
-    prisma.product.findMany({ where: { shopId } }),
-    prisma.customer.findMany({ where: { shopId } }),
-    prisma.supplier.findMany({ where: { shopId } }),
-    prisma.financialAccount.findMany({ where: { shopId } }),
+    prisma.category.findMany(),
+    prisma.product.findMany(),
+    prisma.customer.findMany(),
+    prisma.supplier.findMany(),
+    prisma.financialAccount.findMany(),
     prisma.sale.findMany({
-      where: { shopId },
       include: { items: true, tenders: true },
     }),
     prisma.purchase.findMany({
-      where: { shopId },
       include: { items: true, tenders: true },
     }),
-    prisma.expense.findMany({ where: { shopId } }),
+    prisma.expense.findMany(),
   ]);
 
   const backup = {

@@ -110,9 +110,9 @@ export const customerLedgerService = {
 
     return prisma.$transaction(async (tx) => {
       // 1. Lock & validate customer
-      const customer = await tx.customer.findFirst({
-        where: { id: input.customerId, shopId: ctx.shopId },
-        select: { id: true, balance: true, shopId: true },
+      const customer = await tx.customer.findUnique({
+        where: { id: input.customerId },
+        select: { id: true, balance: true },
       });
       if (!customer) {
         throw new ServiceError("NOT_FOUND", "Customer not found", 404);
@@ -124,8 +124,8 @@ export const customerLedgerService = {
 
       // 2. Validate account if provided
       if (input.accountId) {
-        const account = await tx.financialAccount.findFirst({
-          where: { id: input.accountId, shopId: ctx.shopId },
+        const account = await tx.financialAccount.findUnique({
+          where: { id: input.accountId },
           select: { id: true },
         });
         if (!account) {
@@ -136,7 +136,6 @@ export const customerLedgerService = {
       // 3. Create transaction record
       const transaction = await tx.customerTransaction.create({
         data: {
-          shopId: customer.shopId,
           customerId: input.customerId,
           type: input.type,
           amount: input.amount,
@@ -203,9 +202,9 @@ export const customerLedgerService = {
   ): Promise<PaginatedLedger> {
     requireAtLeastViewer(ctx);
 
-    // Verify customer belongs to this shop
-    const customer = await prisma.customer.findFirst({
-      where: { id: customerId, shopId: ctx.shopId },
+    // Verify customer exists
+    const customer = await prisma.customer.findUnique({
+      where: { id: customerId },
       select: { id: true },
     });
     if (!customer) {
@@ -216,13 +215,13 @@ export const customerLedgerService = {
 
     const [entries, total] = await Promise.all([
       prisma.customerTransaction.findMany({
-        where: { customerId, shopId: ctx.shopId },
+        where: { customerId },
         orderBy: { createdAt: "desc" },
         skip,
         take: pageSize,
       }),
       prisma.customerTransaction.count({
-        where: { customerId, shopId: ctx.shopId },
+        where: { customerId },
       }),
     ]);
 
@@ -253,8 +252,8 @@ export const customerLedgerService = {
   async getBalance(ctx: Ctx, customerId: string) {
     requireAtLeastViewer(ctx);
 
-    const customer = await prisma.customer.findFirst({
-      where: { id: customerId, shopId: ctx.shopId },
+    const customer = await prisma.customer.findUnique({
+      where: { id: customerId },
       select: {
         id: true,
         name: true,
@@ -296,9 +295,9 @@ export const customerLedgerService = {
     const amt = Math.abs(amount);
 
     return prisma.$transaction(async (tx) => {
-      const cust = await tx.customer.findFirst({
-        where: { id: customerId, shopId: ctx.shopId },
-        select: { id: true, due: true, shopId: true },
+      const cust = await tx.customer.findUnique({
+        where: { id: customerId },
+        select: { id: true, due: true },
       });
       if (!cust) throw new ServiceError("NOT_FOUND", "Customer not found", 404);
 
@@ -320,7 +319,6 @@ export const customerLedgerService = {
 
       return tx.customerTransaction.create({
         data: {
-          shopId: cust.shopId,
           customerId,
           type: "PAYMENT",
           amount: amt,
@@ -352,9 +350,9 @@ export const customerLedgerService = {
     const amt = Math.abs(amount);
 
     return prisma.$transaction(async (tx) => {
-      const cust = await tx.customer.findFirst({
-        where: { id: customerId, shopId: ctx.shopId },
-        select: { id: true, balance: true, shopId: true },
+      const cust = await tx.customer.findUnique({
+        where: { id: customerId },
+        select: { id: true, balance: true },
       });
       if (!cust) throw new ServiceError("NOT_FOUND", "Customer not found", 404);
 
@@ -376,7 +374,6 @@ export const customerLedgerService = {
 
       const transaction = await tx.customerTransaction.create({
         data: {
-          shopId: cust.shopId,
           customerId,
           type: "PAYMENT",
           amount: amt,
@@ -410,9 +407,9 @@ export const customerLedgerService = {
     const amt = Math.abs(amount);
 
     return prisma.$transaction(async (tx) => {
-      const cust = await tx.customer.findFirst({
-        where: { id: customerId, shopId: ctx.shopId },
-        select: { id: true, balance: true, shopId: true },
+      const cust = await tx.customer.findUnique({
+        where: { id: customerId },
+        select: { id: true, balance: true },
       });
       if (!cust) throw new ServiceError("NOT_FOUND", "Customer not found", 404);
 
@@ -437,7 +434,6 @@ export const customerLedgerService = {
 
       return tx.customerTransaction.create({
         data: {
-          shopId: cust.shopId,
           customerId,
           type: "REFUND",
           amount: amt,

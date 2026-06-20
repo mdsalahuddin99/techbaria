@@ -12,7 +12,7 @@ export const salesAccounting = {
   ): Promise<void> {
     if (customerId) {
       const customer = await prisma.customer.findFirst({
-        where: { id: customerId, shopId: ctx.shopId },
+        where: { id: customerId },
         select: { id: true },
       });
       if (!customer) {
@@ -25,7 +25,7 @@ export const salesAccounting = {
       .filter((id): id is string => !!id);
     if (accountIds.length > 0) {
       const accounts = await prisma.financialAccount.findMany({
-        where: { id: { in: accountIds }, shopId: ctx.shopId },
+        where: { id: { in: accountIds } },
         select: { id: true },
       });
       if (accounts.length !== new Set(accountIds).size) {
@@ -67,7 +67,7 @@ export const salesAccounting = {
       const currentDue = Number(cust.due);
       const newDue = currentDue + due;
       const creditLimit = Number(cust.creditLimit);
-
+ 
       if (creditLimit > 0 && newDue > creditLimit) {
         throw new ServiceError(
           "CONFLICT",
@@ -83,7 +83,6 @@ export const salesAccounting = {
 
       await tx.customerTransaction.create({
         data: {
-          shopId: ctx.shopId,
           customerId: customerId,
           type: "SALE",
           amount: due,
@@ -119,7 +118,6 @@ export const salesAccounting = {
 
       await tx.customerTransaction.create({
         data: {
-          shopId: ctx.shopId,
           customerId: customerId,
           type: "ADJUSTMENT",
           amount: dueAmount,
@@ -188,7 +186,6 @@ export const salesAccounting = {
 
     await tx.customerTransaction.create({
       data: {
-        shopId: ctx.shopId,
         customerId: customerId,
         type: "PAYMENT",
         amount: walletAmount,
@@ -230,7 +227,6 @@ export const salesAccounting = {
 
     await tx.customerTransaction.create({
       data: {
-        shopId: ctx.shopId,
         customerId,
         type: "WRITE_OFF",
         amount: walletAmount,
@@ -266,7 +262,6 @@ export const salesAccounting = {
 
     await tx.customerTransaction.create({
       data: {
-        shopId: ctx.shopId,
         customerId,
         type: "REFUND",
         amount: refundAmount,

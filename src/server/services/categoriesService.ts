@@ -2,7 +2,7 @@
  * Categories service — Prisma-backed, framework-agnostic.
  *
  * Categories form a self-referencing tree (parent → children).
- * Every query is scoped by `ctx.shopId` (multi-tenant).
+ * Scoped directly for a single tenant.
  */
 import "server-only";
 import { prisma } from "@/server/db/client";
@@ -45,23 +45,22 @@ function slugify(name: string): string {
 }
 
 /** Recursively collect all child IDs for a given parent category. */
-async function collectDescendantIds(shopId: string, parentId: string): Promise<string[]> {
+async function collectDescendantIds(parentId: string): Promise<string[]> {
   const children = await prisma.category.findMany({
-    where: { shopId, parentId },
+    where: { parentId },
     select: { id: true },
   });
   const ids: string[] = [];
   for (const child of children) {
     ids.push(child.id);
-    const grandkids = await collectDescendantIds(shopId, child.id);
+    const grandkids = await collectDescendantIds(child.id);
     ids.push(...grandkids);
   }
   return ids;
 }
 
-async function buildTree(ctx: Ctx): Promise<CategoryOutput[]> {
+async function buildTree(): Promise<CategoryOutput[]> {
   const categories = await prisma.category.findMany({
-    where: { shopId: ctx.shopId },
     include: { _count: { select: { products: true } } },
     orderBy: { name: "asc" },
   });
@@ -97,14 +96,13 @@ async function buildTree(ctx: Ctx): Promise<CategoryOutput[]> {
 export const categoriesService = {
   /** List all categories as a tree. */
   async list(ctx: Ctx): Promise<CategoryOutput[]> {
-    return buildTree(ctx);
+    return buildTree();
   },
 
   /** Get flat list (no nesting) for dropdowns. */
   async listFlat(ctx: Ctx) {
-    return cache.fetch(cacheKeys.categories.list(ctx.shopId), TTL.CATEGORY_TREE, async () => {
+    return cache.fetch(cacheKeys.categories.list("default"), TTL.CATEGORY_TREE, async () => {
       const categories = await prisma.category.findMany({
-        where: { shopId: ctx.shopId },
         include: { _count: { select: { products: true } } },
         orderBy: { name: "asc" },
       });
@@ -123,7 +121,7 @@ export const categoriesService = {
   /** Get a single category by ID. */
   async getById(ctx: Ctx, id: string) {
     const c = await prisma.category.findFirst({
-      where: { id, shopId: ctx.shopId },
+      where: { id },
       include: { _count: { select: { products: true } } },
     });
 
@@ -146,18 +144,18 @@ export const categoriesService = {
 
     const slug = input.slug ?? slugify(input.name);
 
-    // Check slug uniqueness within shop
+    // Check slug uniqueness
     const existing = await prisma.category.findUnique({
-      where: { shopId_slug: { shopId: ctx.shopId, slug } },
+      where: { slug },
     });
     if (existing) {
       throw new ServiceError("CONFLICT", `A category with slug "${slug}" already exists`, 409);
     }
 
-    // Verify parent belongs to shop if provided
+    // Verify parent if provided
     if (input.parentId) {
-      const parent = await prisma.category.findFirst({
-        where: { id: input.parentId, shopId: ctx.shopId },
+      const parent = await prisma.category.findUnique({
+        where: { id: input.parentId },
       });
       if (!parent) {
         throw new ServiceError("NOT_FOUND", "Parent category not found", 404);
@@ -166,14 +164,13 @@ export const categoriesService = {
 
     const c = await prisma.category.create({
       data: {
-        shopId: ctx.shopId,
         name: input.name,
         slug,
         parentId: input.parentId ?? null,
       },
     });
 
-    await cache.invalidateCategories(ctx.shopId);
+    await cache.invalidateCategories("default");
 
     return {
       id: c.id,
@@ -189,8 +186,8 @@ export const categoriesService = {
   async update(ctx: Ctx, id: string, input: CategoryUpdateInput) {
     requireRole(ctx, "MANAGER");
 
-    const existing = await prisma.category.findFirst({
-      where: { id, shopId: ctx.shopId },
+    const existing = await prisma.category.findUnique({
+      where: { id },
     });
     if (!existing) throw new ServiceError("NOT_FOUND", "Category not found", 404);
 
@@ -198,17 +195,17 @@ export const categoriesService = {
     const slug = input.slug ?? (input.name ? slugify(input.name) : undefined);
     if (slug && slug !== existing.slug) {
       const conflict = await prisma.category.findUnique({
-        where: { shopId_slug: { shopId: ctx.shopId, slug } },
+        where: { slug },
       });
       if (conflict) {
         throw new ServiceError("CONFLICT", `A category with slug "${slug}" already exists`, 409);
       }
     }
 
-    // Verify parent belongs to shop if provided
+    // Verify parent if provided
     if (input.parentId) {
-      const parent = await prisma.category.findFirst({
-        where: { id: input.parentId, shopId: ctx.shopId },
+      const parent = await prisma.category.findUnique({
+        where: { id: input.parentId },
       });
       if (!parent) {
         throw new ServiceError("NOT_FOUND", "Parent category not found", 404);
@@ -229,7 +226,7 @@ export const categoriesService = {
       include: { _count: { select: { products: true } } },
     });
 
-    await cache.invalidateCategories(ctx.shopId);
+    await cache.invalidateCategories("default");
 
     const cat = udpated as any;
     return {
@@ -246,8 +243,8 @@ export const categoriesService = {
   async remove(ctx: Ctx, id: string) {
     requireRole(ctx, "MANAGER");
 
-    const existing = await prisma.category.findFirst({
-      where: { id, shopId: ctx.shopId },
+    const existing = await prisma.category.findUnique({
+      where: { id },
       include: { _count: { select: { products: true } } },
     });
     if (!existing) throw new ServiceError("NOT_FOUND", "Category not found", 404);
@@ -262,7 +259,7 @@ export const categoriesService = {
     }
 
     // Recursively collect all descendant IDs
-    const allIds = await collectDescendantIds(ctx.shopId, id);
+    const allIds = await collectDescendantIds(id);
     allIds.push(id); // include the target itself
 
     // Delete all descendants + target in one transaction
@@ -270,6 +267,6 @@ export const categoriesService = {
       allIds.map((cid) => prisma.category.delete({ where: { id: cid } })),
     );
 
-    await cache.invalidateCategories(ctx.shopId);
+    await cache.invalidateCategories("default");
   },
 };

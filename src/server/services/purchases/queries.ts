@@ -12,7 +12,6 @@ async function runPurchaseListQuery(ctx: Ctx, params?: PaginationParams) {
   const raw = await paginate(
     prisma.purchase,
     {
-      where: { shopId: ctx.shopId },
       include: { items: true, tenders: true, supplier: true },
     },
     params,
@@ -30,7 +29,7 @@ export async function list(ctx: Ctx, params?: PaginationParams): Promise<Paginat
   requireRole(ctx, "MANAGER");
   const firstPage = !params?.cursor;
   if (firstPage) {
-    return cache.fetch(cacheKeys.purchases.list(ctx.shopId), TTL.PURCHASES_LIST, async () => {
+    return cache.fetch(cacheKeys.purchases.list("default"), TTL.PURCHASES_LIST, async () => {
       return runPurchaseListQuery(ctx, params);
     });
   }
@@ -41,7 +40,7 @@ export async function list(ctx: Ctx, params?: PaginationParams): Promise<Paginat
 export async function getById(ctx: Ctx, id: string) {
   requireRole(ctx, "MANAGER");
   const raw = await prisma.purchase.findFirst({
-    where: { id, shopId: ctx.shopId },
+    where: { id },
     include: {
       items: { include: { product: true } },
       tenders: true,
@@ -56,7 +55,7 @@ export async function getById(ctx: Ctx, id: string) {
 export async function listBySupplier(ctx: Ctx, supplierId: string): Promise<ReturnType<typeof serializePurchase>[]> {
   requireRole(ctx, "MANAGER");
   const raw = await prisma.purchase.findMany({
-    where: { shopId: ctx.shopId, supplierId },
+    where: { supplierId },
     include: { items: true, tenders: true, supplier: true },
     orderBy: { createdAt: "desc" as const },
     take: 20,

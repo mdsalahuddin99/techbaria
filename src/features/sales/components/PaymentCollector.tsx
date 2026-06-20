@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/shared/ui/select";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/shared/ui/collapsible";
-import { Plus, X, ChevronDown, Zap, CheckCircle2 } from "lucide-react";
+import { Plus, X, ChevronDown, Zap, CheckCircle2, Pencil, Trash2 } from "lucide-react";
 import { formatCurrency, round2 } from "@/shared/lib/format";
 import { flattenAccountTree } from "@/features/accounts/tree";
 import { useAccountsByType } from "@/features/accounts/hooks";
@@ -35,8 +35,6 @@ interface Customer {
 
 interface PaymentCollectorProps {
   subtotal: number;
-  discount: number;
-  onDiscountChange: (v: number) => void;
 
   payments: SalePayment[];
   onAddPayment: (p: SalePayment) => void;
@@ -58,8 +56,6 @@ interface PaymentCollectorProps {
 
 export function PaymentCollector({
   subtotal,
-  discount,
-  onDiscountChange,
   vat,
   extraCharges,
   payments,
@@ -72,7 +68,7 @@ export function PaymentCollector({
   onQuickNameChange,
   onQuickPhoneChange,
 }: PaymentCollectorProps) {
-  const afterDiscount = round2(Math.max(0, subtotal - discount + vat + extraCharges));
+  const afterDiscount = round2(Math.max(0, subtotal + vat + extraCharges));
   const paidNum = round2(payments.reduce((s, p) => s + p.amount, 0));
   const dueNum = round2(Math.max(0, afterDiscount - paidNum));
 
@@ -103,14 +99,14 @@ export function PaymentCollector({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingMethod, cashAccounts.length, bankAccounts.length, mobileAccounts.length]);
 
-  // Auto-fill pendingAmount with remaining due amount on mount, method change, or due change
+  // Auto-fill pendingAmount with remaining due amount on mount or due change
   useEffect(() => {
     if (dueNum > 0) {
-      setPendingAmount(dueNum.toString());
+      setPendingAmount((prev) => (prev === "" || prev === "0" ? dueNum.toString() : prev));
     } else {
       setPendingAmount("");
     }
-  }, [dueNum, pendingMethod]);
+  }, [dueNum]);
 
   // Auto-fix account IDs when accounts load
   useEffect(() => {
@@ -138,132 +134,157 @@ export function PaymentCollector({
     onAddPayment({ method: "Cash", amount: dueNum, accountId: def?.id ?? null });
   };
 
+  const handleEditPayment = (idx: number) => {
+    const p = payments[idx];
+    setPendingMethod(p.method);
+    setPendingAmount(p.amount.toString());
+    setPendingAccountId(p.accountId);
+    onRemovePayment(idx);
+  };
+
   const fullyPaid = dueNum <= 0;
   const needsQuickCust = dueNum > 0 && (!customerId || customerId === "c1");
 
   return (
-    <Collapsible defaultOpen className="rounded-xl border border-slate-200 bg-card overflow-hidden">
+    <Collapsible defaultOpen className="rounded-[4px] border border-border bg-card overflow-hidden">
       {/* Header */}
-      <CollapsibleTrigger className="flex w-full items-center justify-between px-4 py-3 hover:bg-slate-50/60 transition-colors">
-        <div className="flex items-center gap-3 text-sm flex-wrap">
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+      <CollapsibleTrigger className="flex w-full items-center justify-between px-3 py-2.5 hover:bg-secondary/40 transition-colors">
+        <div className="flex items-center gap-2 text-xs flex-wrap">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
             Payment
           </span>
-          <span className="font-bold text-slate-700 tabular-nums">{formatCurrency(afterDiscount)}</span>
+          <span className="font-extrabold text-slate-800 tabular-nums text-xs">{formatCurrency(afterDiscount)}</span>
           <span className="text-slate-300">·</span>
-          <span className="text-slate-500 text-xs">
-            Paid: <span className="font-semibold text-slate-700">{formatCurrency(paidNum)}</span>
+          <span className="text-slate-600 text-[11px]">
+            Paid: <span className="font-semibold text-slate-800">{formatCurrency(paidNum)}</span>
           </span>
           {dueNum > 0 ? (
             <>
               <span className="text-slate-300">·</span>
-              <span className="text-xs font-semibold text-orange-500">
+              <span className="text-[11px] font-bold text-orange-600">
                 Due: {formatCurrency(dueNum)}
               </span>
             </>
           ) : (
             <>
               <span className="text-slate-300">·</span>
-              <span className="text-xs font-semibold text-emerald-600 flex items-center gap-1">
-                <CheckCircle2 className="h-3 w-3" /> Full Paid
+              <span className="text-[11px] font-bold text-emerald-700 flex items-center gap-1">
+                <CheckCircle2 className="h-3 w-3" /> Paid
               </span>
             </>
           )}
         </div>
-        <ChevronDown className="h-4 w-4 text-slate-400 transition-transform ui-open:rotate-180 shrink-0" />
+        <ChevronDown className="h-3.5 w-3.5 text-slate-500 transition-transform ui-open:rotate-180 shrink-0" />
       </CollapsibleTrigger>
 
-      <CollapsibleContent className="border-t border-slate-100">
-        <div className="px-4 py-4 space-y-4">
+      <CollapsibleContent className="border-t border-border">
+        <div className="px-3 py-3 space-y-3">
 
-          {/* Discount field */}
-          <div className="flex items-end gap-3">
-            <div className="flex-1 space-y-1">
-              <label className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                Flat Discount
-              </label>
-              <Input
-                type="number"
-                min={0}
-                max={subtotal}
-                value={discount === 0 ? "" : discount}
-                onChange={(e) => {
-                  const v = round2(Math.max(0, Number(e.target.value) || 0));
-                  if (v > subtotal) {
-                    toast.error("Discount cannot exceed subtotal");
-                    return;
-                  }
-                  onDiscountChange(v);
-                }}
-                placeholder="0.00"
-                className="h-9 text-right text-sm border-slate-200"
-              />
-            </div>
-            <div className="flex-1 space-y-1">
-              <label className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+          {/* Subtotal + Total */}
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-0.5">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
                 Subtotal
               </label>
-              <div className="h-9 flex items-center px-3 rounded-lg bg-slate-50 border border-slate-200 text-sm font-semibold text-slate-700 tabular-nums">
+              <div className="h-7 flex items-center px-2 rounded-[4px] bg-secondary/40 border border-border text-xs font-semibold text-slate-700 tabular-nums">
                 {formatCurrency(subtotal)}
               </div>
             </div>
-            <div className="flex-1 space-y-1">
-              <label className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                Invoice Total
+            <div className="space-y-0.5">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                Total
               </label>
-              <div className="h-9 flex items-center px-3 rounded-lg bg-teal-50 border border-teal-100 text-sm font-bold text-teal-700 tabular-nums">
+              <div className="h-7 flex items-center justify-end px-2 rounded-[4px] bg-primary/10 border border-primary/20 text-xs font-extrabold text-primary tabular-nums">
                 {formatCurrency(afterDiscount)}
               </div>
             </div>
           </div>
 
-          {/* Applied tenders */}
+          {/* Processed Payments list */}
           {payments.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {payments.map((p, i) => (
-                <Badge
-                  key={`${p.method}-${i}`}
-                  variant="secondary"
-                  className="text-xs gap-1.5 pr-1 pl-2.5 py-1.5 bg-slate-100 text-slate-700 border border-slate-200"
-                >
-                  {METHOD_ICONS[p.method] ?? "💳"} {p.method === "Card" ? "Bank" : p.method}:{" "}
-                  <span className="font-semibold">{formatCurrency(p.amount)}</span>
-                  <button
-                    type="button"
-                    onClick={() => onRemovePayment(i)}
-                    className="ml-0.5 hover:text-red-500 transition-colors"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </Badge>
-              ))}
-              <span className="text-xs text-slate-400 self-center ml-1">
-                = {formatCurrency(paidNum)}
-              </span>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
+                Payments
+              </label>
+              <div className="space-y-1">
+                {payments.map((p, i) => {
+                  const pool = accountsForMethod(p.method);
+                  const account = pool.find((a) => a.id === p.accountId);
+                  return (
+                    <div
+                      key={`${p.method}-${i}`}
+                      className="flex items-center justify-between p-2 bg-secondary/35 border border-border rounded-[4px]"
+                    >
+                      <div className="min-w-0 flex-1 flex items-center gap-1.5 text-[11px]">
+                        <span className="text-xs shrink-0">{METHOD_ICONS[p.method] ?? "💳"}</span>
+                        <div className="min-w-0">
+                          <p className="font-bold text-slate-700 text-[11px]">
+                            {p.method === "Card" ? "Bank" : p.method}
+                          </p>
+                          {account && (
+                            <p className="text-[9px] text-slate-400 truncate">
+                              {account.name}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[11px] font-extrabold text-slate-800 tabular-nums">
+                          {formatCurrency(p.amount)}
+                        </span>
+                        <div className="flex items-center gap-0.5 border-l border-border pl-1 ml-0.5">
+                          <button
+                            type="button"
+                            onClick={() => handleEditPayment(i)}
+                            className="h-5 w-5 rounded-[4px] grid place-items-center text-slate-400 hover:text-primary hover:bg-secondary transition-colors"
+                            title="Edit"
+                          >
+                            <Pencil className="h-2.5 w-2.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              onRemovePayment(i);
+                              setPendingAmount("");
+                            }}
+                            className="h-5 w-5 rounded-[4px] grid place-items-center text-slate-400 hover:text-destructive hover:bg-red-50 transition-colors"
+                            title="Delete"
+                          >
+                            <Trash2 className="h-2.5 w-2.5" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
 
-          {/* Add tender form */}
+          {/* Add tender form — 2-column layout */}
           {!fullyPaid && (
             <div className="space-y-2">
-              <div className="flex items-end gap-2 flex-wrap">
-                {/* Method */}
-                <div className="flex-1 min-w-36 space-y-1">
-                  <label className="text-[11px] font-medium text-slate-500">Method</label>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">Add Payment</label>
+              <div className="grid grid-cols-2 gap-2">
+                {/* Mode */}
+                <div className="space-y-0.5">
+                  <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Mode</label>
                   <Select
                     value={pendingMethod}
                     onValueChange={(v) => {
-                      setPendingMethod(v as PaymentMethod);
-                      setPendingAmount("");
+                      const nextMethod = v as PaymentMethod;
+                      setPendingMethod(nextMethod);
+                      const defaultAmt = nextMethod === "Wallet" ? Math.min(walletBalance, dueNum) : dueNum;
+                      setPendingAmount(defaultAmt > 0 ? defaultAmt.toString() : "");
                     }}
                   >
-                    <SelectTrigger className="h-9 border-slate-200 text-sm">
+                    <SelectTrigger className="h-8 border-border bg-card text-[11px] rounded-[4px]">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Cash">💵 Cash</SelectItem>
-                      <SelectItem value="Card">🏦 Bank Transfer</SelectItem>
-                      <SelectItem value="Mobile Banking">📱 Mobile Banking</SelectItem>
+                      <SelectItem value="Card">🏦 Bank</SelectItem>
+                      <SelectItem value="Mobile Banking">📱 Mobile</SelectItem>
                       <SelectItem value="Wallet">
                         💳 Wallet{walletBalance > 0 ? ` (${formatCurrency(walletBalance)})` : ""}
                       </SelectItem>
@@ -271,9 +292,42 @@ export function PaymentCollector({
                   </Select>
                 </div>
 
-                {/* Amount */}
-                <div className="flex-1 min-w-28 space-y-1">
-                  <label className="text-[11px] font-medium text-slate-500">Amount</label>
+                {/* Account */}
+                <div className="space-y-0.5">
+                  <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Account</label>
+                  {pendingMethod === "Wallet" ? (
+                    <Select disabled value="wallet-na">
+                      <SelectTrigger className="h-8 border-border bg-secondary/35 text-slate-400 text-[11px] rounded-[4px]">
+                        <SelectValue placeholder="N/A" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="wallet-na">N/A</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Select
+                      value={pendingAccountId ?? ""}
+                      onValueChange={setPendingAccountId}
+                    >
+                      <SelectTrigger className="h-8 border-border bg-card text-[11px] rounded-[4px]">
+                        <SelectValue placeholder="Select…" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {flattenAccountTree(accountsForMethod(pendingMethod)).map((n) => (
+                          <SelectItem key={n.account.id} value={n.account.id} className="text-xs">
+                            {n.account.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+              </div>
+
+              {/* Amount + Add button in one row */}
+              <div className="flex gap-2">
+                <div className="flex-1 space-y-0.5">
+                  <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Amount</label>
                   <Input
                     type="number"
                     min={0}
@@ -281,42 +335,21 @@ export function PaymentCollector({
                     value={pendingAmount}
                     onChange={(e) => setPendingAmount(e.target.value)}
                     placeholder={formatCurrency(dueNum)}
-                    className="h-9 text-right border-slate-200 text-sm"
+                    className="h-8 text-right border-border bg-card text-[11px] rounded-[4px]"
                     onKeyDown={(e) => { if (e.key === "Enter") commitTender(); }}
                   />
                 </div>
-
-                {/* Account (for bank / mobile) */}
-                {["Card", "Mobile Banking"].includes(pendingMethod) &&
-                  accountsForMethod(pendingMethod).length > 0 && (
-                    <div className="w-32 space-y-1">
-                      <label className="text-[11px] font-medium text-slate-500">Account</label>
-                      <Select
-                        value={pendingAccountId ?? ""}
-                        onValueChange={setPendingAccountId}
-                      >
-                        <SelectTrigger className="h-9 border-slate-200 text-xs">
-                          <SelectValue placeholder="Acct" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {flattenAccountTree(accountsForMethod(pendingMethod)).map((n) => (
-                            <SelectItem key={n.account.id} value={n.account.id} className="text-xs">
-                              {n.account.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
-
-                <Button
-                  type="button"
-                  size="sm"
-                  className="h-9 bg-teal-700 hover:bg-teal-800 text-white self-end"
-                  onClick={commitTender}
-                >
-                  <Plus className="h-4 w-4 mr-1" /> Add
-                </Button>
+                <div className="space-y-0.5">
+                  <label className="text-[9px] font-bold text-transparent uppercase tracking-wider block select-none">.</label>
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="h-8 bg-primary hover:bg-primary/95 text-white px-3 rounded-[4px] font-bold text-[11px]"
+                    onClick={commitTender}
+                  >
+                    <Plus className="h-3 w-3 mr-1" /> Add
+                  </Button>
+                </div>
               </div>
 
               {/* Fast-fill shortcut */}
@@ -324,7 +357,7 @@ export function PaymentCollector({
                 <button
                   type="button"
                   onClick={fastFillCash}
-                  className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-teal-700 transition-colors"
+                  className="inline-flex items-center gap-1 text-[11px] text-slate-500 hover:text-primary transition-colors font-semibold"
                 >
                   <Zap className="h-3 w-3" /> Full Cash ({formatCurrency(dueNum)})
                 </button>
@@ -334,22 +367,22 @@ export function PaymentCollector({
 
           {/* Quick customer form for credit sales */}
           {needsQuickCust && (
-            <div className="rounded-lg border border-orange-200 bg-orange-50 p-3 space-y-2">
-              <p className="text-[11px] font-semibold text-orange-600">
-                ⚠ Credit sale — provide customer details to record the due
+            <div className="rounded-[4px] border border-orange-300/60 bg-orange-500/5 p-2.5 space-y-1.5">
+              <p className="text-[10px] font-bold text-orange-600">
+                ⚠ Credit — add customer details
               </p>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-1.5">
                 <Input
-                  placeholder="Customer name"
+                  placeholder="Name"
                   value={quickName}
                   onChange={(e) => onQuickNameChange(e.target.value)}
-                  className="h-8 text-xs border-orange-200 bg-card"
+                  className="h-7 text-[11px] border-orange-300/60 bg-card rounded-[4px]"
                 />
                 <Input
-                  placeholder="Phone number"
+                  placeholder="Phone"
                   value={quickPhone}
                   onChange={(e) => onQuickPhoneChange(e.target.value)}
-                  className="h-8 text-xs border-orange-200 bg-card"
+                  className="h-7 text-[11px] border-orange-300/60 bg-card rounded-[4px]"
                   inputMode="tel"
                 />
               </div>

@@ -1,8 +1,8 @@
 /**
  * UI session slice — the only slice that survives the Next.js migration.
  *
- * Keeps in-progress POS cart, held sales, customer selection, discount,
- * and active branch in Zustand with localStorage persistence.
+ * Keeps in-progress POS cart, held sales, customer selection, and discount
+ * in Zustand with localStorage persistence.
  * Everything else (domain data) comes from TanStack Query + API.
  */
 import type { SliceCreator, CartItem } from "../types";
@@ -15,7 +15,6 @@ export const createUiSessionSlice: SliceCreator<import("../types").UiSessionSlic
   cart: [],
   discount: 0,
   selectedCustomerId: null,
-  activeBranchId: null,
 
   // ─── Cart actions ───────────────────────────────────────────────────────
   addToCart(productId, name?, price?, imageUrl?) {
@@ -78,8 +77,5 @@ export const createUiSessionSlice: SliceCreator<import("../types").UiSessionSlic
     set({ selectedCustomerId: id });
   },
 
-  setActiveBranch(id) {
-    set({ activeBranchId: id });
-  },
 
 });

@@ -45,7 +45,6 @@ export const purchaseCreateSchema = z.object({
   paidFromAccountId: z.string().optional(),
   status: z.string().optional(),
   expectedDate: z.string().optional(),
-  branchId: z.string().optional(),
   warehouseId: z.string().optional(),
 }).transform((input) => {
   // Merge amountPaid into tenders if provided
@@ -66,7 +65,6 @@ export const purchaseCreateSchema = z.object({
     expectedDate: input.expectedDate,
     items: input.items,
     tenders: tenders.length > 0 ? tenders : undefined,
-    branchId: input.branchId,
     warehouseId: input.warehouseId,
   };
 });

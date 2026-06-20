@@ -45,7 +45,7 @@ export const storefrontOrder = {
     const result = await prisma.$transaction(async (tx) => {
       const productIds = input.items.map((i) => i.productId);
       const products: any[] = await tx.product.findMany({
-        where: { id: { in: productIds }, shopId: ctx.shopId },
+        where: { id: { in: productIds } },
       });
       const productMap = new Map<string, (typeof products)[number]>(products.map((p) => [p.id, p]) as [string, (typeof products)[number]][]);
       let subtotal = 0;
@@ -72,7 +72,6 @@ export const storefrontOrder = {
 
       const sale = await tx.sale.create({
         data: {
-          shopId: ctx.shopId,
           channel: "STOREFRONT",
           status: "COMPLETED",
           subtotal,
@@ -117,7 +116,7 @@ export const storefrontOrder = {
       if (trackedItems.length > 0) {
         await salesSerial.assignSerials(
           tx,
-          ctx.shopId,
+          "default",
           sale.warehouseId,
           sale.items,
           trackedItems.map((ti) => ({ productId: ti.productId, qty: ti.qty }))
@@ -127,7 +126,7 @@ export const storefrontOrder = {
       return serializeStorefrontOrder(sale);
     });
 
-    await cache.invalidateProducts(ctx.shopId);
+    await cache.invalidateProducts("default");
 
     return result;
   },
@@ -138,7 +137,7 @@ export const storefrontOrder = {
     const result = await paginate(
       prisma.sale,
       {
-        where: { shopId: ctx.shopId, channel: "STOREFRONT" },
+        where: { channel: "STOREFRONT" },
         include: { items: true },
       },
       params,
@@ -154,7 +153,7 @@ export const storefrontOrder = {
   async updateStorefrontOrderStatus(ctx: Ctx, id: string, status: StorefrontOrderStatus) {
     requireRole(ctx, "MANAGER");
     const raw = await prisma.sale.findFirst({
-      where: { id, shopId: ctx.shopId, channel: "STOREFRONT" },
+      where: { id, channel: "STOREFRONT" },
       select: { data: true },
     });
     if (!raw) throw new ServiceError("NOT_FOUND", "Storefront order not found", 404);
@@ -173,13 +172,13 @@ export const storefrontOrder = {
   /** Get a single storefront order by id or orderNo (public — used by storefront). */
   async getStorefrontOrder(ctx: Ctx, id: string) {
     let sale = await prisma.sale.findFirst({
-      where: { id, shopId: ctx.shopId, channel: "STOREFRONT" },
+      where: { id, channel: "STOREFRONT" },
       include: { items: true },
     });
     if (!sale) {
       // Fallback: look up by orderNo in the data JSON column
       const all = await prisma.sale.findMany({
-        where: { shopId: ctx.shopId, channel: "STOREFRONT" },
+        where: { channel: "STOREFRONT" },
         select: { id: true, data: true },
         take: 200,
         orderBy: { createdAt: "desc" },
@@ -190,7 +189,7 @@ export const storefrontOrder = {
       });
       if (!match) throw new ServiceError("NOT_FOUND", "Storefront order not found", 404);
       sale = await prisma.sale.findFirst({
-        where: { id: match.id, shopId: ctx.shopId },
+        where: { id: match.id },
         include: { items: true },
       });
     }

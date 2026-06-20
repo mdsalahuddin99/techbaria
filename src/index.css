@@ -9,11 +9,11 @@
 
 @layer base {
   :root {
-    /* Premium SaaS Palette - Crisp, Clean, High Contrast */
-    --background: 210 40% 96.1%; /* Soft grey canvas (slate-100) */
+    /* Premium SaaS Palette - Crisp, Clean, High Contrast Slate Cool Light Tones */
+    --background: 220 14% 96%; /* Crisp light cool-grey background */
     --foreground: 222.2 47.4% 11.2%; /* Sharp dark text */
 
-    --card: 0 0% 100%; /* Pure white cards to pop against grey background */
+    --card: 0 0% 100%; /* Pure white cards for high definition and contrast */
     --card-foreground: 222.2 47.4% 11.2%;
 
     --popover: 0 0% 100%;
@@ -24,14 +24,14 @@
     --primary-foreground: 0 0% 100%;
     --primary-glow: 175 77% 26%;
 
-    /* Secondary - Restored to neutral grey for UI elements like Search Bars */
-    --secondary: 210 40% 96.1%;
+    /* Secondary - Restored to cool grey for UI elements like Search Bars */
+    --secondary: 220 13% 91%;
     --secondary-foreground: 222.2 47.4% 11.2%;
 
-    --muted: 210 40% 96.1%;
+    --muted: 220 13% 91%;
     --muted-foreground: 215.4 16.3% 46.9%;
 
-    --accent: 210 40% 96.1%;
+    --accent: 220 13% 88%;
     --accent-foreground: 222.2 47.4% 11.2%;
 
     --success: 142.1 76.2% 36.3%;
@@ -43,12 +43,12 @@
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
+    --border: 220 13% 85%; /* Crisp, defined borders in cool slate grey */
+    --input: 220 13% 85%;
     --ring: 175 77% 26%;
 
-    /* Sharp corners */
-    --radius: 0.5rem; /* rounded-md for a slightly softer premium feel */
+    /* Sharp corners for a physical card feel */
+    --radius: 4px;
 
     /* Sidebar — Premium Dark Sidebar for High Contrast */
     --sidebar-background: 222.2 47.4% 11.2%; /* slate-900 */
@@ -60,16 +60,15 @@
     --sidebar-border: 217.2 32.6% 17.5%;
     --sidebar-ring: 175 77% 26%;
 
-    /* Crisp, clean borders for elevation instead of diffuse shadows */
-    --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-    --shadow-ring: 0 0 0 1px hsl(var(--border)), 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    /* No diffuse blurry shadows - replaced with flat crisp solid borders */
+    --shadow-xs: none;
+    --shadow-sm: none;
+    --shadow-md: none;
+    --shadow-lg: none;
+    --shadow-ring: 0 0 0 1px hsl(var(--border));
 
     --transition-base: 150ms cubic-bezier(0.4, 0, 0.2, 1);
   }
-
 }
 
 @layer base {
@@ -159,6 +158,70 @@
   }
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+}
+
+/* Page Header & Table Header Module Themes - Swappable branding colors */
+.theme-catalog {
+  --theme-color: #2563eb; /* Royal Blue */
+  --theme-bg-light: rgba(37, 99, 235, 0.04);
+  --theme-border-light: rgba(37, 99, 235, 0.12);
+}
+
+.theme-inventory {
+  --theme-color: #6366f1; /* Indigo */
+  --theme-bg-light: rgba(99, 102, 241, 0.04);
+  --theme-border-light: rgba(99, 102, 241, 0.12);
+}
+
+.theme-commerce {
+  --theme-color: #0f766e; /* Teal */
+  --theme-bg-light: rgba(15, 118, 110, 0.04);
+  --theme-border-light: rgba(15, 118, 110, 0.12);
+}
+
+.theme-ecommerce {
+  --theme-color: #db2777; /* Pink */
+  --theme-bg-light: rgba(219, 39, 119, 0.04);
+  --theme-border-light: rgba(219, 39, 119, 0.12);
+}
+
+.theme-people {
+  --theme-color: #10b981; /* Emerald */
+  --theme-bg-light: rgba(16, 185, 129, 0.04);
+  --theme-border-light: rgba(16, 185, 129, 0.12);
+}
+
+.theme-finance {
+  --theme-color: #0891b2; /* Cyan */
+  --theme-bg-light: rgba(8, 145, 178, 0.04);
+  --theme-border-light: rgba(8, 145, 178, 0.12);
+}
+
+.theme-system {
+  --theme-color: #64748b; /* Slate */
+  --theme-bg-light: rgba(100, 116, 139, 0.04);
+  --theme-border-light: rgba(100, 116, 139, 0.12);
+}
+
+.theme-main {
+  --theme-color: #0f766e; /* Teal */
+  --theme-bg-light: rgba(15, 118, 110, 0.04);
+  --theme-border-light: rgba(15, 118, 110, 0.12);
+}
+
+/* Apply themes to Table Headers inside these categories */
+.theme-catalog thead th,
+.theme-inventory thead th,
+.theme-commerce thead th,
+.theme-ecommerce thead th,
+.theme-people thead th,
+.theme-finance thead th,
+.theme-system thead th,
+.theme-main thead th {
+  background-color: var(--theme-color) !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  border-bottom: 2px solid var(--theme-color) !important;
 }
 
 @media print {

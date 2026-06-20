@@ -20,7 +20,7 @@ export const inventoryApi = {
   },
 
   warehouseStock(warehouseId: string): Promise<Record<string, unknown>> {
-    return apiFetch<Record<string, unknown>>(`${BASE}/branch-stock?warehouseId=${encodeURIComponent(warehouseId)}`);
+    return apiFetch<Record<string, unknown>>(`${BASE}/warehouse-stock?warehouseId=${encodeURIComponent(warehouseId)}`);
   },
 
   listAdjustments(): Promise<StockAdjustment[]> {
@@ -32,7 +32,6 @@ export const inventoryApi = {
     qtyDelta: number;
     reason: string;
     notes?: string;
-    branchId?: string;
     warehouseId?: string;
   }): Promise<void> {
     return apiFetch<void>(`${BASE}/adjust`, { method: "POST", body: JSON.stringify(input) });

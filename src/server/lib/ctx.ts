@@ -10,12 +10,10 @@ import "server-only";
 export interface Ctx {
   /** Current authenticated user's ID */
   userId: string;
-  /** The shop this user belongs to (multi-tenant scoping) */
-  shopId: string;
   /** User's role — determines permission level */
   role: "OWNER" | "MANAGER" | "CASHIER" | "VIEWER";
-  /** Optional branch scoping for multi-branch shops */
-  branchId?: string | null;
+  /** Current shop's ID */
+  shopId: string;
 }
 
 /**
@@ -24,17 +22,15 @@ export interface Ctx {
  */
 export function buildCtx(sessionUser: {
   id?: string | null;
-  shopId?: string | null;
   role?: string | null;
-  branchId?: string | null;
+  shopId?: string | null;
 }): Ctx {
-  if (!sessionUser.id || !sessionUser.shopId || !sessionUser.role) {
+  if (!sessionUser.id || !sessionUser.role) {
     throw new Error("Incomplete session — cannot build Ctx");
   }
   return {
     userId: sessionUser.id,
-    shopId: sessionUser.shopId,
     role: sessionUser.role as Ctx["role"],
-    branchId: sessionUser.branchId ?? null,
+    shopId: sessionUser.shopId ?? process.env.DEFAULT_SHOP_ID ?? "cmq7kgo6x0000l504t8gkk8yp",
   };
 }

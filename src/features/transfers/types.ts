@@ -19,10 +19,10 @@ export interface TransferItem {
 export interface StockTransfer {
   id: string;
   transferNumber: string;
-  fromBranchId: string;
-  fromBranchName: string;
-  toBranchId: string;
-  toBranchName: string;
+  fromWarehouseId: string;
+  fromWarehouseName: string;
+  toWarehouseId: string;
+  toWarehouseName: string;
   items: TransferItem[];
   status: TransferStatus;
   note?: string;
@@ -34,8 +34,8 @@ export interface StockTransfer {
 }
 
 export type TransferInput = {
-  fromBranchId: string;
-  toBranchId: string;
+  fromWarehouseId: string;
+  toWarehouseId: string;
   items: Array<{ productId: string; name: string; qty: number; serials?: string[] }>;
   note?: string;
 };

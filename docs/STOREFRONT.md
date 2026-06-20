@@ -1,6 +1,4 @@
-# Storefront Module
-
-The public-facing storefront is a separate route segment that shares the same backend as the POS/admin app. এটি **shared DB + shopId isolation** ব্যবহার করে।
+The public-facing storefront is a separate route segment that shares the same database and codebase as the POS/admin app. এটি একই শেয়ার্ড ডাটাবেজ ব্যবহার করে।
 
 > Companion: `BACKEND.md`, `docs/DATABASE.md`, `docs/technical-architecture-audit.md`.
 
@@ -129,21 +127,12 @@ This design means:
 
 ---
 
-## 6. Public API — shopId Resolution
+## 6. Public API — Single Tenant Global Access
 
-Public routes don't have a session. The `publicApiHandler` currently gets `shopId` from:
-1. **`x-shop-id` header** (set by proxy.ts from subdomain)
-2. **Fallback:** `DEFAULT_SHOP_ID` env var (for single-tenant dev)
-
-For multi-tenant SaaS, resolved by:
-
-```
-Request → hostname (acme.shop.com)
-  → proxy.ts looks up Shop.slug or Shop.customDomain
-    → sets x-shop-id header
-      → publicApiHandler reads header
-        → scopes all queries by shopId
-```
+Public storefront routes do not require any session. Since the system is single-tenant:
+- All product catalog and category API endpoints return data directly from the global database without tenant filters.
+- Orders/sales created from the storefront are simply saved with `channel: "STOREFRONT"` and `paid: 0` (for COD orders) in the database.
+- Subdomain lookups and query scoping by `shopId` are no longer performed.
 
 ---
 

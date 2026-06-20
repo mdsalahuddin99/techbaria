@@ -13,8 +13,8 @@ import type { ProductUpdateInput } from "./types";
 export async function update(ctx: Ctx, id: string, input: ProductUpdateInput) {
   requireRole(ctx, "MANAGER");
 
-  const existingProduct = await prisma.product.findFirst({
-    where: { id, shopId: ctx.shopId },
+  const existingProduct = await prisma.product.findUnique({
+    where: { id },
     select: { name: true, categoryId: true, brandId: true, modelId: true },
   });
   if (!existingProduct) {
@@ -100,15 +100,12 @@ export async function update(ctx: Ctx, id: string, input: ProductUpdateInput) {
     }
   }
 
-  const updated = await prisma.product.updateMany({
-    where: { id, shopId: ctx.shopId },
+  await prisma.product.update({
+    where: { id },
     data,
   });
-  if (updated.count === 0) {
-    throw new ServiceError("NOT_FOUND", "Product not found", 404);
-  }
 
-  await cache.invalidateSpecificProducts(ctx.shopId, [id]);
+  await cache.invalidateSpecificProducts("default", [id]);
 
   await auditLogService.log(ctx, {
     entity: "Product",

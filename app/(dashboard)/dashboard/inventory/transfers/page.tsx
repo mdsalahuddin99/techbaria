@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useBranches } from "@/features/branches/hooks";
 import { useProductsQuery } from "@/features/products/hooks";
 import { Card } from "@/shared/ui/card";
 import { Input } from "@/shared/ui/input";
@@ -22,6 +21,7 @@ import { ArrowLeftRight, Plus, Search, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader, EmptyState } from "@/shared/components";
 import { AutoSuggest } from "@/shared/ui/auto-suggest";
+import { useWarehouses } from "@/features/warehouses/hooks";
 import {
   useFilteredTransfers,
   useTransferActions,
@@ -38,7 +38,7 @@ interface DraftLine {
 }
 
 export default function Transfers() {
-  const branches = useBranches();
+  const warehouses = useWarehouses();
   const products = ((useProductsQuery().data as any)?.items ?? []) as any[];
   const allTransfers = useTransfers();
   const { create, dispatch, receive, cancel, remove } = useTransferActions();
@@ -85,13 +85,13 @@ export default function Transfers() {
     setLines((prev) => prev.filter((l) => l.productId !== productId));
 
   const submit = async () => {
-    if (!fromId || !toId) return toast.error("From ও To branch দিন");
+    if (!fromId || !toId) return toast.error("From ও To warehouse দিন");
     if (fromId === toId) return toast.error("Source আর destination একই হতে পারবে না");
     if (lines.length === 0) return toast.error("কমপক্ষে একটি item");
     try {
       const t = await create({
-        fromBranchId: fromId,
-        toBranchId: toId,
+        fromWarehouseId: fromId,
+        toWarehouseId: toId,
         items: lines.map((l) => {
           const prod = products.find((p) => p.id === l.productId);
           return { productId: l.productId, qty: l.qty, name: prod?.name ?? "" };
@@ -119,14 +119,14 @@ export default function Transfers() {
     <div className="space-y-4">
       <PageHeader
         title="Stock Transfers"
-        description="এক branch থেকে অন্য branch-এ stock পাঠানোর audit log।"
+        description="এক warehouse থেকে অন্য warehouse-এ stock পাঠানোর audit log।"
       />
       <Card className="p-4">
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search by # or branch…"
+              placeholder="Search by # or warehouse…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9"
@@ -142,14 +142,14 @@ export default function Transfers() {
           <Button
             onClick={() => { reset(); setOpen(true); }}
             className="bg-primary text-primary-foreground hover:bg-primary/90"
-            disabled={branches.length < 2}
+            disabled={warehouses.length < 2}
           >
             <Plus className="h-4 w-4 mr-2" />New Transfer
           </Button>
         </div>
-        {branches.length < 2 && (
+        {warehouses.length < 2 && (
           <p className="text-xs text-muted-foreground mt-2">
-            Transfer তৈরি করতে কমপক্ষে ২টি branch দরকার।
+            Transfer তৈরি করতে কমপক্ষে ২টি warehouse দরকার।
           </p>
         )}
       </Card>
@@ -176,8 +176,8 @@ export default function Transfers() {
                   <TableRow key={t.id} className="cursor-pointer" onClick={() => setDetailId(t.id)}>
                     <TableCell className="font-medium">{t.transferNumber}</TableCell>
                     <TableCell>{formatDateTime(t.createdAt)}</TableCell>
-                    <TableCell>{t.fromBranchName}</TableCell>
-                    <TableCell>{t.toBranchName}</TableCell>
+                    <TableCell>{t.fromWarehouseName}</TableCell>
+                    <TableCell>{t.toWarehouseName}</TableCell>
                     <TableCell className="text-right">{t.items.length}</TableCell>
                     <TableCell className="text-right">{units}</TableCell>
                     <TableCell>{statusBadge(t.status)}</TableCell>
@@ -211,29 +211,29 @@ export default function Transfers() {
           <DialogHeader>
             <DialogTitle>New Stock Transfer</DialogTitle>
             <DialogDescription>
-              From → To branch এবং কোন product কত qty পাঠাবেন সেট করুন।
+              From → To warehouse এবং কোন product কত qty পাঠাবেন সেট করুন।
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="text-sm font-medium mb-1.5 block">From branch</label>
+                <label className="text-sm font-medium mb-1.5 block">From warehouse</label>
                 <Select value={fromId} onValueChange={setFromId}>
                   <SelectTrigger><SelectValue placeholder="Source" /></SelectTrigger>
                   <SelectContent>
-                    {branches.map((b) => (
-                      <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                    {warehouses.map((w) => (
+                      <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <label className="text-sm font-medium mb-1.5 block">To branch</label>
+                <label className="text-sm font-medium mb-1.5 block">To warehouse</label>
                 <Select value={toId} onValueChange={setToId}>
                   <SelectTrigger><SelectValue placeholder="Destination" /></SelectTrigger>
                   <SelectContent>
-                    {branches.filter((b) => b.id !== fromId).map((b) => (
-                      <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                    {warehouses.filter((w) => w.id !== fromId).map((w) => (
+                      <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -300,7 +300,7 @@ export default function Transfers() {
           <SheetHeader>
             <SheetTitle>{detail?.transferNumber}</SheetTitle>
             <SheetDescription>
-              {detail?.fromBranchName} → {detail?.toBranchName}
+              {detail?.fromWarehouseName} → {detail?.toWarehouseName}
             </SheetDescription>
           </SheetHeader>
           {detail && (

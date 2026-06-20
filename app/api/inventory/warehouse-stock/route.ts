@@ -6,7 +6,7 @@ import type { Ctx } from "@/server/lib/ctx";
 
 export const GET = apiHandler(async (ctx: Ctx, req: Request) => {
   const url = new URL(req.url);
-  const warehouseId = url.searchParams.get("warehouseId") ?? url.searchParams.get("branchId");
+  const warehouseId = url.searchParams.get("warehouseId");
   if (!warehouseId) {
     return inventoryService.snapshot(ctx);
   }

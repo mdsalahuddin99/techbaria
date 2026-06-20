@@ -1,6 +1,5 @@
 export interface PurchaseCreateInput {
   supplierId?: string;
-  branchId?: string;
   warehouseId?: string;
   invoiceNo?: string;
   status?: string;

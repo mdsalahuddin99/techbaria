@@ -19,10 +19,10 @@ export const transferService = {
 
     return prisma.$transaction(async (tx) => {
       const fromAcc = await tx.financialAccount.findFirst({
-        where: { id: input.fromAccountId, shopId: ctx.shopId },
+        where: { id: input.fromAccountId },
       });
       const toAcc = await tx.financialAccount.findFirst({
-        where: { id: input.toAccountId, shopId: ctx.shopId },
+        where: { id: input.toAccountId },
       });
 
       if (!fromAcc || !toAcc) {
@@ -48,7 +48,6 @@ export const transferService = {
       // Record transfer
       await tx.accountTransfer.create({
         data: {
-          shopId: ctx.shopId,
           fromAccountId: input.fromAccountId,
           toAccountId: input.toAccountId,
           amount: input.amount,
@@ -66,7 +65,7 @@ export const transferService = {
 
     return prisma.$transaction(async (tx) => {
       const account = await tx.financialAccount.findFirst({
-        where: { id: input.accountId, shopId: ctx.shopId },
+        where: { id: input.accountId },
       });
 
       if (!account) {
@@ -87,7 +86,6 @@ export const transferService = {
       // Since there's no manual transaction table, we record it as a system audit log
       await tx.auditLog.create({
         data: {
-          shopId: ctx.shopId,
           userId: ctx.userId,
           entity: "FinancialAccount",
           entityId: input.accountId,

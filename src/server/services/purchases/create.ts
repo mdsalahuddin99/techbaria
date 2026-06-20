@@ -11,61 +11,21 @@ import { PurchaseCreateInput } from "./types";
 
 /** Create a new purchase order. Requires MANAGER+. */
 export async function create(ctx: Ctx, input: PurchaseCreateInput) {
-  let branchId = input.branchId ?? ctx.branchId;
   let warehouseId = input.warehouseId;
 
-  // Resolve default branch and warehouse if missing
-  if (!branchId || !warehouseId) {
-    let defaultBranch = await prisma.branch.findFirst({
-      where: { shopId: ctx.shopId, isHeadOffice: true },
-    });
-    if (!defaultBranch) {
-      defaultBranch = await prisma.branch.findFirst({
-        where: { shopId: ctx.shopId },
-        orderBy: { createdAt: "asc" },
-      });
-    }
-    if (!defaultBranch) {
-      defaultBranch = await prisma.branch.create({
+  // Resolve default warehouse if missing
+  if (!warehouseId) {
+    let defaultWarehouse = await prisma.warehouse.findFirst();
+    if (!defaultWarehouse) {
+      defaultWarehouse = await prisma.warehouse.create({
         data: {
-          shopId: ctx.shopId,
-          name: "Main Branch",
+          name: "Main Showroom",
           code: "MAIN",
-          isHeadOffice: true,
           isActive: true,
-        },
+        } as any,
       });
     }
-    branchId = defaultBranch.id;
-
-    if (!warehouseId) {
-      let defaultWarehouse = await prisma.warehouse.findFirst({
-        where: { shopId: ctx.shopId, branchId: defaultBranch.id },
-      });
-      if (!defaultWarehouse) {
-        defaultWarehouse = await prisma.warehouse.create({
-          data: {
-            shopId: ctx.shopId,
-            branchId: defaultBranch.id,
-            name: "Main Warehouse",
-            code: "MAIN-WH",
-            isActive: true,
-          },
-        });
-      }
-      warehouseId = defaultWarehouse.id;
-    }
-  }
-
-  // Ensure selected warehouse belongs to the same branch
-  if (warehouseId) {
-    const selectedWarehouse = await prisma.warehouse.findUnique({
-      where: { id: warehouseId },
-      select: { branchId: true },
-    });
-    if (selectedWarehouse && selectedWarehouse.branchId !== branchId) {
-      throw new ServiceError('VALIDATION', 'Warehouse-Branch Mismatch');
-    }
+    warehouseId = defaultWarehouse.id;
   }
 
   requireRole(ctx, "MANAGER");
@@ -76,7 +36,7 @@ export async function create(ctx: Ctx, input: PurchaseCreateInput) {
 
   if (input.supplierId) {
     const supplier = await prisma.supplier.findFirst({
-      where: { id: input.supplierId, shopId: ctx.shopId },
+      where: { id: input.supplierId },
       select: { id: true },
     });
     if (!supplier) {
@@ -89,7 +49,7 @@ export async function create(ctx: Ctx, input: PurchaseCreateInput) {
     .filter((id): id is string => !!id);
   if (accountIds.length > 0) {
     const accounts = await prisma.financialAccount.findMany({
-      where: { id: { in: accountIds }, shopId: ctx.shopId },
+      where: { id: { in: accountIds } },
       select: { id: true },
     });
     if (accounts.length !== new Set(accountIds).size) {
@@ -106,10 +66,8 @@ export async function create(ctx: Ctx, input: PurchaseCreateInput) {
 
     const created = await tx.purchase.create({
       data: {
-        shopId: ctx.shopId,
-        supplierId: input.supplierId,
-        branchId: branchId,
-        warehouseId: warehouseId,
+        supplier: input.supplierId ? { connect: { id: input.supplierId } } : undefined,
+        warehouse: warehouseId ? { connect: { id: warehouseId } } : undefined,
         invoiceNo: input.invoiceNo || undefined,
         subtotal,
         discount: input.discount ?? 0,
@@ -133,19 +91,17 @@ export async function create(ctx: Ctx, input: PurchaseCreateInput) {
             warrantyMonths: item.warrantyMonths,
           })),
         },
-        ...(input.tenders?.length && {
-          tenders: {
-            create: input.tenders.map((t) => ({
-              type: mapPaymentMethodToTenderType(t.type),
-              amount: t.amount,
-              accountId: t.accountId,
-              ref: t.ref,
-            })),
-          },
-        }),
-      },
+        tenders: input.tenders?.length ? {
+          create: input.tenders.map((t) => ({
+            type: mapPaymentMethodToTenderType(t.type),
+            amount: t.amount,
+            accountId: t.accountId,
+            ref: t.ref,
+          })),
+        } : undefined,
+      } as any,
       include: { items: true, tenders: true, supplier: true },
-    });
+    }) as any;
 
     // Auto-generate PO number if not provided
     if (!input.invoiceNo) {
@@ -201,7 +157,7 @@ export async function create(ctx: Ctx, input: PurchaseCreateInput) {
       .filter((t) => t.accountId && t.amount > 0)
       .map((t) =>
         tx.financialAccount.update({
-          where: { id: t.accountId, shopId: ctx.shopId },
+          where: { id: t.accountId },
           data: { balance: { decrement: t.amount } },
         }),
       ),
@@ -214,7 +170,6 @@ export async function create(ctx: Ctx, input: PurchaseCreateInput) {
         const purchaseItem = created.items.find((pi: any) => pi.productId === item.productId);
         if (!purchaseItem) return [];
         return item.serials!.map((serial) => ({
-          shopId: ctx.shopId,
           productId: item.productId,
           serial,
           status: "IN_STOCK" as const,
@@ -224,12 +179,12 @@ export async function create(ctx: Ctx, input: PurchaseCreateInput) {
       });
 
     if (serialEntries.length > 0) {
-      await tx.serialNumber.createMany({ data: serialEntries, skipDuplicates: true });
+      await tx.serialNumber.createMany({ data: serialEntries as any, skipDuplicates: true });
 
       // For tracked products, sync Product.stock = actual IN_STOCK serial count (Fix #4)
       const trackedProductIds = [...new Set(serialEntries.map((s) => s.productId))];
       for (const productId of trackedProductIds) {
-        await inventoryService.syncStockCount(tx, ctx.shopId, warehouseId, productId);
+        await inventoryService.syncStockCount(tx, warehouseId, productId);
       }
     }
 
@@ -244,9 +199,9 @@ export async function create(ctx: Ctx, input: PurchaseCreateInput) {
     diff: { total, items: input.items.length, supplierId: input.supplierId },
   });
 
-  await cache.invalidatePurchases(ctx.shopId);
+  await cache.invalidatePurchases("default");
   const productIds = [...new Set(input.items.map(item => item.productId))];
-  await cache.invalidateSpecificProducts(ctx.shopId, productIds);
+  await cache.invalidateSpecificProducts("default", productIds);
 
   return serializePurchase(raw);
 }

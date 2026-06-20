@@ -29,20 +29,20 @@ describe("inventoryService.syncStockCount reconciliation logic", () => {
       },
     } as any;
 
-    await inventoryService.syncStockCount(tx, shopId, warehouseId, productId);
+    await inventoryService.syncStockCount(tx, warehouseId, productId);
 
     // Verify product status query
     expect(tx.product.findFirst).toHaveBeenCalledWith({
-      where: { id: productId, shopId },
+      where: { id: productId },
       select: { trackSerials: true },
     });
 
     // Verify counts are queried correctly
     expect(tx.serialNumber.count).toHaveBeenNthCalledWith(1, {
-      where: { productId, warehouseId, status: "IN_STOCK", shopId },
+      where: { productId, warehouseId, status: "IN_STOCK" },
     });
     expect(tx.serialNumber.count).toHaveBeenNthCalledWith(2, {
-      where: { productId, status: "IN_STOCK", shopId },
+      where: { productId, status: "IN_STOCK" },
     });
 
     // Verify upsert is called to correct the warehouse stock to 3
@@ -73,7 +73,7 @@ describe("inventoryService.syncStockCount reconciliation logic", () => {
       },
     } as any;
 
-    await inventoryService.syncStockCount(tx, shopId, warehouseId, productId);
+    await inventoryService.syncStockCount(tx, warehouseId, productId);
 
     expect(tx.serialNumber.count).not.toHaveBeenCalled();
   });

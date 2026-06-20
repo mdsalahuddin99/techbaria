@@ -7,7 +7,7 @@ import type { Ctx } from "@/server/lib/ctx";
 export const DELETE = apiHandler(async (ctx: Ctx, _req: Request, { params }: { params: { id: string } }) => {
   // Delete return (which is a Sale with status REFUNDED)
   const sale = await prisma.sale.findFirst({
-    where: { id: params.id, shopId: ctx.shopId, status: "REFUNDED" },
+    where: { id: params.id, status: "REFUNDED" },
   });
 
   if (!sale) {

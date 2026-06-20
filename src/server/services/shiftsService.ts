@@ -1,7 +1,7 @@
 /**
  * Cash-shift service — Prisma-backed, framework-agnostic.
  *
- * Scoped by `ctx.shopId` (multi-tenant).
+ * Scoped directly for a single tenant.
  */
 import "server-only";
 import { prisma } from "@/server/db/client";
@@ -13,7 +13,6 @@ export const shiftsService = {
   /** List all shifts for the shop. */
   async list(ctx: Ctx) {
     const shifts = await prisma.cashShift.findMany({
-      where: { shopId: ctx.shopId },
       orderBy: { openedAt: "desc" },
     });
 
@@ -33,8 +32,8 @@ export const shiftsService = {
 
   /** Get a shift by ID. */
   async getById(ctx: Ctx, id: string) {
-    const s = await prisma.cashShift.findFirst({
-      where: { id, shopId: ctx.shopId },
+    const s = await prisma.cashShift.findUnique({
+      where: { id },
     });
 
     if (!s) throw new ServiceError("NOT_FOUND", "Shift not found", 404);
@@ -56,7 +55,7 @@ export const shiftsService = {
   /** Get active (Open) shift. */
   async active(ctx: Ctx) {
     const s = await prisma.cashShift.findFirst({
-      where: { shopId: ctx.shopId, status: "Open" },
+      where: { status: "Open" },
     });
 
     if (!s) return null;
@@ -83,7 +82,7 @@ export const shiftsService = {
 
     return prisma.$transaction(async (tx) => {
       const activeShift = await tx.cashShift.findFirst({
-        where: { shopId: ctx.shopId, status: "Open" },
+        where: { status: "Open" },
       });
 
       if (activeShift) {
@@ -99,7 +98,6 @@ export const shiftsService = {
 
       const shift = await tx.cashShift.create({
         data: {
-          shopId: ctx.shopId,
           openingBalance,
           cashierId: ctx.userId,
           cashierName,
@@ -125,7 +123,7 @@ export const shiftsService = {
 
     return prisma.$transaction(async (tx) => {
       const activeShift = await tx.cashShift.findFirst({
-        where: { shopId: ctx.shopId, status: "Open" },
+        where: { status: "Open" },
       });
 
       if (!activeShift) {
@@ -135,7 +133,6 @@ export const shiftsService = {
       // Calculate expected cash and sales totals since shift opened
       const sales = await tx.sale.findMany({
         where: {
-          shopId: ctx.shopId,
           createdAt: { gte: activeShift.openedAt },
         },
         include: { tenders: true },
@@ -194,14 +191,13 @@ export const shiftsService = {
   /** Calculate expected cash in drawer for the currently open shift. */
   async expectedCash(ctx: Ctx) {
     const activeShift = await prisma.cashShift.findFirst({
-      where: { shopId: ctx.shopId, status: "Open" },
+      where: { status: "Open" },
     });
 
     if (!activeShift) return 0;
 
     const sales = await prisma.sale.findMany({
       where: {
-        shopId: ctx.shopId,
         createdAt: { gte: activeShift.openedAt },
       },
       include: { tenders: true },

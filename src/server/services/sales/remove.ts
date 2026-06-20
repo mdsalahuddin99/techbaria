@@ -14,7 +14,7 @@ export async function remove(ctx: Ctx, id: string) {
 
   const productIds = await prisma.$transaction(async (tx) => {
     const sale = await tx.sale.findFirst({
-      where: { id, shopId: ctx.shopId },
+      where: { id },
       include: { items: true },
     });
     if (!sale) throw new ServiceError("NOT_FOUND", "Sale not found", 404);
@@ -22,18 +22,41 @@ export async function remove(ctx: Ctx, id: string) {
       throw new ServiceError("CONFLICT", "Only completed sales can be deleted");
     }
 
-    // Restore product stock
+    // Fetch warehouse stock if sale was from a warehouse
+    const warehouseId = sale.warehouseId;
+    const warehouseStocks = warehouseId ? await tx.warehouseStock.findMany({
+      where: { warehouseId, productId: { in: sale.items.map(i => i.productId) } },
+    }) : [];
+    const warehouseStockMap = new Map<string, (typeof warehouseStocks)[number]>(
+      warehouseStocks.map((ws) => [ws.productId, ws]) as [string, (typeof warehouseStocks)[number]][]
+    );
+
+    // Restore product stock (global & warehouse)
     for (const item of sale.items) {
       await tx.product.update({
         where: { id: item.productId },
         data: { stock: { increment: item.qty } },
       });
+
+      if (warehouseId) {
+        const warehouseStock = warehouseStockMap.get(item.productId);
+        if (warehouseStock) {
+          await tx.warehouseStock.update({
+            where: { id: warehouseStock.id },
+            data: { qty: { increment: item.qty } },
+          });
+        } else {
+          await tx.warehouseStock.create({
+            data: { warehouseId, productId: item.productId, qty: item.qty },
+          });
+        }
+      }
     }
 
     // Release serial numbers back to IN_STOCK
     const saleItemIds = sale.items.map((i) => i.id);
     const productIds = [...new Set(sale.items.map(item => item.productId))];
-    await salesSerial.releaseSerials(tx, ctx.shopId, sale.warehouseId, saleItemIds, productIds);
+    await salesSerial.releaseSerials(tx, "default", sale.warehouseId, saleItemIds, productIds);
 
     // Reverse customer due + record ledger (delete)
     if (sale.customerId && Number(sale.due) > 0) {
@@ -54,6 +77,6 @@ export async function remove(ctx: Ctx, id: string) {
     return productIds;
   }, { timeout: 30000 });
 
-  await cache.invalidateSales(ctx.shopId);
-  await cache.invalidateSpecificProducts(ctx.shopId, productIds);
+  await cache.invalidateSales("default");
+  await cache.invalidateSpecificProducts("default", productIds);
 }

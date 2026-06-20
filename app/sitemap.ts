@@ -83,7 +83,7 @@ async function getProductPages(): Promise<MetadataRoute.Sitemap> {
     if (!shopId) return [];
 
     const products = await prisma.product.findMany({
-      where: { shopId, isPublished: true },
+      where: { isPublished: true },
       select: { slug: true, updatedAt: true },
     });
 

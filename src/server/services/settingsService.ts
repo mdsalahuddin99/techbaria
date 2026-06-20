@@ -29,12 +29,12 @@ export const settingsService = {
   /** Get settings for the current shop. Returns defaults merged with stored values. */
   async get(ctx: Ctx): Promise<ShopSettings> {
     return cache.fetch(
-      cacheKeys.shop.config(ctx.shopId),
+      cacheKeys.shop.config("default"),
       TTL.SHOP_CONFIG,
       async () => {
-        const shop = await prisma.shop.findUnique({
-          where: { id: ctx.shopId },
+        const shop = await prisma.shop.findFirst({
           select: {
+            id: true,
             name: true,
             slug: true,
             logoUrl: true,
@@ -85,6 +85,10 @@ export const settingsService = {
 
   /** Update settings for the current shop. */
   async update(ctx: Ctx, input: Partial<ShopSettings>): Promise<ShopSettings> {
+    // Fetch the single shop record to get its ID
+    const shop = await prisma.shop.findFirst({ select: { id: true } });
+    if (!shop) throw new ServiceError("NOT_FOUND", "Shop not found", 404);
+
     // Build the JSON to store: everything except shopName/logoUrl goes into settings column
     const settingsUpdate: Record<string, unknown> = {};
 
@@ -109,7 +113,7 @@ export const settingsService = {
 
     // Update the shop record
     await prisma.shop.update({
-      where: { id: ctx.shopId },
+      where: { id: shop.id },
       data: {
         // shopName and logoUrl live on the Shop table directly
         ...(input.shopName !== undefined && { name: input.shopName }),
@@ -122,7 +126,7 @@ export const settingsService = {
     });
 
     // Invalidate cache so next read is fresh
-    await cache.invalidateShopConfig(ctx.shopId);
+    await cache.invalidateShopConfig("default");
 
     // Return the merged result
     return this.get(ctx);

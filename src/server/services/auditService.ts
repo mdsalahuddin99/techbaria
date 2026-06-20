@@ -27,7 +27,7 @@ async function buildAuditLines(
   ctx: Ctx,
   categoryFilter?: string | null,
 ): Promise<AuditLine[]> {
-  const where: Record<string, unknown> = { shopId: ctx.shopId };
+  const where: Record<string, unknown> = {};
   if (categoryFilter) where.categoryId = categoryFilter;
 
   const products = await prisma.product.findMany({
@@ -58,11 +58,11 @@ async function buildAuditLines(
 
 export const auditService = {
   list(ctx: Ctx): Promise<StockAudit[]> {
-    return Promise.resolve(getAudits(ctx.shopId));
+    return Promise.resolve(getAudits("default"));
   },
 
   getById(ctx: Ctx, id: string): Promise<StockAudit | null> {
-    const audit = getAudits(ctx.shopId).find((a) => a.id === id) ?? null;
+    const audit = getAudits("default").find((a) => a.id === id) ?? null;
     return Promise.resolve(audit);
   },
 
@@ -72,9 +72,9 @@ export const auditService = {
 
     const audit: StockAudit = {
       id,
-      auditNumber: nextAuditNumber(ctx.shopId),
-      branchId: input.branchId,
-      branchName: "", // Resolve from DB if needed
+      auditNumber: nextAuditNumber("default"),
+      warehouseId: input.warehouseId,
+      warehouseName: "", // Resolve from DB if needed
       categoryFilter: input.categoryFilter ?? null,
       status: "Draft",
       lines,
@@ -83,7 +83,7 @@ export const auditService = {
       note: input.note,
     };
 
-    getAudits(ctx.shopId).push(audit);
+    getAudits("default").push(audit);
     return audit;
   },
 
@@ -94,7 +94,7 @@ export const auditService = {
     countedQty: number | null,
     note?: string,
   ): Promise<void> {
-    const audits = getAudits(ctx.shopId);
+    const audits = getAudits("default");
     const audit = audits.find((a) => a.id === auditId);
     if (!audit) throw new Error(`Audit ${auditId} not found`);
     if (audit.status !== "Draft") throw new Error("Audit is not in Draft state");
@@ -107,7 +107,7 @@ export const auditService = {
   },
 
   async complete(ctx: Ctx, auditId: string): Promise<StockAudit> {
-    const audits = getAudits(ctx.shopId);
+    const audits = getAudits("default");
     const audit = audits.find((a) => a.id === auditId);
     if (!audit) throw new Error(`Audit ${auditId} not found`);
     if (audit.status !== "Draft") throw new Error("Audit is not in Draft state");
@@ -121,9 +121,8 @@ export const auditService = {
 
         await tx.stockAdjustment.create({
           data: {
-            shopId: ctx.shopId,
             productId: line.productId,
-            branchId: audit.branchId ?? undefined,
+            warehouseId: audit.warehouseId ?? undefined,
             qtyDelta: variance,
             reason: "CORRECTION",
             notes: `Stock audit ${audit.auditNumber}: ${line.note ?? ""}`.trim(),
@@ -140,7 +139,6 @@ export const auditService = {
       // Log audit completion
       await tx.auditLog.create({
         data: {
-          shopId: ctx.shopId,
           userId: ctx.userId,
           entity: "StockAudit",
           entityId: auditId,
@@ -160,7 +158,7 @@ export const auditService = {
   },
 
   async cancel(ctx: Ctx, auditId: string): Promise<void> {
-    const audits = getAudits(ctx.shopId);
+    const audits = getAudits("default");
     const audit = audits.find((a) => a.id === auditId);
     if (!audit) throw new Error(`Audit ${auditId} not found`);
     if (audit.status !== "Draft") throw new Error("Audit is not in Draft state");
@@ -170,7 +168,7 @@ export const auditService = {
   },
 
   async remove(ctx: Ctx, auditId: string): Promise<void> {
-    const audits = getAudits(ctx.shopId);
+    const audits = getAudits("default");
     const idx = audits.findIndex((a) => a.id === auditId);
     if (idx === -1) throw new Error(`Audit ${auditId} not found`);
     audits.splice(idx, 1);

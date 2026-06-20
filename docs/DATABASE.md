@@ -23,9 +23,12 @@ Neon gives both. For self-hosted Postgres set `DATABASE_URL = DIRECT_URL` (same 
 
 ---
 
-## 2. Multi-tenancy
+### 2. Single-Tenant Architecture
 
-Every business table has `shopId String` + `@@index([shopId])`. Service layer enforces `where: { shopId: ctx.shopId }` on every query. No Postgres RLS — tenant isolation happens in the service layer (simpler, portable).
+The system has transitioned from a multi-tenant model to a clean **Single-Tenant Architecture**. 
+- The `shopId` field and indices have been completely removed from all business tables.
+- A single `Shop` record is stored in the database to hold global configuration settings, metadata, name, currency, and timezone.
+- The `Branch` model has been completely dropped. Multi-location physical inventory is managed directly using the `Warehouse` and `WarehouseStock` models under the single shop.
 
 ---
 
@@ -34,6 +37,7 @@ Every business table has `shopId String` + `@@index([shopId])`. Service layer en
 ```prisma
 generator client {
   provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
 }
 
 datasource db {
@@ -50,18 +54,21 @@ model User {
   emailVerified DateTime?
   name          String?
   image         String?
-  passwordHash  String?               // null for OAuth-only users
+  passwordHash  String? // null for OAuth-only users
   role          Role      @default(CASHIER)
-  shopId        String
-  shop          Shop      @relation(fields: [shopId], references: [id])
+  active        Boolean   @default(true)
   accounts      Account[]
   sessions      Session[]
-  sales         Sale[]
+  sales         Sale[]    @relation("SaleCashier")
+  editedSales   Sale[]    @relation("EditedBy")
+  heldSales     HeldSale[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+
+  @@index([role])
 }
 
-model Account {                       // OAuth providers
+model Account {
   id                String  @id @default(cuid())
   userId            String
   type              String
@@ -75,6 +82,7 @@ model Account {                       // OAuth providers
   id_token          String? @db.Text
   session_state     String?
   user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@unique([provider, providerAccountId])
 }
 
@@ -89,10 +97,12 @@ model VerificationToken {
   identifier String
   token      String   @unique
   expires    DateTime
+
   @@unique([identifier, token])
 }
 
 enum Role {
+  SUPER_ADMIN
   OWNER
   MANAGER
   CASHIER
@@ -109,82 +119,153 @@ model Shop {
   currency  String   @default("BDT")
   timezone  String   @default("Asia/Dhaka")
   settings  Json     @default("{}")
-  users     User[]
-  branches  Branch[]
-  products  Product[]
-  customers Customer[]
-  suppliers Supplier[]
-  sales     Sale[]
-  purchases Purchase[]
-  accounts  FinancialAccount[]
-  expenses  Expense[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
-model Branch {
-  id        String   @id @default(cuid())
-  shopId    String
-  shop      Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  name      String
-  address   String?
-  isMain    Boolean  @default(false)
-  sales     Sale[]
-  stocks    BranchStock[]
-  createdAt DateTime @default(now())
-  @@index([shopId])
+model Warehouse {
+  id               String            @id @default(cuid())
+  name             String            @unique
+  code             String?
+  isActive         Boolean           @default(true)
+  stocks           WarehouseStock[]
+  sales            Sale[]
+  purchases        Purchase[]
+  serialNumbers    SerialNumber[]
+  stockAdjustments StockAdjustment[]
+  transfersOut     Transfer[]        @relation("FromWarehouseTransfers")
+  transfersIn      Transfer[]        @relation("ToWarehouseTransfers")
+  createdAt        DateTime          @default(now())
 }
 
 // ============ CATALOG ============
 
 model Category {
-  id        String    @id @default(cuid())
-  shopId    String
+  id        String          @id @default(cuid())
   name      String
-  slug      String
+  slug      String          @unique
   parentId  String?
-  parent    Category? @relation("CategoryTree", fields: [parentId], references: [id])
-  children  Category[] @relation("CategoryTree")
+  parent    Category?       @relation("CategoryTree", fields: [parentId], references: [id])
+  children  Category[]      @relation("CategoryTree")
   products  Product[]
-  @@unique([shopId, slug])
-  @@index([shopId])
+  brands    CategoryBrand[]
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+}
+
+/// Brands under a subcategory, e.g. "Walton", "Samsung" under "TV"
+model CategoryBrand {
+  id         String               @id @default(cuid())
+  name       String
+  categoryId String
+  category   Category             @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  products   SubcategoryProduct[]
+  productItems Product[]
+  createdAt  DateTime             @default(now())
+
+  @@unique([categoryId, name])
+  @@index([categoryId])
+}
+
+/// Product names under a brand, e.g. "Smart TV 4K", "OLED 55\" under "Walton"
+model SubcategoryProduct {
+  id        String             @id @default(cuid())
+  name      String
+  brandId   String
+  brand     CategoryBrand      @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  models    SubcategoryModel[]
+  createdAt DateTime           @default(now())
+
+  @@unique([brandId, name])
+  @@index([brandId])
+}
+
+/// Models under a product name, e.g. "W110", "W120" under "Smart TV 4K"
+model SubcategoryModel {
+  id        String              @id @default(cuid())
+  name      String
+  productId String
+  product   SubcategoryProduct  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  series    SubcategorySeries[]
+  productItems Product[]
+  createdAt DateTime            @default(now())
+
+  @@unique([productId, name])
+  @@index([productId])
+}
+
+/// Series under a model, e.g. "Pro", "Ultra" under "W110"
+model SubcategorySeries {
+  id        String            @id @default(cuid())
+  name      String
+  modelId   String
+  model     SubcategoryModel  @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  productItems Product[]
+  createdAt DateTime          @default(now())
+
+  @@unique([modelId, name])
+  @@index([modelId])
 }
 
 model Product {
-  id          String        @id @default(cuid())
-  shopId      String
-  shop        Shop          @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  sku         String
-  barcode     String?
-  name        String
-  slug        String
-  description String?       @db.Text
-  categoryId  String?
-  category    Category?     @relation(fields: [categoryId], references: [id])
-  price       Decimal       @db.Decimal(12, 2)
-  cost        Decimal       @db.Decimal(12, 2) @default(0)
-  stock       Int           @default(0)         // aggregate; per-branch in BranchStock
-  reorderLevel Int          @default(0)
-  unit        String        @default("pc")
-  images      ProductImage[]
-  variants    ProductVariant[]
-  isPublished Boolean       @default(false)     // visible on storefront
-  saleItems   SaleItem[]
+  id               String            @id @default(cuid())
+  sku              String            @unique
+  barcode          String?           @unique
+  name             String
+  slug             String            @unique
+  description      String?           @db.Text
+  shortDescription String?           @db.Text
+  categoryId       String?
+  category         Category?         @relation(fields: [categoryId], references: [id])
+  price            Decimal           @db.Decimal(12, 2)
+  cost             Decimal           @default(0) @db.Decimal(12, 2)
+  stock            Int               @default(0) // aggregate
+  reorderLevel     Int               @default(0)
+  unit             String            @default("pc")
+
+  brandId           String?
+  brand             CategoryBrand?    @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  modelId           String?
+  model             SubcategoryModel? @relation(fields: [modelId], references: [id], onDelete: SetNull)
+  seriesId          String?
+  series            SubcategorySeries? @relation(fields: [seriesId], references: [id], onDelete: SetNull)
+  subcategory       String?
+  color             String?
+  storage           String?
+  ram               String?
+  condition         String?
+  emoji             String            @default("📦")
+  wholesalePrice    Decimal?          @db.Decimal(12, 2)
+  supplierId        String?
+  supplier          Supplier?         @relation(fields: [supplierId], references: [id])
+  trackSerials      Boolean           @default(true)
+  warrantyStartDate DateTime?
+  warrantyMonths    Int?
+
+  images        ProductImage[]
+  variants      ProductVariant[]
+  isPublished   Boolean          @default(false)
+  saleItems     SaleItem[]
   purchaseItems PurchaseItem[]
-  branchStocks BranchStock[]
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  @@unique([shopId, sku])
-  @@unique([shopId, slug])
-  @@index([shopId, isPublished])
+  serialNumbers SerialNumber[]
+  warehouseStocks WarehouseStock[]
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@index([isPublished])
+  @@index([categoryId])
+  @@index([supplierId])
+  @@index([brandId])
+  @@index([modelId])
+  @@index([seriesId])
 }
 
 model ProductImage {
   id        String  @id @default(cuid())
   productId String
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  url       String                                  // Cloudinary URL
-  publicId  String                                  // Cloudinary public_id
+  url       String // Cloudinary URL
+  publicId  String // Cloudinary public_id
   position  Int     @default(0)
   alt       String?
 }
@@ -193,246 +274,389 @@ model ProductVariant {
   id        String  @id @default(cuid())
   productId String
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  name      String                                  // "Red / XL"
+  name      String // "Red / XL"
   sku       String
   price     Decimal @db.Decimal(12, 2)
   stock     Int     @default(0)
   attrs     Json    @default("{}")
 }
 
-model BranchStock {
-  id        String  @id @default(cuid())
-  branchId  String
-  branch    Branch  @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  productId String
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  qty       Int     @default(0)
-  @@unique([branchId, productId])
+model WarehouseStock {
+  id          String    @id @default(cuid())
+  warehouseId String
+  warehouse   Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  qty         Int       @default(0)
+
+  @@unique([warehouseId, productId])
 }
 
 // ============ PARTNERS ============
 
 model Customer {
-  id        String   @id @default(cuid())
-  shopId    String
-  shop      Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  name      String
-  phone     String?
-  email     String?
-  address   String?
-  due       Decimal  @db.Decimal(12, 2) @default(0)
-  notes     String?
-  sales     Sale[]
-  createdAt DateTime @default(now())
-  @@index([shopId, phone])
+  id             String                @id @default(cuid())
+  name           String
+  phone          String?
+  email          String?
+  address        String?
+  due            Decimal               @default(0) @db.Decimal(12, 2)
+  balance        Decimal               @default(0) @db.Decimal(14, 2)
+  creditLimit    Decimal               @default(0) @db.Decimal(14, 2)
+  group          String?
+  referencePerson String?
+  notes          String?
+  sales          Sale[]
+  heldSales      HeldSale[]
+  transactions   CustomerTransaction[]
+  createdAt      DateTime              @default(now())
+
+  @@index([phone])
+}
+
+enum TransactionType {
+  SALE
+  PAYMENT
+  REFUND
+  ADJUSTMENT
+  WRITE_OFF
+}
+
+model CustomerTransaction {
+  id            String            @id @default(cuid())
+  customerId    String
+  customer      Customer          @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  type          TransactionType
+  amount        Decimal           @db.Decimal(14, 2)
+  balanceBefore Decimal           @db.Decimal(14, 2)
+  balanceAfter  Decimal           @db.Decimal(14, 2)
+  saleId        String?
+  sale          Sale?             @relation(fields: [saleId], references: [id])
+  accountId     String?
+  account       FinancialAccount? @relation(fields: [accountId], references: [id])
+  reference     String?
+  notes         String?
+  createdById   String?
+  createdAt     DateTime          @default(now())
+
+  @@index([customerId, createdAt])
+  @@index([createdAt])
+  @@index([type, createdAt])
 }
 
 model Supplier {
-  id        String   @id @default(cuid())
-  shopId    String
-  shop      Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  name      String
-  phone     String?
-  email     String?
-  payable   Decimal  @db.Decimal(12, 2) @default(0)
-  purchases Purchase[]
-  payments  SupplierPayment[]
-  createdAt DateTime @default(now())
-  @@index([shopId])
+  id            String            @id @default(cuid())
+  name          String
+  contactPerson String?
+  phone         String?
+  email         String?
+  address       String?
+  notes         String?
+  payable       Decimal           @default(0) @db.Decimal(12, 2)
+  purchases     Purchase[]
+  products      Product[]
+  payments      SupplierPayment[]
+  createdAt     DateTime          @default(now())
 }
 
 // ============ SALES ============
 
-enum SaleChannel { POS STOREFRONT }
-enum SaleStatus  { COMPLETED HELD VOIDED REFUNDED }
+enum SaleChannel {
+  POS
+  STOREFRONT
+}
+
+enum SaleStatus {
+  COMPLETED
+  HELD
+  VOIDED
+  REFUNDED
+}
 
 model Sale {
-  id          String       @id @default(cuid())
-  shopId      String
-  shop        Shop         @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  branchId    String?
-  branch      Branch?      @relation(fields: [branchId], references: [id])
+  id          String                @id @default(cuid())
+  warehouseId String?
+  warehouse   Warehouse?            @relation(fields: [warehouseId], references: [id])
   userId      String?
-  user        User?        @relation(fields: [userId], references: [id])
+  user        User?                 @relation("SaleCashier", fields: [userId], references: [id])
   customerId  String?
-  customer    Customer?    @relation(fields: [customerId], references: [id])
-  channel     SaleChannel  @default(POS)
-  status      SaleStatus   @default(COMPLETED)
-  subtotal    Decimal      @db.Decimal(12, 2)
-  discount    Decimal      @db.Decimal(12, 2) @default(0)
-  total       Decimal      @db.Decimal(12, 2)
-  paid        Decimal      @db.Decimal(12, 2) @default(0)
-  due         Decimal      @db.Decimal(12, 2) @default(0)
+  customer    Customer?             @relation(fields: [customerId], references: [id])
+  channel     SaleChannel           @default(POS)
+  status      SaleStatus            @default(COMPLETED)
+  subtotal    Decimal               @db.Decimal(12, 2)
+  discount    Decimal               @default(0) @db.Decimal(12, 2)
+  total       Decimal               @db.Decimal(12, 2)
+  paid        Decimal               @default(0) @db.Decimal(12, 2)
+  due         Decimal               @default(0) @db.Decimal(12, 2)
   notes       String?
+  editedById  String?
+  editedAt    DateTime?
+  editedBy    User?                 @relation("EditedBy", fields: [editedById], references: [id])
   items       SaleItem[]
   tenders     SaleTender[]
-  data        Json         @default("{}")        // misc: shipping addr, tracking, etc.
-  createdAt   DateTime     @default(now())
-  @@index([shopId, channel, createdAt])
-  @@index([shopId, customerId])
+  data        Json                  @default("{}")
+  customerTransactions CustomerTransaction[]
+  createdAt   DateTime              @default(now())
+
+  @@index([channel, createdAt])
+  @@index([customerId])
+  @@index([status])
+  @@index([userId])
+  @@index([status, createdAt])
 }
 
 model SaleItem {
-  id        String  @id @default(cuid())
-  saleId    String
-  sale      Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
-  productId String
-  product   Product @relation(fields: [productId], references: [id])
-  name      String                              // snapshot
-  qty       Int
-  price     Decimal @db.Decimal(12, 2)          // snapshot
-  cost      Decimal @db.Decimal(12, 2)          // snapshot for COGS
-  discount  Decimal @db.Decimal(12, 2) @default(0)
+  id             String         @id @default(cuid())
+  saleId         String
+  sale           Sale           @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  productId      String
+  product        Product        @relation(fields: [productId], references: [id])
+  name           String
+  qty            Int
+  price          Decimal        @db.Decimal(12, 2)
+  cost           Decimal        @db.Decimal(12, 2)
+  discount       Decimal        @default(0) @db.Decimal(12, 2)
+  warrantyMonths Int?
+  serialNumbers  SerialNumber[]
+
+  @@index([productId])
 }
 
-enum TenderType { CASH BANK BKASH NAGAD ROCKET CARD DUE OTHER }
+enum TenderType {
+  CASH
+  BANK
+  BKASH
+  NAGAD
+  ROCKET
+  CARD
+  DUE
+  WALLET
+  OTHER
+}
 
 model SaleTender {
-  id        String     @id @default(cuid())
+  id        String            @id @default(cuid())
   saleId    String
-  sale      Sale       @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  sale              Sale              @relation(fields: [saleId], references: [id], onDelete: Cascade)
   type      TenderType
   accountId String?
   account   FinancialAccount? @relation(fields: [accountId], references: [id])
-  amount    Decimal    @db.Decimal(12, 2)
-  ref       String?                                // txn id / cheque no
+  amount    Decimal           @db.Decimal(12, 2)
+  ref       String?
+}
+
+model HeldSale {
+  id           String    @id @default(cuid())
+  userId       String?
+  user         User?     @relation(fields: [userId], references: [id])
+  customerId   String?
+  customer     Customer? @relation(fields: [customerId], references: [id])
+  customerName String?
+  cart         Json
+  discount     Decimal   @default(0) @db.Decimal(12, 2)
+  heldAt       DateTime  @default(now())
+
+  @@index([userId])
 }
 
 // ============ PURCHASES ============
 
 model Purchase {
-  id         String         @id @default(cuid())
-  shopId     String
-  shop       Shop           @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  supplierId String?
-  supplier   Supplier?      @relation(fields: [supplierId], references: [id])
-  invoiceNo  String?
-  subtotal   Decimal        @db.Decimal(12, 2)
-  discount   Decimal        @db.Decimal(12, 2) @default(0)
-  total      Decimal        @db.Decimal(12, 2)
-  paid       Decimal        @db.Decimal(12, 2) @default(0)
-  due        Decimal        @db.Decimal(12, 2) @default(0)
-  items      PurchaseItem[]
-  tenders    PurchaseTender[]
-  notes      String?
-  createdAt  DateTime       @default(now())
-  @@index([shopId, createdAt])
+  id          String           @id @default(cuid())
+  supplierId  String?
+  supplier    Supplier?        @relation(fields: [supplierId], references: [id])
+  warehouseId String?
+  warehouse   Warehouse?       @relation(fields: [warehouseId], references: [id])
+  invoiceNo   String?
+  subtotal    Decimal          @db.Decimal(12, 2)
+  discount    Decimal          @default(0) @db.Decimal(12, 2)
+  total       Decimal          @db.Decimal(12, 2)
+  paid        Decimal          @default(0) @db.Decimal(12, 2)
+  due         Decimal          @default(0) @db.Decimal(12, 2)
+  items       PurchaseItem[]
+  tenders     PurchaseTender[]
+  notes       String?
+  createdAt   DateTime         @default(now())
+
+  @@index([createdAt])
+  @@index([supplierId])
 }
 
 model PurchaseItem {
-  id         String   @id @default(cuid())
-  purchaseId String
-  purchase   Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
-  productId  String
-  product    Product  @relation(fields: [productId], references: [id])
-  qty        Int
-  cost       Decimal  @db.Decimal(12, 2)
+  id                String         @id @default(cuid())
+  purchaseId        String
+  purchase          Purchase       @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  productId         String
+  product           Product        @relation(fields: [productId], references: [id])
+  qty               Int
+  cost              Decimal        @db.Decimal(12, 2)
+  extraCost         Decimal?       @db.Decimal(12, 2)
+  name              String
+  salePrice         Decimal?       @db.Decimal(12, 2)
+  serials           String[]
+  warrantyStartDate DateTime?
+  warrantyMonths    Int?
+  serialNumbers     SerialNumber[]
+
+  @@index([productId])
 }
 
 model PurchaseTender {
-  id         String     @id @default(cuid())
+  id         String            @id @default(cuid())
   purchaseId String
-  purchase   Purchase   @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  purchase   Purchase          @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
   type       TenderType
   accountId  String?
   account    FinancialAccount? @relation(fields: [accountId], references: [id])
-  amount     Decimal    @db.Decimal(12, 2)
+  amount     Decimal           @db.Decimal(12, 2)
   ref        String?
 }
 
 model SupplierPayment {
-  id         String   @id @default(cuid())
+  id         String            @id @default(cuid())
   supplierId String
-  supplier   Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
-  amount     Decimal  @db.Decimal(12, 2)
+  supplier   Supplier          @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  amount     Decimal           @db.Decimal(12, 2)
   accountId  String?
   account    FinancialAccount? @relation(fields: [accountId], references: [id])
-  date       DateTime @default(now())
+  date       DateTime          @default(now())
   notes      String?
+}
+
+// ============ SERIAL / IMEI TRACKING ============
+
+enum SerialStatus {
+  IN_STOCK
+  SOLD
+  EXPIRED
+  DAMAGED
+}
+
+model SerialNumber {
+  id                 String        @id @default(cuid())
+  productId          String
+  product            Product       @relation(fields: [productId], references: [id])
+  serial             String        @unique
+  status             SerialStatus  @default(IN_STOCK)
+  saleItemId         String?
+  saleItem           SaleItem?     @relation(fields: [saleItemId], references: [id])
+  purchaseItemId     String?
+  purchaseItem       PurchaseItem? @relation(fields: [purchaseItemId], references: [id])
+  soldAt             DateTime?
+  warrantyExpiryDate DateTime?
+  warehouseId        String?
+  warehouse          Warehouse?    @relation(fields: [warehouseId], references: [id], onDelete: SetNull)
+  createdAt          DateTime      @default(now())
+
+  @@index([productId, status])
+  @@index([status, createdAt])
+  @@index([saleItemId])
+  @@index([warehouseId])
 }
 
 // ============ FINANCE ============
 
-enum AccountType { CASH BANK MOBILE_BANKING WALLET OTHER }
+enum AccountType {
+  CASH
+  BANK
+  MOBILE_BANKING
+  WALLET
+  OTHER
+}
 
 model FinancialAccount {
-  id           String      @id @default(cuid())
-  shopId       String
-  shop         Shop        @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  name         String
-  type         AccountType
-  parentId     String?
-  parent       FinancialAccount?  @relation("AccountTree", fields: [parentId], references: [id])
-  children     FinancialAccount[] @relation("AccountTree")
-  openingBalance Decimal   @db.Decimal(14, 2) @default(0)
-  balance      Decimal     @db.Decimal(14, 2) @default(0)
-  saleTenders     SaleTender[]
-  purchaseTenders PurchaseTender[]
+  id               String             @id @default(cuid())
+  name             String
+  type             AccountType
+  parentId         String?
+  parent           FinancialAccount?  @relation("AccountTree", fields: [parentId], references: [id])
+  children         FinancialAccount[] @relation("AccountTree")
+  openingBalance   Decimal            @default(0) @db.Decimal(14, 2)
+  balance          Decimal            @default(0) @db.Decimal(14, 2)
+  saleTenders      SaleTender[]
+  purchaseTenders  PurchaseTender[]
   supplierPayments SupplierPayment[]
-  transfersIn  AccountTransfer[] @relation("ToAccount")
-  transfersOut AccountTransfer[] @relation("FromAccount")
-  expenses     Expense[]
-  archived     Boolean     @default(false)
-  createdAt    DateTime    @default(now())
-  @@index([shopId, type])
+  transfersIn      AccountTransfer[]  @relation("ToAccount")
+  transfersOut     AccountTransfer[]  @relation("FromAccount")
+  expenses         Expense[]
+  customerTransactions CustomerTransaction[]
+  archived         Boolean            @default(false)
+  createdAt        DateTime           @default(now())
+
+  @@index([type])
 }
 
 model AccountTransfer {
-  id           String   @id @default(cuid())
-  shopId       String
+  id            String           @id @default(cuid())
   fromAccountId String
-  fromAccount  FinancialAccount @relation("FromAccount", fields: [fromAccountId], references: [id])
-  toAccountId  String
-  toAccount    FinancialAccount @relation("ToAccount", fields: [toAccountId], references: [id])
-  amount       Decimal  @db.Decimal(14, 2)
-  notes        String?
-  date         DateTime @default(now())
+  fromAccount   FinancialAccount @relation("FromAccount", fields: [fromAccountId], references: [id])
+  toAccountId   String
+  toAccount     FinancialAccount @relation("ToAccount", fields: [toAccountId], references: [id])
+  amount        Decimal          @db.Decimal(14, 2)
+  notes         String?
+  date          DateTime         @default(now())
 }
 
 model Expense {
-  id         String   @id @default(cuid())
-  shopId     String
-  shop       Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  category   String
-  amount     Decimal  @db.Decimal(12, 2)
-  accountId  String?
-  account    FinancialAccount? @relation(fields: [accountId], references: [id])
-  date       DateTime @default(now())
-  notes      String?
-  @@index([shopId, date])
+  id        String            @id @default(cuid())
+  category  String
+  amount    Decimal           @db.Decimal(12, 2)
+  accountId String?
+  account   FinancialAccount? @relation(fields: [accountId], references: [id])
+  date      DateTime          @default(now())
+  notes     String?
+
+  @@index([date])
 }
 
 // ============ INVENTORY ============
 
-enum AdjustmentReason { DAMAGE LOSS THEFT CORRECTION RECEIVED OTHER }
+enum AdjustmentReason {
+  DAMAGE
+  LOSS
+  THEFT
+  CORRECTION
+  RECEIVED
+  OTHER
+}
 
 model StockAdjustment {
-  id        String           @id @default(cuid())
-  shopId    String
-  productId String
-  branchId  String?
-  qtyDelta  Int                                  // +/-
-  reason    AdjustmentReason
-  notes     String?
-  userId    String?
-  createdAt DateTime         @default(now())
-  @@index([shopId, productId])
+  id          String           @id @default(cuid())
+  productId   String
+  warehouseId String?
+  warehouse   Warehouse?       @relation(fields: [warehouseId], references: [id], onDelete: SetNull)
+  qtyDelta    Int
+  reason      AdjustmentReason
+  notes       String?
+  userId      String?
+  createdAt   DateTime         @default(now())
+
+  @@index([productId])
+  @@index([warehouseId])
 }
 
 model Transfer {
-  id           String         @id @default(cuid())
-  shopId       String
-  fromBranchId String
-  toBranchId   String
-  status       TransferStatus @default(PENDING)
-  items        TransferItem[]
-  notes        String?
-  createdAt    DateTime       @default(now())
-  completedAt  DateTime?
-  @@index([shopId])
+  id              String         @id @default(cuid())
+  fromWarehouseId String?
+  fromWarehouse   Warehouse?     @relation("FromWarehouseTransfers", fields: [fromWarehouseId], references: [id], onDelete: SetNull)
+  toWarehouseId   String?
+  toWarehouse     Warehouse?     @relation("ToWarehouseTransfers", fields: [toWarehouseId], references: [id], onDelete: SetNull)
+  status          TransferStatus @default(PENDING)
+  items           TransferItem[]
+  notes           String?
+  createdAt       DateTime       @default(now())
+  completedAt     DateTime?
+
+  @@index([fromWarehouseId])
+  @@index([toWarehouseId])
 }
 
-enum TransferStatus { PENDING IN_TRANSIT COMPLETED CANCELLED }
+enum TransferStatus {
+  PENDING
+  IN_TRANSIT
+  COMPLETED
+  CANCELLED
+}
 
 model TransferItem {
   id         String   @id @default(cuid())
@@ -446,15 +670,41 @@ model TransferItem {
 
 model AuditLog {
   id        String   @id @default(cuid())
-  shopId    String
   userId    String?
-  entity    String                                // "Product", "Sale", etc.
+  entity    String
   entityId  String
-  action    String                                // "CREATE" | "UPDATE" | "DELETE"
+  action    String
   diff      Json?
   createdAt DateTime @default(now())
-  @@index([shopId, entity, entityId])
-  @@index([shopId, createdAt])
+
+  @@index([entity, entityId])
+  @@index([createdAt])
+  @@index([entity, action, createdAt])
+  @@index([userId])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  type      String
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+}
+
+model CashShift {
+  id             String    @id @default(cuid())
+  openedAt       DateTime  @default(now())
+  closedAt       DateTime?
+  openingBalance Decimal   @db.Decimal(12, 2)
+  closingCount   Decimal?  @db.Decimal(12, 2)
+  expectedCash   Decimal?  @db.Decimal(12, 2)
+  overShort      Decimal?  @db.Decimal(12, 2)
+  salesByMethod  Json?
+  cashierId      String
+  cashierName    String
+  status         String    @default("Open")
 }
 ```
 
@@ -470,25 +720,24 @@ import bcrypt from "bcryptjs";
 const prisma = new PrismaClient();
 
 async function main() {
+  // Create default configuration shop (single-tenant metadata)
   const shop = await prisma.shop.create({
-    data: { name: "Demo Shop", slug: "demo", currency: "BDT" },
+    data: { id: "cmq7kgo6x0000l504t8gkk8yp", name: "Demo Shop", slug: "demo", currency: "BDT" },
   });
+
+  // Create default warehouse (Main Showroom)
+  await prisma.warehouse.create({
+    data: { name: "Main Showroom", code: "MSR", isActive: true }
+  });
+
   await prisma.user.create({
     data: {
       email: "owner@demo.com",
       passwordHash: await bcrypt.hash("password123", 10),
       role: "OWNER",
-      shopId: shop.id,
     },
   });
-  // ...port categories, products, customers, suppliers from src/shared/lib/mock.ts
 }
 
 main().finally(() => prisma.$disconnect());
-```
-
-Add to `package.json`:
-
-```json
-"prisma": { "seed": "tsx prisma/seed.ts" }
-```
+`````

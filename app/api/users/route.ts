@@ -24,7 +24,7 @@ const updateUserSchema = z.object({
 
 export const GET = apiHandler(async (ctx: Ctx) => {
   const users = await prisma.user.findMany({
-    where: { shopId: ctx.shopId, role: { not: "VIEWER" } },
+    where: { role: { not: "VIEWER" } },
     select: {
       id: true,
       name: true,
@@ -63,7 +63,6 @@ export const POST = apiHandler(async (ctx: Ctx, req: Request) => {
       email: parsed.email,
       passwordHash,
       role: parsed.role,
-      shopId: ctx.shopId,
     },
     select: {
       id: true,
@@ -89,7 +88,7 @@ export const PATCH = apiHandler(async (ctx: Ctx, req: Request) => {
   const parsed = updateUserSchema.parse(body);
 
   const result = await prisma.user.updateMany({
-    where: { id: userId, shopId: ctx.shopId },
+    where: { id: userId },
     data: parsed,
   });
 
@@ -108,7 +107,7 @@ export const DELETE = apiHandler(async (ctx: Ctx, req: Request) => {
   if (!userId) throw new (await import("@/server/lib/errors")).ServiceError("BAD_REQUEST", "User ID is required", 400);
 
   const result = await prisma.user.updateMany({
-    where: { id: userId, shopId: ctx.shopId },
+    where: { id: userId },
     data: { active: false },
   });
 
