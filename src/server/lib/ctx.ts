@@ -12,8 +12,6 @@ export interface Ctx {
   userId: string;
   /** User's role — determines permission level */
   role: "OWNER" | "MANAGER" | "CASHIER" | "VIEWER";
-  /** Current shop's ID */
-  shopId: string;
 }
 
 /**
@@ -23,7 +21,6 @@ export interface Ctx {
 export function buildCtx(sessionUser: {
   id?: string | null;
   role?: string | null;
-  shopId?: string | null;
 }): Ctx {
   if (!sessionUser.id || !sessionUser.role) {
     throw new Error("Incomplete session — cannot build Ctx");
@@ -31,6 +28,5 @@ export function buildCtx(sessionUser: {
   return {
     userId: sessionUser.id,
     role: sessionUser.role as Ctx["role"],
-    shopId: sessionUser.shopId ?? process.env.DEFAULT_SHOP_ID ?? "cmq7kgo6x0000l504t8gkk8yp",
   };
 }

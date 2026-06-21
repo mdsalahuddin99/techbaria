@@ -1,10 +1,15 @@
 /**
- * Typed fetch wrapper for the suppliers API.
+ * Typed client using Next.js Server Actions.
  */
-import { apiFetch } from "./fetch";
 import type { Supplier } from "@/features/suppliers/types";
-
-const BASE = "/api/suppliers";
+import { 
+  listSuppliersAction, 
+  getSupplierByIdAction, 
+  createSupplierAction, 
+  updateSupplierAction, 
+  deleteSupplierAction,
+  getSupplierProfileAction
+} from "@/server/actions/suppliers";
 
 export interface PaginatedResponse<T> {
   items: T[];
@@ -14,22 +19,26 @@ export interface PaginatedResponse<T> {
 
 export const suppliersApi = {
   list(): Promise<PaginatedResponse<Supplier>> {
-    return apiFetch<PaginatedResponse<Supplier>>(BASE);
+    return listSuppliersAction() as unknown as Promise<PaginatedResponse<Supplier>>;
   },
 
   getById(id: string): Promise<Supplier | null> {
-    return apiFetch<Supplier | null>(`${BASE}/${id}`);
+    return getSupplierByIdAction(id) as unknown as Promise<Supplier | null>;
   },
 
   create(data: Omit<Supplier, "id" | "createdAt" | "payableBalance" | "totalPurchased">): Promise<Supplier> {
-    return apiFetch<Supplier>(BASE, { method: "POST", body: JSON.stringify(data) });
+    return createSupplierAction(data as any) as unknown as Promise<Supplier>;
   },
 
   update(id: string, patch: Partial<Supplier>): Promise<Supplier | null> {
-    return apiFetch<Supplier | null>(`${BASE}/${id}`, { method: "PATCH", body: JSON.stringify(patch) });
+    return updateSupplierAction(id, patch as any) as unknown as Promise<Supplier | null>;
   },
 
   remove(id: string): Promise<void> {
-    return apiFetch<void>(`${BASE}/${id}`, { method: "DELETE" });
+    return deleteSupplierAction(id).then(() => undefined);
+  },
+
+  getProfile(id: string): Promise<any> {
+    return getSupplierProfileAction(id);
   },
 };

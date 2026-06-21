@@ -35,7 +35,7 @@ describe("customers hooks + cache bridge", () => {
       );
     });
     await waitFor(() => {
-      const cached = qc.getQueryData(customerKeys.list())?.items as Array<{ name: string }>;
+      const cached = (qc.getQueryData(customerKeys.list()) as any)?.items as Array<{ name: string }>;
       expect(cached?.some((c) => c.name === "Bridge Test")).toBe(true);
     });
   });

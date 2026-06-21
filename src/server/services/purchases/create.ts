@@ -22,7 +22,7 @@ export async function create(ctx: Ctx, input: PurchaseCreateInput) {
           name: "Main Showroom",
           code: "MAIN",
           isActive: true,
-        } as any,
+        },
       });
     }
     warehouseId = defaultWarehouse.id;
@@ -99,9 +99,9 @@ export async function create(ctx: Ctx, input: PurchaseCreateInput) {
             ref: t.ref,
           })),
         } : undefined,
-      } as any,
+      },
       include: { items: true, tenders: true, supplier: true },
-    }) as any;
+    });
 
     // Auto-generate PO number if not provided
     if (!input.invoiceNo) {
@@ -167,7 +167,7 @@ export async function create(ctx: Ctx, input: PurchaseCreateInput) {
     const serialEntries = input.items
       .filter((item) => item.serials?.length)
       .flatMap((item) => {
-        const purchaseItem = created.items.find((pi: any) => pi.productId === item.productId);
+        const purchaseItem = created.items.find((pi) => pi.productId === item.productId);
         if (!purchaseItem) return [];
         return item.serials!.map((serial) => ({
           productId: item.productId,
@@ -179,7 +179,7 @@ export async function create(ctx: Ctx, input: PurchaseCreateInput) {
       });
 
     if (serialEntries.length > 0) {
-      await tx.serialNumber.createMany({ data: serialEntries as any, skipDuplicates: true });
+      await tx.serialNumber.createMany({ data: serialEntries, skipDuplicates: true });
 
       // For tracked products, sync Product.stock = actual IN_STOCK serial count (Fix #4)
       const trackedProductIds = [...new Set(serialEntries.map((s) => s.productId))];

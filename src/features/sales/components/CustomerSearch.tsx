@@ -30,12 +30,55 @@ export function CustomerSearch({
 }: CustomerSearchProps) {
   const [open, setOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const beforeIdsRef = useRef<Set<string>>(new Set());
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const selected = useMemo(
     () => customers.find((c) => c.id === selectedCustomerId) ?? null,
     [customers, selectedCustomerId],
   );
+
+  const filteredCustomers = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return customers.slice(0, 50);
+
+    const qDigits = q.replace(/\D/g, "");
+
+    return customers
+      .filter((c) => {
+        // 1. Name Match
+        if (c.name.toLowerCase().includes(q)) return true;
+
+        // 2. Phone Match (Robust digit-only comparison + partial lookup)
+        if (c.phone) {
+          const cDigits = c.phone.replace(/\D/g, "");
+          if (qDigits && (cDigits.includes(qDigits) || qDigits.includes(cDigits))) {
+            return true;
+          }
+          if (c.phone.toLowerCase().includes(q)) return true;
+        }
+
+        // 3. Address Match
+        if (c.address && c.address.toLowerCase().includes(q)) return true;
+
+        // 4. Email Match
+        if (c.email && c.email.toLowerCase().includes(q)) return true;
+
+        // 5. Invoice Number Match
+        if (c.sales && c.sales.some((s) => s.invoiceNo.toLowerCase().includes(q))) return true;
+
+        return false;
+      })
+      .slice(0, 50);
+  }, [customers, searchQuery]);
+
+  const handleOpenChange = (isOpen: boolean) => {
+    setOpen(isOpen);
+    if (!isOpen) {
+      setSearchQuery("");
+    }
+  };
 
   const handleAddOpenChange = (isOpen: boolean) => {
     if (isOpen) {
@@ -61,31 +104,42 @@ export function CustomerSearch({
   return (
     <>
       <div className="flex items-center gap-2">
-        <Popover open={open} onOpenChange={setOpen}>
+        <Popover open={open} onOpenChange={handleOpenChange}>
           <PopoverTrigger asChild>
-            <Button
-              type="button"
-              variant="outline"
-              role="combobox"
-              aria-expanded={open}
-              className="flex-1 min-w-0 justify-between h-11 md:h-10 font-normal"
-            >
-              <span className="truncate text-left">
-                {selected
-                  ? `${selected.name}${selected.phone && selected.phone !== "—" ? ` · ${selected.phone}` : ""}`
-                  : "Walk-in Customer"}
-              </span>
-              {selected && balanceBadge(selected)}
-              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-            </Button>
+            <div className="flex-1 relative">
+              <input
+                ref={inputRef}
+                id="pos-customer-search-btn"
+                type="text"
+                className="w-full h-10 px-3 py-2 text-sm bg-background border border-input rounded-[4px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+                placeholder="Search customer by name/phone..."
+                value={
+                  open
+                    ? searchQuery
+                    : selected
+                    ? `${selected.name}${selected.phone && selected.phone !== "—" ? ` · ${selected.phone}` : ""}`
+                    : "Walk-in Customer"
+                }
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setOpen(true);
+                }}
+                onFocus={() => {
+                  setOpen(true);
+                  setSearchQuery("");
+                }}
+              />
+            </div>
           </PopoverTrigger>
           <PopoverContent
             className="p-0 w-[--radix-popover-trigger-width] max-w-[calc(100vw-2rem)]"
             align="start"
+            onOpenAutoFocus={(e) => {
+              e.preventDefault();
+            }}
           >
-            <Command>
-              <CommandInput placeholder="Search customer..." />
-              <CommandList className="max-h-[60vh]">
+            <Command shouldFilter={false}>
+              <CommandList className="max-h-[50vh]">
                 <CommandEmpty>No customer found.</CommandEmpty>
                 <CommandGroup>
                   <CommandItem
@@ -94,6 +148,7 @@ export function CustomerSearch({
                       onChange("");
                       setOpen(false);
                     }}
+                    className="cursor-pointer"
                   >
                     <Check
                       className={cn(
@@ -105,7 +160,7 @@ export function CustomerSearch({
                       Walk-in Customer
                     </span>
                   </CommandItem>
-                  {customers.map((c) => (
+                  {filteredCustomers.map((c) => (
                     <CommandItem
                       key={c.id}
                       value={`${c.name} ${c.phone} ${c.email ?? ""}`}
@@ -113,6 +168,7 @@ export function CustomerSearch({
                         onChange(c.id);
                         setOpen(false);
                       }}
+                      className="cursor-pointer"
                     >
                       <Check
                         className={cn(
@@ -138,7 +194,7 @@ export function CustomerSearch({
           type="button"
           variant="outline"
           size="icon"
-          className="shrink-0 h-11 w-11 md:h-10 md:w-10"
+          className="shrink-0 h-10 w-10"
           onClick={() => handleAddOpenChange(true)}
           title="Add new customer"
           aria-label="Add new customer"

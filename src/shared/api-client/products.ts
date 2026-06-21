@@ -1,12 +1,17 @@
 /**
- * Typed fetch wrapper for the products API.
+ * Typed client using Next.js Server Actions.
  * Matches the same API surface as the old src/services/productsService.ts
  * so that existing feature hooks (importing from @/services) work unchanged.
  */
-import { apiFetch } from "./fetch";
 import type { Product } from "@/features/products/types";
-
-const BASE = "/api/products";
+import { 
+  listProductsAction, 
+  getProductByIdAction, 
+  createProductAction, 
+  updateProductAction, 
+  deleteProductAction,
+  getProductDistinctValuesAction
+} from "@/server/actions/products";
 
 export interface PaginatedResponse<T> {
   items: T[];
@@ -17,37 +22,35 @@ export interface PaginatedResponse<T> {
 export const productsApi = {
   /** List products with optional filters */
   list(filter?: { search?: string; categoryId?: string; isPublished?: boolean; lowStock?: boolean }): Promise<PaginatedResponse<Product>> {
-    const params = new URLSearchParams();
-    if (filter?.search) params.set("search", filter.search);
-    if (filter?.categoryId) params.set("categoryId", filter.categoryId);
-    if (filter?.isPublished !== undefined) params.set("isPublished", String(filter.isPublished));
-    if (filter?.lowStock) params.set("lowStock", "true");
-    const qs = params.toString();
-    return apiFetch<PaginatedResponse<Product>>(`${BASE}${qs ? `?${qs}` : ""}`);
+    return listProductsAction(filter) as unknown as Promise<PaginatedResponse<Product>>;
   },
 
   getById(id: string): Promise<Product | null> {
-    return apiFetch<Product | null>(`${BASE}/${id}`);
+    return getProductByIdAction(id) as unknown as Promise<Product | null>;
   },
 
   create(data: any): Promise<Product> {
-    return apiFetch<Product>(BASE, { method: "POST", body: JSON.stringify(data) });
+    return createProductAction(data) as unknown as Promise<Product>;
   },
 
   update(id: string, patch: Partial<Product>): Promise<Product | null> {
-    return apiFetch<Product | null>(`${BASE}/${id}`, { method: "PATCH", body: JSON.stringify(patch) });
+    return updateProductAction(id, patch) as unknown as Promise<Product | null>;
   },
 
   remove(id: string): Promise<void> {
-    return apiFetch<void>(`${BASE}/${id}`, { method: "DELETE" });
+    return deleteProductAction(id).then(() => undefined);
   },
 
   bulkUpdate(ids: string[], patch: Partial<Product>): Promise<void> {
-    // Future: POST /api/products/bulk when implemented
+    // Sequentially / in parallel invoke server action
     return Promise.all(ids.map((id) => this.update(id, patch))).then(() => undefined);
   },
 
   bulkRemove(ids: string[]): Promise<void> {
     return Promise.all(ids.map((id) => this.remove(id))).then(() => undefined);
+  },
+
+  getDistinctValues(field: string, parent?: string): Promise<string[]> {
+    return getProductDistinctValuesAction(field, parent);
   },
 };

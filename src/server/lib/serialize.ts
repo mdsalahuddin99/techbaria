@@ -334,4 +334,28 @@ export function serializeAccount(raw: PrismaAccount): AccountDTO {
   };
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// CUSTOMER
+// ═══════════════════════════════════════════════════════════════════════════
+
+type PrismaCustomer = Prisma.CustomerGetPayload<object>;
+
+export function serializeCustomer(raw: PrismaCustomer): any {
+  if (!raw) return null;
+  return {
+    id: raw.id,
+    name: raw.name,
+    phone: raw.phone ?? "",
+    email: raw.email ?? undefined,
+    address: raw.address ?? undefined,
+    due: toNumber(raw.due),
+    balance: toNumber(raw.balance),
+    creditLimit: toNumber(raw.creditLimit),
+    group: raw.group ?? undefined,
+    referencePerson: raw.referencePerson ?? undefined,
+    notes: raw.notes ?? undefined,
+    createdAt: raw.createdAt.toISOString(),
+  };
+}
+
 export { encodeNotes, decodeNotes };

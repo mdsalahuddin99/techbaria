@@ -25,7 +25,7 @@ function freshClient() {
 
 describe("products hooks + cache bridge", () => {
   beforeEach(() => {
-    usePosStore.setState({ cart: [], discount: 0, selectedCustomerId: null, activeBranchId: null });
+    usePosStore.setState({ cart: [], discount: 0, selectedCustomerId: null });
     vi.mocked(productsService.list).mockResolvedValue({ items: [...mockProducts] } as any);
     vi.mocked(productsService.getById).mockImplementation(async (id: string) => {
       const found = mockProducts.find((p) => p.id === id);

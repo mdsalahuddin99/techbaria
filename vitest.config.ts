@@ -13,5 +13,10 @@ export default defineConfig({
     globals: true,
     include: ["src/**/*.test.{ts,tsx}"],
     exclude: ["node_modules", "dist", ".idea", ".git", ".cache", "e2e/**/*", ".next/**/*"],
+    server: {
+      deps: {
+        inline: ["next"],
+      },
+    },
   },
 });

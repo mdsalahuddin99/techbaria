@@ -51,25 +51,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // Resolve which shop the user belongs to
-    const shopId = process.env.DEFAULT_SHOP_ID
-      ? process.env.DEFAULT_SHOP_ID
-      : await (async () => {
-          const firstShop = await prisma.shop.findFirst({ orderBy: { createdAt: "asc" } });
-          if (!firstShop) {
-            logger.error("No shop found — set DEFAULT_SHOP_ID in .env.local");
-            return null;
-          }
-          return firstShop.id;
-        })();
-
-    if (!shopId) {
-      return Response.json(
-        { error: "CONFIG", message: "Registration is not configured. Please contact support." },
-        { status: 500 },
-      );
-    }
-
     const passwordHash = hashPassword(password);
 
     const user = await prisma.user.create({

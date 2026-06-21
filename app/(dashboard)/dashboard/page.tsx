@@ -105,7 +105,7 @@ function SectionHeader({
   iconColor: string;
 }) {
   return (
-    <div className="flex items-center justify-between px-5 pt-4.5 pb-3.5 border-b border-slate-100 bg-slate-50/40">
+    <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-100 bg-slate-50/40">
       <div className="flex items-center gap-3">
         <div className={cn("h-8 w-8 rounded-lg grid place-items-center border border-teal-100/40", iconBg)}>
           <Icon className={cn("h-4 w-4", iconColor)} />
@@ -254,10 +254,10 @@ export default function Dashboard() {
   } as const;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
 
       {/* ── Page header ─────────────────────────────────────────────── */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between px-5 py-4.5 rounded-lg border border-teal-100/80 bg-teal-50/40 border-l-4 border-l-primary shadow-sm transition-all duration-300">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-4 py-3 rounded-lg border border-teal-100/80 bg-teal-50/40 border-l-4 border-l-primary shadow-sm transition-all duration-300">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-teal-700 bg-teal-50 border border-teal-100 px-2.5 py-0.5 rounded-full">
@@ -297,7 +297,7 @@ export default function Dashboard() {
             <div
               key={kpi.id}
               className={cn(
-                "bg-card rounded-lg border border-border shadow-sm p-5 transition-all duration-300",
+                "bg-card rounded-lg border border-border shadow-sm p-4 transition-all duration-300",
                 "hover:shadow-md hover:-translate-y-1 hover:border-slate-300/80 group",
                 a.borderClass
               )}

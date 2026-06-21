@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { productsService } from "@/services";
 
 /**
  * Fetch distinct field values from /api/products/values for AutoSuggest.
@@ -17,12 +18,7 @@ export function useDistinctValues(field: string, parent?: string): string[] {
 
     const fetchValues = async () => {
       try {
-        const params = new URLSearchParams({ field });
-        if (parent) params.set("parent", parent);
-        const res = await fetch(`/api/products/values?${params.toString()}`);
-        if (!res.ok) return;
-        const json = await res.json();
-        const list: string[] = json.values ?? [];
+        const list = await productsService.getDistinctValues(field, parent);
         if (!cancelled) setValues(list);
       } catch {
         // silently fail — suggestions are optional

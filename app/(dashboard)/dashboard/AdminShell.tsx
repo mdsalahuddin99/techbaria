@@ -42,6 +42,7 @@ import { Breadcrumb } from "@/shared/components";
 import MobileBottomNav from "@/components/layout/MobileBottomNav";
 import { useT, useLocale, LanguageToggle, type TranslationKey } from "@/features/i18n";
 import { useSettings } from "@/features/settings/hooks";
+import { CommandPalette } from "@/components/layout/CommandPalette";
 
 type NavItem = { to: string; labelKey: TranslationKey; icon: typeof LayoutDashboard; roles?: UserRole[] };
 type NavGroup = { labelKey: TranslationKey; icon: typeof LayoutDashboard; items: NavItem[] };
@@ -189,18 +190,6 @@ export function AdminShell({
   // Barcode scanner — only on POS page
   useGlobalBarcodeScanner();
 
-  // Keyboard shortcut: Ctrl+K / Cmd+K → focus search
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-        e.preventDefault();
-        document.querySelector<HTMLInputElement>("[data-cmdk-input]")?.focus();
-      }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, []);
-
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
   // Auto-expand the group that contains the active route
@@ -209,18 +198,24 @@ export function AdminShell({
       group.items.some((item) => pathname === item.to || pathname.startsWith(item.to + "/"))
     );
     if (activeGroup) {
-      setExpandedGroups((prev) => ({
-        ...prev,
+      setExpandedGroups({
         [activeGroup.labelKey]: true,
-      }));
+      });
+    } else {
+      setExpandedGroups({});
     }
   }, [pathname]);
 
   const toggleGroup = (groupKey: string) => {
-    setExpandedGroups((prev) => ({
-      ...prev,
-      [groupKey]: !prev[groupKey],
-    }));
+    setExpandedGroups((prev) => {
+      const isAlreadyExpanded = !!prev[groupKey];
+      if (isAlreadyExpanded) {
+        return {};
+      }
+      return {
+        [groupKey]: true,
+      };
+    });
   };
 
   return (
@@ -366,14 +361,13 @@ export function AdminShell({
 
       {/* Main column */}
       <div className="flex-1 flex flex-col min-w-0 relative z-10">
-        <header className="h-14 border-b border-border/60 bg-card md:bg-card/80 md:backdrop-blur-xl md:sticky md:top-0 z-30 flex items-center justify-between gap-3 px-3 md:px-6">
+        <header className="h-14 border-b border-border/60 bg-card md:bg-card/80 md:backdrop-blur-xl md:sticky md:top-0 z-30 flex items-center justify-between gap-3 px-3 md:px-4">
           {/* Global command bar — desktop */}
           <div className="hidden lg:flex flex-1 max-w-md">
             <button
               type="button"
               onClick={() => {
-                const el = document.querySelector<HTMLInputElement>("[data-cmdk-input]");
-                el?.focus();
+                window.dispatchEvent(new CustomEvent("cmd:open-palette"));
               }}
               className="group w-full inline-flex items-center gap-2.5 px-3.5 h-9 rounded-lg bg-secondary/60 hover:bg-secondary border border-border/70 hover:border-border text-sm text-muted-foreground transition"
             >
@@ -408,7 +402,7 @@ export function AdminShell({
         </header>
 
         <main className={cn(
-          "flex-1 px-4 md:px-6 py-4 md:py-6 overflow-y-auto overflow-x-hidden scroll-smooth pb-nav w-full",
+          "flex-1 px-2.5 md:px-4 py-3 md:py-4 overflow-y-auto overflow-x-hidden scroll-smooth pb-nav w-full",
           getThemeClass(pathname)
         )}>
           <Breadcrumb />
@@ -419,6 +413,7 @@ export function AdminShell({
       <MobileBottomNav />
       <OfflineIndicator />
       <AdminWatchers />
+      <CommandPalette />
     </div>
   );
 }

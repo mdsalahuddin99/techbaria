@@ -1,10 +1,20 @@
 /**
- * Typed fetch wrapper for the customers API.
+ * Typed client using Next.js Server Actions.
  */
-import { apiFetch } from "./fetch";
 import type { Customer } from "@/features/customers/types";
-
-const BASE = "/api/customers";
+import { 
+  listCustomersAction, 
+  getCustomerByIdAction, 
+  createCustomerAction, 
+  updateCustomerAction, 
+  deleteCustomerAction,
+  getCustomersWithDuesAction,
+  getCustomerLedgerAction,
+  getCustomerBalanceAction,
+  collectCustomerPaymentAction,
+  depositCustomerAdvanceAction,
+  withdrawCustomerPaymentAction
+} from "@/server/actions/customers";
 
 export interface PaginatedResponse<T> {
   items: T[];
@@ -14,104 +24,48 @@ export interface PaginatedResponse<T> {
 
 export const customersApi = {
   list(search?: string): Promise<PaginatedResponse<Customer>> {
-    const qs = search ? `?search=${encodeURIComponent(search)}` : "";
-    return apiFetch<PaginatedResponse<Customer>>(`${BASE}${qs}`);
+    return listCustomersAction(search) as unknown as Promise<PaginatedResponse<Customer>>;
   },
 
   getById(id: string): Promise<Customer | null> {
-    return apiFetch<Customer | null>(`${BASE}/${id}`);
+    return getCustomerByIdAction(id) as unknown as Promise<Customer | null>;
   },
 
   create(data: Partial<Customer>): Promise<Customer> {
-    return apiFetch<Customer>(BASE, { method: "POST", body: JSON.stringify(data) });
+    return createCustomerAction(data as any) as unknown as Promise<Customer>;
   },
 
   update(id: string, data: Partial<Customer>): Promise<Customer> {
-    return apiFetch<Customer>(`${BASE}/${id}`, { method: "PATCH", body: JSON.stringify(data) });
+    return updateCustomerAction(id, data as any) as unknown as Promise<Customer>;
   },
 
   remove(id: string): Promise<void> {
-    return apiFetch<void>(`${BASE}/${id}`, { method: "DELETE" });
+    return deleteCustomerAction(id).then(() => undefined);
   },
 
   withDues(): Promise<Customer[]> {
-    return apiFetch<Customer[]>(`${BASE}/dues`);
+    return getCustomersWithDuesAction() as unknown as Promise<Customer[]>;
   },
 
   // ─── Ledger API ───────────────────────────────────────────────────────
 
-  getLedger(customerId: string, page = 1, pageSize = 20): Promise<{
-    entries: Array<{
-      id: string;
-      type: string;
-      amount: number;
-      balanceBefore: number;
-      balanceAfter: number;
-      reference: string | null;
-      notes: string | null;
-      saleId: string | null;
-      accountId: string | null;
-      createdById: string | null;
-      createdAt: string;
-    }>;
-    total: number;
-    page: number;
-    pageSize: number;
-    totalPages: number;
-  }> {
-    return apiFetch(`${BASE}/${customerId}/ledger?page=${page}&pageSize=${pageSize}`);
+  getLedger(customerId: string, page = 1, pageSize = 20) {
+    return getCustomerLedgerAction(customerId, page, pageSize) as any;
   },
 
-  getBalance(customerId: string): Promise<{
-    id: string;
-    name: string;
-    phone: string | null;
-    balance: number;
-    due: number;
-    creditLimit: number;
-    notes: string | null;
-    availableCredit: number;
-    isOverLimit: boolean;
-  }> {
-    return apiFetch(`${BASE}/${customerId}/balance`);
+  getBalance(customerId: string) {
+    return getCustomerBalanceAction(customerId) as any;
   },
 
-  collectPayment(customerId: string, data: { amount: number; accountId: string; reference?: string; notes?: string }): Promise<{
-    id: string;
-    type: string;
-    amount: number;
-    balanceBefore: number;
-    balanceAfter: number;
-  }> {
-    return apiFetch(`${BASE}/${customerId}/collect`, {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
+  collectPayment(customerId: string, data: { amount: number; accountId: string; reference?: string; notes?: string }) {
+    return collectCustomerPaymentAction(customerId, data) as any;
   },
 
-  depositAdvance(customerId: string, data: { amount: number; accountId: string; reference?: string; notes?: string }): Promise<{
-    id: string;
-    type: string;
-    amount: number;
-    balanceBefore: number;
-    balanceAfter: number;
-  }> {
-    return apiFetch(`${BASE}/${customerId}/deposit-advance`, {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
+  depositAdvance(customerId: string, data: { amount: number; accountId: string; reference?: string; notes?: string }) {
+    return depositCustomerAdvanceAction(customerId, data) as any;
   },
 
-  withdrawPayment(customerId: string, data: { amount: number; accountId: string; reference?: string; notes?: string }): Promise<{
-    id: string;
-    type: string;
-    amount: number;
-    balanceBefore: number;
-    balanceAfter: number;
-  }> {
-    return apiFetch(`${BASE}/${customerId}/withdraw`, {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
+  withdrawPayment(customerId: string, data: { amount: number; accountId: string; reference?: string; notes?: string }) {
+    return withdrawCustomerPaymentAction(customerId, data) as any;
   },
 };

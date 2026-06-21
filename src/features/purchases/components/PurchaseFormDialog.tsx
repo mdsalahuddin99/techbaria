@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/shared/api-client/fetch";
+import { suppliersService } from "@/services";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/shared/ui/dialog";
@@ -15,7 +16,8 @@ import { LoadingButton } from "@/shared/ui/loading-button";
 import { AutoSuggest } from "@/shared/ui/auto-suggest";
 import { formatCurrency, formatDate, productDisplayName } from "@/shared/lib/format";
 import { Plus, X, ShoppingCart, ScanLine, Package, Camera, Wallet, Building2, Warehouse as WarehouseIcon, User, Phone, Mail, FileText } from "lucide-react";
-import CameraScanner from "@/components/CameraScanner";
+import dynamic from "next/dynamic";
+const CameraScanner = dynamic(() => import("@/components/CameraScanner"), { ssr: false });
 import { SupplierFormDialog } from "@/features/suppliers/SupplierFormDialog";
 import { ProductFormDialog } from "@/features/products/ProductFormDialog";
 import { usePurchaseForm, lineCost, lineSale } from "../hooks/usePurchaseForm";
@@ -43,7 +45,7 @@ interface PurchaseFormDialogProps {
 function SupplierSidebar({ supplierId }: { supplierId: string }) {
   const { data, isLoading } = useQuery({
     queryKey: ["supplier-profile", supplierId],
-    queryFn: () => apiFetch<any>(`/api/suppliers/${supplierId}/profile`),
+    queryFn: () => suppliersService.getProfile(supplierId),
     enabled: !!supplierId,
   });
 

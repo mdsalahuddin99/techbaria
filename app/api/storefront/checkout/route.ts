@@ -27,7 +27,7 @@ const checkoutSchema = z.object({
 export const POST = publicApiHandler(async (shopId: string, req: Request) => {
   const body = await parseBody(req, checkoutSchema);
   return salesService.createStorefrontOrder(
-    { userId: "", shopId, role: "CASHIER" },
+    { userId: "", role: "CASHIER" },
     body,
   );
 });

@@ -33,7 +33,7 @@ describe("suppliers hooks + cache bridge", () => {
       );
     });
     await waitFor(() => {
-      const cached = qc.getQueryData(supplierKeys.list())?.items as Array<{ name: string }>;
+      const cached = (qc.getQueryData(supplierKeys.list()) as any)?.items as Array<{ name: string }>;
       expect(cached?.some((s) => s.name === "Bridge Co.")).toBe(true);
     });
   });

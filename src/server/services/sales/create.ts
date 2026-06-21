@@ -121,17 +121,17 @@ export async function create(ctx: Ctx, input: SaleCreateInput) {
     const sale = await tx.sale.create({
       data: {
         userId: ctx.userId,
-        warehouseId,
-        customerId: input.customerId,
+        warehouseId: warehouseId ?? null,
+        customerId: input.customerId ?? null,
         channel: input.channel ?? "POS",
         status: "COMPLETED",
         subtotal, discount: input.discount ?? 0, total, paid, due,
-        notes: input.notes,
+        notes: input.notes ?? null,
         data: {
           invoiceNo,
           vat: input.vat ?? 0,
           extraCharges: input.extraCharges ?? 0,
-          salesPerson: input.salesPerson,
+          salesPerson: input.salesPerson ?? null,
         },
 
         items: {
@@ -147,11 +147,11 @@ export async function create(ctx: Ctx, input: SaleCreateInput) {
         tenders: {
           create: input.tenders.map((t) => ({
             type: mapPaymentMethodToTenderType(t.type), amount: t.amount,
-            accountId: t.accountId, ref: t.ref,
+            accountId: t.accountId ?? null, ref: t.ref ?? null,
           })),
         },
       },
-      include: { items: { include: { serialNumbers: true } } as any, tenders: true, customer: true, editedBy: true, user: true },
+      include: { items: { include: { serialNumbers: true } }, tenders: true, customer: true, editedBy: true, user: true },
     });
 
     // Decrement stock (sequential to avoid race conditions)
@@ -193,5 +193,5 @@ export async function create(ctx: Ctx, input: SaleCreateInput) {
   const productIds = [...new Set(input.items.map(item => item.productId))];
   await __postProcess(ctx, raw, productIds);
 
-  return serializeSale(raw as any);
+  return serializeSale(raw);
 }

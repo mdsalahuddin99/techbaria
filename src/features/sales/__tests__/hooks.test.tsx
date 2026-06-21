@@ -60,7 +60,7 @@ describe("sales hooks + cache bridge", () => {
     renderHook(() => useSalesCacheBridge(), { wrapper: wrapper(qc) });
 
       await waitFor(() => {
-        const cached = qc.getQueryData(saleKeys.list())?.items as Array<{ id: string }>;
+        const cached = (qc.getQueryData(saleKeys.list()) as any)?.items as Array<{ id: string }>;
         expect(cached?.length).toBe(mockSales.length);
       });
   });

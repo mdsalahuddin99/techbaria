@@ -157,6 +157,23 @@ export default function Customers() {
   );
 
   const openNew = () => { setEditing(null); setOpen(true); };
+
+  useEffect(() => {
+    const handleFocusSearch = () => {
+      document.getElementById("customers-search-input")?.focus();
+    };
+    const handleAddCustomer = () => {
+      openNew();
+    };
+
+    window.addEventListener("cmd:focus-customer-search", handleFocusSearch);
+    window.addEventListener("cmd:add-customer", handleAddCustomer);
+
+    return () => {
+      window.removeEventListener("cmd:focus-customer-search", handleFocusSearch);
+      window.removeEventListener("cmd:add-customer", handleAddCustomer);
+    };
+  }, []);
   const openEdit = (c: Customer) => { setEditing(c); setOpen(true); };
 
   const groupColor = (g: Group) =>
@@ -187,6 +204,7 @@ export default function Customers() {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
+              id="customers-search-input"
               placeholder="Search by name, phone or email…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}

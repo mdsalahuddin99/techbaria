@@ -1,7 +1,7 @@
 "use client";
 
 import { usePageTitle } from "@/shared/hooks/usePageTitle";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/shared/ui/card";
 import { Input } from "@/shared/ui/input";
@@ -22,8 +22,9 @@ import { categoryName } from "@/shared/lib/categoryName";
 import { Plus, Search, Pencil, Trash2, Settings2, X, ScanLine, PackageOpen, Tag, Eye } from "lucide-react";
 import { Product, Category } from "@/shared/lib/types";
 import { toast } from "sonner";
-import CameraScanner from "@/components/CameraScanner";
-import PrintLabelsDialog from "@/components/PrintLabelsDialog";
+import dynamic from "next/dynamic";
+const CameraScanner = dynamic(() => import("@/components/CameraScanner"), { ssr: false });
+const PrintLabelsDialog = dynamic(() => import("@/components/PrintLabelsDialog"), { ssr: false });
 import { PageHeader, EmptyState, ConfirmDialog } from "@/shared/components";
 import type { CategoryItem } from "@/shared/api-client/categories";
 import { listCategories } from "@/shared/api-client/categories";
@@ -54,6 +55,7 @@ export default function Products() {
   );
 
   const [search, setSearch] = useState("");
+  const [lowStockOnly, setLowStockOnly] = useState(false);
   const [filter, setFilter] = useState<string>("All");
   const [editing, setEditing] = useState<Product | null>(null);
   const [open, setOpen] = useState(false);
@@ -73,15 +75,42 @@ export default function Products() {
       (p) =>
         (filter === "All" || p.category === filter) &&
         (productDisplayName(p).toLowerCase().includes(search.toLowerCase()) ||
-          p.sku.toLowerCase().includes(search.toLowerCase()))
+          p.sku.toLowerCase().includes(search.toLowerCase())) &&
+        (!lowStockOnly || p.stock <= p.minStock)
     );
-  }, [products, search, filter]);
+  }, [products, search, filter, lowStockOnly]);
 
   const openNew = () => {
     setEditing(null);
     setPrefillBarcode("");
     setOpen(true);
   };
+
+  useEffect(() => {
+    const handleFocusSearch = () => {
+      document.getElementById("products-search-input")?.focus();
+    };
+    const handleAddProduct = () => {
+      openNew();
+    };
+    const handleFilterLowStock = () => {
+      setLowStockOnly((prev) => {
+        const next = !prev;
+        toast.info(next ? "Filtering by low stock" : "Showing all products");
+        return next;
+      });
+    };
+
+    window.addEventListener("cmd:focus-product-search", handleFocusSearch);
+    window.addEventListener("cmd:add-product", handleAddProduct);
+    window.addEventListener("cmd:filter-low-stock", handleFilterLowStock);
+
+    return () => {
+      window.removeEventListener("cmd:focus-product-search", handleFocusSearch);
+      window.removeEventListener("cmd:add-product", handleAddProduct);
+      window.removeEventListener("cmd:filter-low-stock", handleFilterLowStock);
+    };
+  }, []);
 
   const openEdit = (p: Product) => {
     setEditing(p);
@@ -242,6 +271,7 @@ export default function Products() {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
+              id="products-search-input"
               placeholder="Search by name or SKU…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -259,6 +289,15 @@ export default function Products() {
           </Select>
         </div>
       </Card>
+
+      {lowStockOnly && (
+        <Card className="p-3 flex items-center justify-between border-amber-300 bg-amber-50 text-amber-800">
+          <span className="text-xs font-semibold">⚠️ Filtering by low stock alert level</span>
+          <Button size="sm" variant="ghost" className="h-6 text-xs text-amber-800 hover:bg-amber-100" onClick={() => setLowStockOnly(false)}>
+            Clear Filter
+          </Button>
+        </Card>
+      )}
 
       {selected.size > 0 && (
         <Card className="p-3 flex flex-wrap items-center gap-3 border-primary/40 bg-primary/5">

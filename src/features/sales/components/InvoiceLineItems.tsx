@@ -327,6 +327,7 @@ export function InvoiceLineItems({
                 {/* Discount */}
                 <td className="px-3 py-3">
                   <Input
+                    name="row-discount"
                     type="number"
                     min={0}
                     value={row.discount === 0 || !row.discount ? "" : row.discount}

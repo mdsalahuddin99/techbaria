@@ -75,6 +75,23 @@ export default function Suppliers() {
   const totalPurchased = suppliers.reduce((sum, s) => sum + s.totalPurchased, 0);
 
   const openNew = () => { setEditing(null); setOpen(true); };
+
+  useEffect(() => {
+    const handleFocusSearch = () => {
+      document.getElementById("suppliers-search-input")?.focus();
+    };
+    const handleAddSupplier = () => {
+      openNew();
+    };
+
+    window.addEventListener("cmd:focus-supplier-search", handleFocusSearch);
+    window.addEventListener("cmd:add-supplier", handleAddSupplier);
+
+    return () => {
+      window.removeEventListener("cmd:focus-supplier-search", handleFocusSearch);
+      window.removeEventListener("cmd:add-supplier", handleAddSupplier);
+    };
+  }, []);
   const openEdit = (s: Supplier) => { setEditing(s); setOpen(true); };
 
   const confirmDelete = async () => {
@@ -168,6 +185,7 @@ export default function Suppliers() {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
+            id="suppliers-search-input"
             placeholder="Search suppliers by name or phone…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}

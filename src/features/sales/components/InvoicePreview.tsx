@@ -1,5 +1,6 @@
-import Invoice from "@/components/Invoice";
-import ThermalReceipt from "@/components/ThermalReceipt";
+import dynamic from "next/dynamic";
+const Invoice = dynamic(() => import("@/components/Invoice"), { ssr: false });
+const ThermalReceipt = dynamic(() => import("@/components/ThermalReceipt"), { ssr: false });
 import ReceiptChooser from "@/components/ReceiptChooser";
 import type { Sale } from "@/shared/lib/types";
 import type { ShopSettings } from "@/features/settings/types";

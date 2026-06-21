@@ -6,7 +6,7 @@ import { formatCurrency } from "@/shared/lib/format";
 import { History, User, Phone, Mail, FileText, ChevronRight } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/shared/ui/popover";
 import { useQuery } from "@tanstack/react-query";
-import { apiFetch } from "@/shared/api-client/fetch";
+import { salesService } from "@/services";
 import { Button } from "@/shared/ui/button";
 import { Customer } from "@/features/customers/types";
 
@@ -27,7 +27,7 @@ export function CustomerSidebar({
 
   const { data: history = [], isLoading: historyLoading } = useQuery({
     queryKey: ["customer-history", customerId],
-    queryFn: () => apiFetch<any[]>(`/api/sales/by-customer?customerId=${customerId}`),
+    queryFn: () => salesService.byCustomer(customerId!),
     enabled: !!customerId && customerId !== "walk-in",
   });
 

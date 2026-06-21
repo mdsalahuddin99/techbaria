@@ -1,7 +1,7 @@
 "use client";
 
 import { usePageTitle } from "@/shared/hooks/usePageTitle";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/shared/ui/card";
 import { Input } from "@/shared/ui/input";
@@ -36,6 +36,31 @@ export default function SalesHistory() {
   const [invoice, setInvoice] = useState<Sale | null>(null);
   const { delete: deleteSale } = useSaleMutations();
 
+  useEffect(() => {
+    const handleFocusSearch = () => {
+      document.getElementById("sales-search-input")?.focus();
+    };
+    const handleFilterUnpaid = () => {
+      setSort("due-desc");
+      toast.info("Sorted by outstanding dues");
+    };
+    const handleFilterCompleted = () => {
+      setSort("newest");
+      setMethod("All");
+      toast.info("Showing newest completed transactions");
+    };
+
+    window.addEventListener("cmd:focus-invoice-search", handleFocusSearch);
+    window.addEventListener("cmd:filter-unpaid", handleFilterUnpaid);
+    window.addEventListener("cmd:filter-completed", handleFilterCompleted);
+
+    return () => {
+      window.removeEventListener("cmd:focus-invoice-search", handleFocusSearch);
+      window.removeEventListener("cmd:filter-unpaid", handleFilterUnpaid);
+      window.removeEventListener("cmd:filter-completed", handleFilterCompleted);
+    };
+  }, []);
+
   const filtered = useFilteredSales({ search, paymentMethod: method });
   const sorted = useMemo(() => {
     const list = filtered.slice();
@@ -69,16 +94,16 @@ export default function SalesHistory() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <PageHeader
-          title="Sales History"
-          description="Search, review and reprint past invoices."
-        />
-        <Button onClick={() => router.push("/dashboard/sales/create")} className="bg-primary text-primary-foreground hover:bg-primary/90">
-          <Plus className="h-4 w-4 mr-2" />
-          New Sale
-        </Button>
-      </div>
+      <PageHeader
+        title="Sales History"
+        description="Search, review and reprint past invoices."
+        actions={
+          <Button onClick={() => router.push("/dashboard/sales/create")} className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Plus className="h-4 w-4 mr-2" />
+            New Sale
+          </Button>
+        }
+      />
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card className="p-4">
           <p className="text-sm text-muted-foreground">Transactions</p>
@@ -99,7 +124,7 @@ export default function SalesHistory() {
       <Card className="p-4 flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search invoice, customer name or phone…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+          <Input id="sales-search-input" placeholder="Search invoice, customer name or phone…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
         </div>
         <Select value={method} onValueChange={setMethod}>
           <SelectTrigger className="sm:w-48"><SelectValue /></SelectTrigger>

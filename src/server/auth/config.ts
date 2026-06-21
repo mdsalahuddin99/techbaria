@@ -46,7 +46,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           email: user.email,
           name: user.name,
           role: (user as any).role,
-          shopId: (user as any).shopId,
         };
       },
     }),
@@ -68,19 +67,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   callbacks: {
     async jwt({ token, user }) {
-      // On first sign-in, copy role & shopId into the JWT
+      // On first sign-in, copy role into the JWT
       if (user) {
         token.role = (user as any).role;
-        token.shopId = (user as any).shopId;
       }
       return token;
     },
     async session({ session, token }) {
-      // Expose role & shopId on the session.user object
+      // Expose role on the session.user object
       if (session.user) {
         (session.user as any).id = token.sub;
         (session.user as any).role = token.role;
-        (session.user as any).shopId = token.shopId;
       }
       return session;
     },

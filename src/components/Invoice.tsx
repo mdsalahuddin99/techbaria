@@ -7,6 +7,7 @@ import { Printer, Download, X, Receipt } from "lucide-react";
 import ThermalReceipt from "@/components/ThermalReceipt";
 import { canPrint, printHtml, downloadHtml } from "@/shared/lib/print";
 import { toast } from "sonner";
+import { useCustomerBalance } from "@/features/customers/ledgerHooks";
 
 interface Props {
   sale: Sale | null;
@@ -17,10 +18,18 @@ interface Props {
 
 export default function Invoice({ sale, settings, open, onClose }: Props) {
   const [thermalOpen, setThermalOpen] = useState(false);
+  const { data: balanceData } = useCustomerBalance(sale?.customerId ?? null);
+
   if (!sale) return null;
 
+  const currentTotalDue = balanceData?.due ?? Math.max(0, sale.total - sale.amountPaid);
+  const thisSaleDue = Math.max(0, sale.total - sale.amountPaid);
+  const previousDue = Math.max(0, currentTotalDue - thisSaleDue);
+  const totalDueAmount = previousDue + sale.total;
+  const currentDueAmount = Math.max(0, totalDueAmount - Math.min(sale.amountPaid, sale.total));
+
   const handleDownload = async () => {
-    const html = buildStandaloneInvoice(sale, settings);
+    const html = buildStandaloneInvoice(sale, settings, previousDue, totalDueAmount, currentDueAmount);
     const host = document.createElement("div");
     host.style.position = "fixed";
     host.style.left = "-10000px";
@@ -52,7 +61,7 @@ export default function Invoice({ sale, settings, open, onClose }: Props) {
   };
 
   const handlePrint = () => {
-    const html = buildStandaloneInvoice(sale, settings);
+    const html = buildStandaloneInvoice(sale, settings, previousDue, totalDueAmount, currentDueAmount);
     if (!canPrint()) {
       toast.error("Printing isn't supported on this device", {
         description: "Downloading the invoice as an HTML file instead.",
@@ -69,7 +78,7 @@ export default function Invoice({ sale, settings, open, onClose }: Props) {
     }
   };
 
-  const html = buildStandaloneInvoice(sale, settings);
+  const html = buildStandaloneInvoice(sale, settings, previousDue, totalDueAmount, currentDueAmount);
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
@@ -159,7 +168,13 @@ function numberToWords(num: number): string {
   return parts.join(" ").trim();
 }
 
-function buildStandaloneInvoice(sale: Sale, settings: ShopSettings): string {
+function buildStandaloneInvoice(
+  sale: Sale,
+  settings: ShopSettings,
+  previousDue: number,
+  totalDueAmount: number,
+  currentDueAmount: number
+): string {
   const d = new Date(sale.date);
   const dateStr = d.toLocaleDateString("en-GB");
   const timeStr = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: true });
@@ -167,7 +182,6 @@ function buildStandaloneInvoice(sale: Sale, settings: ShopSettings): string {
   const printStr = `${printNow.toLocaleDateString("en-GB")}  ${printNow.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: true })}`;
   const billStatus = sale.amountPaid >= sale.total ? "Paid" : sale.amountPaid > 0 ? "Partial" : "Due";
   const totalQty = sale.items.reduce((s, i) => s + i.qty, 0);
-  const due = Math.max(0, sale.total - sale.amountPaid);
   const receivedShown = Math.min(sale.amountPaid, sale.total);
   const words = numberToWords(sale.total) + " Only";
   const billStatusColor = sale.amountPaid >= sale.total ? "#16a34a" : sale.amountPaid > 0 ? "#f59e0b" : "#dc2626";
@@ -180,20 +194,20 @@ function buildStandaloneInvoice(sale: Sale, settings: ShopSettings): string {
   const itemRows = sale.items
     .map((i, idx) => {
       const serialStr = i.serials?.length
-        ? `<div style="font-size:10px; color:#555; border-top:1px solid #ccc; padding-top:2px; margin-top:2px;">S/N: ${esc(i.serials.join(", "))}</div>`
+        ? `<div style="font-size:9px; color:#444; font-weight:normal; margin-left:12px; margin-top:2px;">S/N: ${esc(i.serials.join(", "))}</div>`
         : "";
       return `
-        <tr>
-          <td style="border:1px solid #000; padding:4px; text-align:center; vertical-align:middle;">${idx + 1}</td>
-          <td style="border:1px solid #000; padding:4px; vertical-align:top;">
-            <div style="font-weight:600;">${esc(i.name)}</div>
+        <tr style="border-bottom:1px solid #000;">
+          <td style="border-right:1px solid #000; padding:4px; text-align:center; vertical-align:middle;">${idx + 1}</td>
+          <td style="border-right:1px solid #000; padding:4px; vertical-align:top; text-align:left;">
+            <div style="font-weight:bold;">${esc(i.name)}</div>
             ${serialStr}
           </td>
-          <td style="border:1px solid #000; padding:4px; text-align:center; vertical-align:middle; white-space:pre-wrap;">${warrantyLabel(i.warrantyMonths).replace(" ", "\n")}</td>
-          <td style="border:1px solid #000; padding:4px; text-align:center; vertical-align:middle;">${i.qty.toFixed(2)}</td>
-          <td style="border:1px solid #000; padding:4px; text-align:center; vertical-align:middle;">PCS</td>
-          <td style="border:1px solid #000; padding:4px; text-align:right; vertical-align:middle;">${i.price.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-          <td style="border:1px solid #000; padding:4px; text-align:right; vertical-align:middle;">${(i.price * i.qty).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+          <td style="border-right:1px solid #000; padding:4px; text-align:center; vertical-align:middle; white-space:pre-wrap;">${warrantyLabel(i.warrantyMonths).replace(" ", "\n")}</td>
+          <td style="border-right:1px solid #000; padding:4px; text-align:center; vertical-align:middle;">${i.qty.toFixed(2)}</td>
+          <td style="border-right:1px solid #000; padding:4px; text-align:center; vertical-align:middle;">PCS</td>
+          <td style="border-right:1px solid #000; padding:4px; text-align:right; vertical-align:middle;">${i.price.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+          <td style="padding:4px; text-align:right; vertical-align:middle;">${(i.price * i.qty).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
         </tr>`;
     })
     .join("");
@@ -207,13 +221,13 @@ function buildStandaloneInvoice(sale: Sale, settings: ShopSettings): string {
 <style>
   @page { margin: 0; }
   *,*::before,*::after { box-sizing: border-box; }
-  html,body { margin:0; padding:0; background:#eef0f3; color:#000; font-family: Arial, Helvetica, sans-serif; font-size:12px; }
+  html,body { margin:0; padding:0; background:#eef0f3; color:#000; font-family: Arial, Helvetica, sans-serif; font-size:11px; }
   .page { 
     width: 21cm; 
     min-height: 29.7cm; /* A4 height */
     margin: 16px auto; 
     background:#fff; 
-    padding: 2.50cm; /* 2.50 margin all around */
+    padding: 1.50cm 1.50cm 2.00cm 1.50cm; /* Adjusted margins for exact printing */
     position: relative; 
   }
   
@@ -230,19 +244,19 @@ function buildStandaloneInvoice(sale: Sale, settings: ShopSettings): string {
     }
   }
   
-  /* Header */
-  .hdr-top { display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px; }
-  .hdr-logo-left { width: 150px; text-align:left; }
-  .hdr-center { flex:1; text-align:center; }
-  .hdr-logo-right { width: 180px; text-align:right; }
+  /* Header Layout */
+  .hdr-top { display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px; }
+  .hdr-logo-left { width: 140px; text-align:left; }
+  .hdr-center { flex:1; text-align:center; padding: 0 10px; }
+  .hdr-logo-right { width: 140px; text-align:right; }
   
-  /* Reset some paddings */
+  /* Reset table styles */
   table { border-collapse: collapse; }
-  td { padding: 2px 4px; }
+  td, th { padding: 3px 5px; }
   
   @media print {
     html,body { background:#fff; }
-    .page { margin:0; width:21cm; min-height:29.7cm; padding: 2.50cm; box-shadow:none; }
+    .page { margin:0; width:21cm; min-height:29.7cm; padding: 1.50cm 1.50cm 2.00cm 1.50cm; box-shadow:none; }
     @page { size: A4 portrait; margin: 0; }
   }
 </style>
@@ -252,72 +266,81 @@ function buildStandaloneInvoice(sale: Sale, settings: ShopSettings): string {
     
     <!-- Top Header Layout -->
     ${settings.invoiceFullHeaderUrl ? 
-      `<div style="width:100%; text-align:center; margin-bottom: 8px;">
+      `<div style="width:100%; text-align:center; margin-bottom: 12px;">
          <img src="${settings.invoiceFullHeaderUrl}" style="max-width:100%; object-fit:contain;" />
        </div>` : 
       `<div class="hdr-top">
         <div class="hdr-logo-left">
-          ${settings.logoUrl ? `<img src="${settings.logoUrl}" style="max-width:100%; max-height:80px; object-fit:contain;"/>` : ''}
+          ${settings.logoUrl ? `<img src="${settings.logoUrl}" style="max-width:100%; max-height:75px; object-fit:contain;"/>` : ''}
         </div>
         <div class="hdr-center">
-          <div style="font-size:34px; font-weight:bold; letter-spacing:0.5px;">${esc(settings.shopName)}</div>
-          ${settings.tagline ? `<div style="font-size:12px; font-weight:600; margin-top:2px;">A Sister Concern Of <span style="font-weight:bold; font-size:13px;">${esc(settings.tagline)}</span></div>` : ''}
-          <div style="font-size:12px; margin-top:2px;">${esc(settings.address)}</div>
-          <div style="font-size:12px; font-weight:bold; margin-top:2px;">
-            &#9742; ${esc(settings.phone)}
+          <div style="font-size:28px; font-weight:bold; font-family:'Outfit', Arial, sans-serif; letter-spacing:0.5px; line-height:1.1;">${esc(settings.shopName)}</div>
+          ${settings.tagline ? `<div style="font-size:10.5px; font-weight:bold; margin-top:3px; color:#111;">${esc(settings.tagline)}</div>` : ''}
+          <div style="font-size:10.5px; margin-top:3px; color:#222;">${esc(settings.address)}</div>
+          <div style="font-size:11px; font-weight:bold; margin-top:4px; display:flex; align-items:center; justify-content:center; gap:3px;">
+            <svg style="width:11px; height:11px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            ${esc(settings.phone)}
           </div>
-          <div style="font-size:11px; margin-top:2px; font-weight:bold;">
-            &#9993; ${esc(settings.email || "")} &nbsp;&nbsp;&nbsp; &#12710; ${esc(settings.website || "")}
+          <div style="font-size:10px; margin-top:3px; font-weight:bold; display:flex; align-items:center; justify-content:center; gap:12px; color:#222;">
+            <span style="display:flex; align-items:center; gap:3px;">
+              <svg style="width:10px; height:10px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+              ${esc(settings.email || "")}
+            </span>
+            <span style="display:flex; align-items:center; gap:3px;">
+              <svg style="width:10px; height:10px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+              ${esc(settings.website || "")}
+            </span>
           </div>
         </div>
         <div class="hdr-logo-right">
-          ${settings.invoiceHeaderRightLogoUrl ? `<img src="${settings.invoiceHeaderRightLogoUrl}" style="max-width:100%; max-height:80px; object-fit:contain;"/>` : ''}
+          ${settings.invoiceHeaderRightLogoUrl ? `<img src="${settings.invoiceHeaderRightLogoUrl}" style="max-width:100%; max-height:75px; object-fit:contain;"/>` : ''}
         </div>
       </div>`
     }
     
     <!-- Title Box -->
-    <div style="text-align:center; margin-bottom: 12px; margin-top: 4px;">
-      <span style="border: 1.5px solid #000; padding: 2px 16px; font-weight:bold; font-size:13px; display:inline-block;">
+    <div style="text-align:center; margin-bottom: 14px; margin-top: 4px;">
+      <span style="border: 1.5px solid #000; padding: 2px 16px; font-weight:bold; font-size:12px; display:inline-block; letter-spacing:1px; text-transform:uppercase;">
         ${esc(settings.invoiceTitleLabel || "Sales Invoice")}
       </span>
     </div>
 
     <!-- Customer & Invoice Info Table Grid -->
-    <table style="width:100%; border-collapse:collapse; margin-bottom:12px; font-size:11px;">
+    <table style="width:100%; border-collapse:collapse; margin-bottom:14px; font-size:11px;">
       <tr>
-        <td style="width:65%; vertical-align:top; border:1px solid #000; padding:4px 8px;">
-          <table style="width:100%;">
-            <tr><td style="width:80px; font-weight:bold;">Customer</td><td style="font-weight:bold;">: ${esc(sale.customerName)}</td></tr>
-            <tr><td style="font-weight:bold;">Through</td><td>: ${esc(sale.customerReferencePerson || "—")}</td></tr>
-            <tr><td style="font-weight:bold;">Address</td><td>: ${esc(sale.customerAddress || "—")}</td></tr>
-            <tr><td style="font-weight:bold;">Mobile</td><td>: ${esc(sale.customerPhone || "—")}</td></tr>
+        <td style="width:65%; vertical-align:top; border:1px solid #000; padding:6px 8px;">
+          <table style="width:100%; border-collapse:collapse;">
+            <tr><td style="width:85px; font-weight:bold; padding:2px 0;">Customer</td><td style="font-weight:bold; padding:2px 0;">: ${esc(sale.customerName)}</td></tr>
+            <tr><td style="font-weight:bold; padding:2px 0;">Address</td><td style="padding:2px 0;">: ${esc(sale.customerAddress || "")}</td></tr>
+            <tr><td style="font-weight:bold; padding:2px 0;">Mobile</td><td style="padding:2px 0;">: ${esc(sale.customerPhone || "")}</td></tr>
+            <tr><td style="font-weight:bold; padding:2px 0;">Attention</td><td style="padding:2px 0;">: ${esc(sale.customerReferencePerson || "")}</td></tr>
+            <tr><td style="font-weight:bold; padding:2px 0;">Destination</td><td style="padding:2px 0;">: </td></tr>
           </table>
         </td>
         <td style="width:35%; vertical-align:top; border:1px solid #000; padding:0;">
-          <table style="width:100%; height:100%;">
-            <tr><td style="border-bottom:1px solid #000; padding:2px 6px; font-weight:bold; width:90px;">Invoice No.</td><td style="border-bottom:1px solid #000; padding:2px 6px; border-left:1px solid #000; font-weight:bold;">${esc(sale.invoiceNo)}</td></tr>
-            <tr><td style="border-bottom:1px solid #000; padding:2px 6px; font-weight:bold;">Date</td><td style="border-bottom:1px solid #000; padding:2px 6px; border-left:1px solid #000; font-weight:bold;">${esc(dateStr)}</td></tr>
-            <tr><td style="border-bottom:1px solid #000; padding:2px 6px; font-weight:bold;">Entry Time</td><td style="border-bottom:1px solid #000; padding:2px 6px; border-left:1px solid #000;">${esc(timeStr)}</td></tr>
-            <tr><td style="border-bottom:1px solid #000; padding:2px 6px; font-weight:bold;">Prepared By</td><td style="border-bottom:1px solid #000; padding:2px 6px; border-left:1px solid #000;">${esc(sale.cashier || "—")}</td></tr>
-            <tr><td style="border-bottom:1px solid #000; padding:2px 6px; font-weight:bold;">Sales Person</td><td style="border-bottom:1px solid #000; padding:2px 6px; border-left:1px solid #000;">${esc(sale.salesPerson || "—")}</td></tr>
-            <tr><td style="padding:2px 6px; font-weight:bold;">Bill Status</td><td style="padding:2px 6px; border-left:1px solid #000; font-weight:bold;">${billStatus.toUpperCase()}</td></tr>
+          <table style="width:100%; border-collapse:collapse; font-size:11px; height:100%;">
+            <tr style="border-bottom:1px solid #000;"><td style="padding:3px 6px; font-weight:bold; width:95px;">Invoice No.</td><td style="padding:3px 6px; border-left:1px solid #000; font-weight:bold;">${esc(sale.invoiceNo)}</td></tr>
+            <tr style="border-bottom:1px solid #000;"><td style="padding:3px 6px; font-weight:bold;">Date</td><td style="padding:3px 6px; border-left:1px solid #000; font-weight:bold;">${esc(dateStr)}</td></tr>
+            <tr style="border-bottom:1px solid #000;"><td style="padding:3px 6px; font-weight:bold;">Entry Time</td><td style="padding:3px 6px; border-left:1px solid #000;">${esc(timeStr)}</td></tr>
+            <tr style="border-bottom:1px solid #000;"><td style="padding:3px 6px; font-weight:bold;">Prepared By</td><td style="padding:3px 6px; border-left:1px solid #000;">${esc(sale.cashier || "—")}</td></tr>
+            <tr style="border-bottom:1px solid #000;"><td style="padding:3px 6px; font-weight:bold;">Sales Person</td><td style="padding:3px 6px; border-left:1px solid #000;">${esc(sale.salesPerson || "—")}</td></tr>
+            <tr><td style="padding:3px 6px; font-weight:bold;">Bill Status</td><td style="padding:3px 6px; border-left:1px solid #000; font-weight:bold; color:${billStatusColor};">${billStatus.toUpperCase()}</td></tr>
           </table>
         </td>
       </tr>
     </table>
 
     <!-- Items Table -->
-    <table style="width:100%; border:1px solid #000; font-size:11px; margin-bottom: 12px;">
+    <table style="width:100%; border:1px solid #000; border-collapse:collapse; font-size:11px; margin-bottom: 14px;">
       <thead>
-        <tr>
-          <th style="border:1px solid #000; padding:4px; text-align:center; width:30px">SL</th>
-          <th style="border:1px solid #000; padding:4px; text-align:left">Product Description</th>
-          <th style="border:1px solid #000; padding:4px; text-align:center; width:70px">Warranty</th>
-          <th style="border:1px solid #000; padding:4px; text-align:center; width:45px">Qty</th>
-          <th style="border:1px solid #000; padding:4px; text-align:center; width:45px">UoM</th>
-          <th style="border:1px solid #000; padding:4px; text-align:right; width:75px">Unit Price</th>
-          <th style="border:1px solid #000; padding:4px; text-align:right; width:85px">Amount</th>
+        <tr style="border-bottom:1.5px solid #000; background-color:#fafafa;">
+          <th style="border-right:1px solid #000; padding:5px; text-align:center; width:35px; font-weight:bold;">SL</th>
+          <th style="border-right:1px solid #000; padding:5px; text-align:left; font-weight:bold;">Product Description</th>
+          <th style="border-right:1px solid #000; padding:5px; text-align:center; width:80px; font-weight:bold;">Warranty</th>
+          <th style="border-right:1px solid #000; padding:5px; text-align:center; width:50px; font-weight:bold;">Qty</th>
+          <th style="border-right:1px solid #000; padding:5px; text-align:center; width:50px; font-weight:bold;">UoM</th>
+          <th style="border-right:1px solid #000; padding:5px; text-align:right; width:85px; font-weight:bold;">Unit Price</th>
+          <th style="padding:5px; text-align:right; width:100px; font-weight:bold;">Amount</th>
         </tr>
       </thead>
       <tbody>
@@ -326,90 +349,89 @@ function buildStandaloneInvoice(sale: Sale, settings: ShopSettings): string {
     </table>
 
     <!-- Bottom Section Layout -->
-    <table style="width:100%; border:1px solid #000; font-size:11px;">
+    <table style="width:100%; border:1px solid #000; border-collapse:collapse; font-size:11px; margin-bottom:12px;">
       <tr>
-        <td style="width:55%; vertical-align:top; padding:8px 12px;">
-          <table style="border:1px solid #000; margin-bottom:8px;">
-            <tr><td style="padding:2px 8px; font-weight:bold;">Total Qty :</td><td style="padding:2px 8px; font-weight:bold; border-left:1px solid #000;">${totalQty.toFixed(2)}</td></tr>
-          </table>
-          <div style="font-weight:bold; margin-bottom:12px;">Taka In Word : ${esc(words)}</div>
-          <div style="font-weight:bold; margin-bottom:12px;">Narration : ${esc(sale.notes || "")}</div>
-          <div style="font-weight:bold; margin-bottom:4px;">Return &amp; Refund :</div>
-          <div style="line-height:1.4;">
+        <td style="width:55%; vertical-align:top; border-right:1px solid #000; padding:8px 12px;">
+          <div style="border:1px solid #000; padding:4px 10px; font-weight:bold; margin-bottom:8px; display:inline-block; font-size:11px;">
+            Total Qty : &nbsp;&nbsp;&nbsp;&nbsp; ${totalQty.toFixed(2)}
+          </div>
+          <div style="font-weight:bold; margin-bottom:8px; font-size:11px;">Taka In Word : <span style="font-weight:normal;">${esc(words)}</span></div>
+          <div style="font-weight:bold; margin-bottom:12px; font-size:11px;">Narration : <span style="font-weight:normal;">${esc(sale.notes || "")}</span></div>
+          <div style="font-weight:bold; margin-bottom:4px; font-size:11px;">Return &amp; Refund :</div>
+          <div style="line-height:1.4; font-size:10px; color:#222;">
             ${esc(settings.invoiceReturnPolicy ?? "-No Return After Sales.\n-Product Exchange Applies Only To Products.\n-No Money Will Refund.\n-Please Check Your Products Before Leave.").replace(/\n/g, "<br/>")}
           </div>
         </td>
         <td style="width:45%; vertical-align:top; padding:0;">
-          <table style="width:100%; height:100%;">
-            <tr>
-              <td style="padding:4px 8px; font-weight:bold;">Total Amount</td>
-              <td style="padding:4px 8px; text-align:right; font-weight:bold;">${sale.subtotal.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+          <table style="width:100%; border-collapse:collapse; font-size:11px;">
+            <tr style="border-bottom:1px solid #000;">
+              <td style="padding:4px 8px; font-weight:bold; width:155px;">Total Amount</td>
+              <td style="padding:4px 8px; text-align:right; font-weight:bold; border-left:1px solid #000;">${sale.subtotal.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
             </tr>
-            <tr>
+            <tr style="border-bottom:1px solid #000;">
               <td style="padding:4px 8px; font-weight:bold;">Less Discount</td>
-              <td style="padding:4px 8px; text-align:right;">${sale.discount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+              <td style="padding:4px 8px; text-align:right; border-left:1px solid #000;">${sale.discount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
             </tr>
-            <tr>
+            <tr style="border-bottom:1px solid #000;">
               <td style="padding:4px 8px; font-weight:bold;">Add VAT</td>
-              <td style="padding:4px 8px; text-align:right;">${(sale.vat ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+              <td style="padding:4px 8px; text-align:right; border-left:1px solid #000;">${(sale.vat ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
             </tr>
-            <tr>
+            <tr style="border-bottom:1px solid #000;">
               <td style="padding:4px 8px; font-weight:bold;">Add Extra Charges</td>
-              <td style="padding:4px 8px; text-align:right;">${(sale.extraCharges ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+              <td style="padding:4px 8px; text-align:right; border-left:1px solid #000;">${(sale.extraCharges ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
             </tr>
-            <tr>
-              <td style="padding:4px 8px; font-weight:bold; border-top:1px solid #000; border-bottom:1px solid #000;">Net Payable Amount</td>
-              <td style="padding:4px 8px; text-align:right; font-weight:bold; border-top:1px solid #000; border-bottom:1px solid #000;">${sale.total.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+            <tr style="border-bottom:1px solid #000; background-color:#fafafa;">
+              <td style="padding:5px 8px; font-weight:bold; font-size:11px;">Net Payable Amount</td>
+              <td style="padding:5px 8px; text-align:right; font-weight:bold; border-left:1px solid #000; font-size:11px;">${sale.total.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
             </tr>
-            <tr>
-              <td style="padding:4px 8px; font-weight:bold; border-bottom:1px solid #000;">Previous Due</td>
-              <td style="padding:4px 8px; text-align:right; border-bottom:1px solid #000;">0.00</td>
+            <tr style="border-bottom:1px solid #000;">
+              <td style="padding:4px 8px; font-weight:bold;">Previous Due</td>
+              <td style="padding:4px 8px; text-align:right; border-left:1px solid #000;">${previousDue.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
             </tr>
-            <tr>
-              <td style="padding:4px 8px; font-weight:bold; border-bottom:1px solid #000;">Total Due Amount</td>
-              <td style="padding:4px 8px; text-align:right; font-weight:bold; border-bottom:1px solid #000;">${sale.total.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+            <tr style="border-bottom:1px solid #000; background-color:#fafafa;">
+              <td style="padding:5px 8px; font-weight:bold; font-size:11px;">Total Due Amount</td>
+              <td style="padding:5px 8px; text-align:right; font-weight:bold; border-left:1px solid #000; font-size:11px;">${totalDueAmount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
             </tr>
-            <tr>
-              <td style="padding:4px 8px; font-weight:bold; border-bottom:1px solid #000;">Received Amount</td>
-              <td style="padding:4px 8px; text-align:right; border-bottom:1px solid #000;">${receivedShown.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+            <tr style="border-bottom:1px solid #000;">
+              <td style="padding:4px 8px; font-weight:bold;">Received Amount</td>
+              <td style="padding:4px 8px; text-align:right; border-left:1px solid #000; font-weight:bold;">${receivedShown.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
             </tr>
-            <tr>
-              <td style="padding:4px 8px; font-weight:bold;">Current Due Amount</td>
-              <td style="padding:4px 8px; text-align:right; font-weight:bold;">${due.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+            <tr style="background-color:#fafafa;">
+              <td style="padding:5px 8px; font-weight:bold; font-size:11px;">Current Due Amount</td>
+              <td style="padding:5px 8px; text-align:right; font-weight:bold; border-left:1px solid #000; font-size:11px;">${currentDueAmount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
             </tr>
           </table>
         </td>
-
       </tr>
     </table>
 
-    <!-- Warranty Void Info -->
-    <div style="border:1px solid #000; text-align:center; padding:4px 8px; font-size:11px; margin: 16px 10% 30px 10%;">
-      <b>Warranty Void</b> - ${esc(settings.invoiceWarrantyNote || "The Warranty Is Not Applicable To Adaptor, Remote Control, Sticker-removed Items, Burnt & Physically Damaged Item.")}
+    <!-- Warranty Void Info Box -->
+    <div style="border:1.5px solid #000; text-align:center; padding:6px 12px; font-size:11px; margin: 12px auto 28px auto; font-weight:bold; max-width:90%;">
+      Warranty Void - ${esc(settings.invoiceWarrantyNote || "The Warranty Is Not Applicable To Adaptor, Remote Control, Sticker-removed Items, Burnt & Physically Damaged Item.")}
     </div>
 
-    <!-- Absolute positioning for Footer to stay at the bottom of the page -->
-    <div style="position: absolute; bottom: 2.50cm; left: 2.50cm; right: 2.50cm;">
+    <!-- Absolute positioning for Footer to stay at the bottom of the A4 page -->
+    <div style="position: absolute; bottom: 1.50cm; left: 1.50cm; right: 1.50cm;">
       ${settings.invoiceFullFooterUrl ? 
         `<div style="width:100%; text-align:center; margin-bottom:8px;">
            <img src="${settings.invoiceFullFooterUrl}" style="max-width:100%; object-fit:contain;" />
          </div>` :
-        `${settings.invoiceShowComputerGenerated === false ? "" : `<div style="text-align:center; font-size:12px; font-weight:bold; letter-spacing:2px; margin-bottom:12px; color:#333;">Computer Generated Bill, No Sign Required</div>`}
+        `${settings.invoiceShowComputerGenerated === false ? "" : `<div style="text-align:center; font-size:11px; font-weight:bold; letter-spacing:1px; margin-bottom:10px; color:#111;">Computer Generated Bill, No Sign Required</div>`}
          
-         <div style="text-align:center; margin-bottom:8px; display:flex; justify-content:center; align-items:center; gap:20px; flex-wrap:wrap;">
+         <div style="text-align:center; margin-bottom:8px; display:flex; justify-content:center; align-items:center; gap:24px; flex-wrap:wrap;">
            ${settings.invoiceFooterBrandLogos?.length 
-             ? settings.invoiceFooterBrandLogos.map(url => `<img src="${url}" style="height:30px; object-fit:contain;" />`).join("")
+             ? settings.invoiceFooterBrandLogos.map(url => `<img src="${url}" style="height:25px; object-fit:contain;" />`).join("")
              : `
-               <span style="font-weight:bold; font-size:16px; color:#d32f2f; font-style:italic;">HIKVISION</span>
-               <span style="font-weight:bold; font-size:16px;">unv</span>
-               <span style="font-weight:bold; font-size:16px; color:#f57c00;">IMOU</span>
-               <span style="font-weight:bold; font-size:16px; color:#0288d1;">tp-link</span>
-               <span style="font-weight:bold; font-size:16px; color:#e65100; font-style:italic;">Tenda</span>
+               <span style="font-weight:bold; font-size:14px; color:#d32f2f; font-style:italic; letter-spacing:0.5px;">HIKVISION</span>
+               <span style="font-weight:bold; font-size:14px; letter-spacing:0.5px;">unv</span>
+               <span style="font-weight:bold; font-size:14px; color:#f57c00; letter-spacing:0.5px;">IMOU</span>
+               <span style="font-weight:bold; font-size:14px; color:#0288d1; letter-spacing:0.5px;">tp-link</span>
+               <span style="font-weight:bold; font-size:14px; color:#e65100; font-style:italic; letter-spacing:0.5px;">Tenda</span>
              `}
          </div>`
       }
 
-      <div style="display:flex; justify-content:space-between; font-size:10px; border-top:1px solid #000; padding-top:6px; font-weight:bold;">
+      <div style="display:flex; justify-content:space-between; font-size:9.5px; border-top:1px solid #000; padding-top:6px; font-weight:bold;">
         <span>Print Date &amp; Time : ${esc(printStr)}</span>
         <span>Page 1 of 1</span>
       </div>

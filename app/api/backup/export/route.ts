@@ -10,7 +10,7 @@ import { prisma } from "@/server/db/client";
  * customers, suppliers, accounts, expenses, etc.
  */
 export const GET = apiHandler(async (ctx: Ctx) => {
-  const shopId = ctx.shopId;
+  const shopId = process.env.DEFAULT_SHOP_ID ?? "default";
 
   const [
     categories,

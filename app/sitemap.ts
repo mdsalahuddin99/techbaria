@@ -78,10 +78,6 @@ const staticPages: MetadataRoute.Sitemap = [
 
 async function getProductPages(): Promise<MetadataRoute.Sitemap> {
   try {
-    // If no shop is seeded yet, return empty
-    const shopId = process.env.DEFAULT_SHOP_ID;
-    if (!shopId) return [];
-
     const products = await prisma.product.findMany({
       where: { isPublished: true },
       select: { slug: true, updatedAt: true },

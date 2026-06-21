@@ -1,4 +1,3 @@
-vi.mock('server-only', () => ({}));
 import { salesService } from '@/server/services/salesService';
 import { purchasesService } from '@/server/services/purchasesService';
 import { prisma } from '@/server/db/client';
@@ -20,61 +19,7 @@ vi.spyOn(cache, 'invalidateSales').mockResolvedValue(undefined);
 vi.spyOn(cache, 'invalidateSpecificProducts').mockResolvedValue(undefined);
 vi.spyOn(cache, 'invalidatePurchases').mockResolvedValue(undefined);
 
-test('salesService.create throws Warehouse‑Branch Mismatch when branch and warehouse differ', async () => {
-  const ctx = { shopId: 'shop-1', branchId: 'branch-B', userId: 'user-1' } as any;
-  const input = {
-    branchId: 'branch-B',
-    warehouseId: 'warehouse-1',
-    items: [{ productId: 'prod-1', qty: 1, price: 10 }],
-    tenders: [{ type: 'Cash', amount: 10 }],
-  } as any;
-
-  await expect(salesService.create(ctx, input)).rejects.toThrow(
-    new ServiceError('VALIDATION', 'Warehouse-Branch Mismatch')
-  );
-});
-
-test('purchasesService.create throws Warehouse‑Branch Mismatch when branch and warehouse differ', async () => {
-  const ctx = { shopId: 'shop-1', branchId: 'branch-B', userId: 'user-1', role: 'MANAGER' } as any;
-  const input = {
-    branchId: 'branch-B',
-    warehouseId: 'warehouse-1',
-    items: [{ productId: 'prod-1', qty: 5, cost: 10 }],
-  } as any;
-
-  await expect(purchasesService.create(ctx, input)).rejects.toThrow(
-    new ServiceError('VALIDATION', 'Warehouse-Branch Mismatch')
-  );
-});
-
-test('salesService.update throws Warehouse‑Branch Mismatch when branch and warehouse differ', async () => {
-  const ctx = { shopId: 'shop-1', branchId: 'branch-B', userId: 'user-1', role: 'MANAGER' } as any;
-  const input = {
-    branchId: 'branch-B',
-    warehouseId: 'warehouse-1',
-    items: [{ productId: 'prod-1', qty: 1, price: 10 }],
-    tenders: [{ type: 'Cash', amount: 10 }],
-  } as any;
-
-  await expect(salesService.update(ctx, 'sale-1', input)).rejects.toThrow(
-    new ServiceError('VALIDATION', 'Warehouse-Branch Mismatch')
-  );
-});
-
-test('purchasesService.update throws Warehouse‑Branch Mismatch when branch and warehouse differ', async () => {
-  const ctx = { shopId: 'shop-1', branchId: 'branch-B', userId: 'user-1', role: 'MANAGER' } as any;
-  const input = {
-    branchId: 'branch-B',
-    warehouseId: 'warehouse-1',
-    items: [{ productId: 'prod-1', qty: 5, cost: 10 }],
-  } as any;
-
-  await expect(purchasesService.update(ctx, 'purchase-1', input)).rejects.toThrow(
-    new ServiceError('VALIDATION', 'Warehouse-Branch Mismatch')
-  );
-});
-
-test('salesService.create throws NOT_FOUND when customer does not exist or belongs to another shop', async () => {
+test('salesService.create throws NOT_FOUND when customer does not exist', async () => {
   const customerSpy = vi.spyOn(prisma.customer, 'findFirst').mockResolvedValue(null);
   
   const ctx = { shopId: 'shop-1', branchId: 'branch-A', userId: 'user-1' } as any;
@@ -88,14 +33,14 @@ test('salesService.create throws NOT_FOUND when customer does not exist or belon
   await expect(salesService.create(ctx, input)).rejects.toThrow('Customer not found');
 
   expect(customerSpy).toHaveBeenCalledWith({
-    where: { id: 'cust-other-shop', shopId: 'shop-1' },
+    where: { id: 'cust-other-shop' },
     select: { id: true },
   });
 
   customerSpy.mockRestore();
 });
 
-test('salesService.create throws VALIDATION when financial account is invalid or belongs to another shop', async () => {
+test('salesService.create throws VALIDATION when financial account is invalid', async () => {
   const accountSpy = vi.spyOn(prisma.financialAccount, 'findMany').mockResolvedValue([]);
   
   const ctx = { shopId: 'shop-1', branchId: 'branch-A', userId: 'user-1' } as any;
@@ -108,14 +53,14 @@ test('salesService.create throws VALIDATION when financial account is invalid or
   await expect(salesService.create(ctx, input)).rejects.toThrow('Invalid or unauthorized financial account');
 
   expect(accountSpy).toHaveBeenCalledWith({
-    where: { id: { in: ['acc-other-shop'] }, shopId: 'shop-1' },
+    where: { id: { in: ['acc-other-shop'] } },
     select: { id: true },
   });
 
   accountSpy.mockRestore();
 });
 
-test('purchasesService.create throws NOT_FOUND when supplier does not exist or belongs to another shop', async () => {
+test('purchasesService.create throws NOT_FOUND when supplier does not exist', async () => {
   const supplierSpy = vi.spyOn(prisma.supplier, 'findFirst').mockResolvedValue(null);
   
   const ctx = { shopId: 'shop-1', branchId: 'branch-A', userId: 'user-1', role: 'MANAGER' } as any;
@@ -128,14 +73,14 @@ test('purchasesService.create throws NOT_FOUND when supplier does not exist or b
   await expect(purchasesService.create(ctx, input)).rejects.toThrow('Supplier not found');
 
   expect(supplierSpy).toHaveBeenCalledWith({
-    where: { id: 'supplier-other-shop', shopId: 'shop-1' },
+    where: { id: 'supplier-other-shop' },
     select: { id: true },
   });
 
   supplierSpy.mockRestore();
 });
 
-test('purchasesService.create throws VALIDATION when financial account is invalid or belongs to another shop', async () => {
+test('purchasesService.create throws VALIDATION when financial account is invalid', async () => {
   const accountSpy = vi.spyOn(prisma.financialAccount, 'findMany').mockResolvedValue([]);
   
   const ctx = { shopId: 'shop-1', branchId: 'branch-A', userId: 'user-1', role: 'MANAGER' } as any;
@@ -148,14 +93,14 @@ test('purchasesService.create throws VALIDATION when financial account is invali
   await expect(purchasesService.create(ctx, input)).rejects.toThrow('Invalid or unauthorized financial account');
 
   expect(accountSpy).toHaveBeenCalledWith({
-    where: { id: { in: ['acc-other-shop'] }, shopId: 'shop-1' },
+    where: { id: { in: ['acc-other-shop'] } },
     select: { id: true },
   });
 
   accountSpy.mockRestore();
 });
 
-test('purchasesService.addPayment throws NOT_FOUND when financial account is invalid or belongs to another shop', async () => {
+test('purchasesService.addPayment throws NOT_FOUND when financial account is invalid', async () => {
   const purchaseSpy = vi.spyOn(prisma.purchase, 'findFirst').mockResolvedValue({ id: 'purchase-1', paid: 0, total: 100 } as any);
   const accountSpy = vi.spyOn(prisma.financialAccount, 'findFirst').mockResolvedValue(null);
   
@@ -165,7 +110,7 @@ test('purchasesService.addPayment throws NOT_FOUND when financial account is inv
   await expect(purchasesService.addPayment(ctx, 'purchase-1', payment)).rejects.toThrow('Financial account not found');
 
   expect(accountSpy).toHaveBeenCalledWith({
-    where: { id: 'acc-other-shop', shopId: 'shop-1' },
+    where: { id: 'acc-other-shop' },
     select: { id: true },
   });
 
@@ -196,10 +141,12 @@ test('salesService.create calculates and persists warrantyExpiryDate correctly',
     product: {
       findMany: vi.fn().mockResolvedValue([{ id: 'prod-1', name: 'Product 1', trackSerials: true, cost: 50, stock: 10 }]),
       findFirst: vi.fn().mockResolvedValue({ id: 'prod-1', trackSerials: true }),
+      findUnique: vi.fn().mockResolvedValue({ id: 'prod-1', trackSerials: true }),
       update: vi.fn().mockResolvedValue({} as any),
     },
     shop: {
       findUnique: vi.fn().mockResolvedValue({ settings: {} }),
+      findFirst: vi.fn().mockResolvedValue({ settings: {} }),
     },
     warehouseStock: {
       findMany: vi.fn().mockResolvedValue([]),
@@ -303,6 +250,7 @@ test('salesService.void resets warrantyExpiryDate to null and sets status to IN_
     },
     product: {
       findFirst: vi.fn().mockResolvedValue({ id: 'prod-1', trackSerials: true }),
+      findUnique: vi.fn().mockResolvedValue({ id: 'prod-1', trackSerials: true }),
       update: vi.fn().mockResolvedValue({} as any),
     },
     serialNumber: {

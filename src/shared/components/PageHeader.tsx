@@ -17,23 +17,22 @@ export function PageHeader({ title, description, actions, className }: PageHeade
     <div
       className={cn(
         "flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-5 md:mb-6",
-        "px-4 py-3 rounded-lg border border-[var(--theme-border-light,hsl(var(--border)))] bg-[var(--theme-bg-light,hsl(var(--card)))]",
-        "border-l-4 border-l-[var(--theme-color,hsl(var(--primary)))] shadow-sm transition-all duration-300",
+        "px-5 py-4 rounded-lg bg-[var(--theme-color,hsl(var(--primary)))] shadow-md border border-[var(--theme-color,hsl(var(--primary)))] page-header-solid text-white transition-all duration-300",
         className
       )}
     >
       <div className="min-w-0 flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
-        <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-[var(--theme-color,hsl(var(--foreground)))]">
+        <h1 className="text-xl md:text-2xl font-bold tracking-tight text-white">
           {title}
         </h1>
         {description ? (
-          <span className="text-xs md:text-sm text-muted-foreground font-normal">
+          <span className="text-xs md:text-sm text-white/85 font-normal">
             — {description}
           </span>
         ) : null}
       </div>
       {actions ? (
-        <div className="flex flex-wrap items-center gap-2 shrink-0">{actions}</div>
+        <div className="flex flex-wrap items-center gap-2 shrink-0 header-actions">{actions}</div>
       ) : null}
     </div>
   );

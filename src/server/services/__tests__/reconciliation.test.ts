@@ -14,7 +14,7 @@ describe("inventoryService.syncStockCount reconciliation logic", () => {
     // Mock transaction client (tx)
     const tx = {
       product: {
-        findFirst: vi.fn().mockResolvedValue({ id: productId, trackSerials: true }),
+        findUnique: vi.fn().mockResolvedValue({ id: productId, trackSerials: true }),
         update: updateSpy.mockResolvedValue({ id: productId, stock: 10 }),
       },
       serialNumber: {
@@ -32,7 +32,7 @@ describe("inventoryService.syncStockCount reconciliation logic", () => {
     await inventoryService.syncStockCount(tx, warehouseId, productId);
 
     // Verify product status query
-    expect(tx.product.findFirst).toHaveBeenCalledWith({
+    expect(tx.product.findUnique).toHaveBeenCalledWith({
       where: { id: productId },
       select: { trackSerials: true },
     });
@@ -66,7 +66,7 @@ describe("inventoryService.syncStockCount reconciliation logic", () => {
 
     const tx = {
       product: {
-        findFirst: vi.fn().mockResolvedValue({ id: productId, trackSerials: false }),
+        findUnique: vi.fn().mockResolvedValue({ id: productId, trackSerials: false }),
       },
       serialNumber: {
         count: vi.fn(),

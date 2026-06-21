@@ -73,7 +73,7 @@ export default function SettingsPage() {
       />
 
       {/* Language switcher */}
-      <Card className="p-4 max-w-4xl flex items-center justify-between gap-4">
+      <Card className="p-4 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3 min-w-0">
           <div className="h-9 w-9 rounded-md bg-primary/10 grid place-items-center shrink-0">
             <Languages className="h-4 w-4 text-primary" />
@@ -118,7 +118,7 @@ export default function SettingsPage() {
 
         {/* Shop info */}
         <TabsContent value="shop" className="mt-4">
-          <Card className="p-6 space-y-4 max-w-4xl">
+          <Card className="p-6 space-y-4">
             <Field label="Shop Logo">
               <ImageUpload
                 value={form.logoUrl || undefined}
@@ -179,7 +179,7 @@ export default function SettingsPage() {
 
         {/* Receipt */}
         <TabsContent value="receipt" className="mt-4">
-          <Card className="p-6 space-y-4 max-w-4xl">
+          <Card className="p-6 space-y-4">
             <Field label="Receipt Footer">
               <Input value={form.receiptFooter} onChange={(e) => setForm({ ...form, receiptFooter: e.target.value })} />
             </Field>
@@ -213,7 +213,7 @@ export default function SettingsPage() {
 
         {/* Invoice Template */}
         <TabsContent value="invoice" className="mt-4">
-          <Card className="p-6 space-y-4 max-w-4xl">
+          <Card className="p-6 space-y-4">
             <div className="flex items-center gap-2">
               <FileText className="h-4 w-4 text-primary" />
               <h3 className="font-semibold">Printable A4 Invoice</h3>
@@ -377,7 +377,7 @@ export default function SettingsPage() {
 
         {/* Payment methods */}
         <TabsContent value="payments" className="mt-4">
-          <Card className="p-6 space-y-3 max-w-4xl">
+          <Card className="p-6 space-y-3">
             {(["Cash", "Card", "Mobile Banking"] as PaymentMethod[]).map((m) => (
               <div key={m} className="flex items-center justify-between p-3 border rounded-md">
                 <div>
@@ -400,7 +400,7 @@ export default function SettingsPage() {
 
         {/* Loyalty */}
         <TabsContent value="loyalty" className="mt-4">
-          <Card className="p-6 space-y-4 max-w-4xl">
+          <Card className="p-6 space-y-4">
             <div className="flex items-center justify-between p-3 border rounded-md">
               <div>
                 <p className="font-medium">Loyalty Program</p>
@@ -436,7 +436,7 @@ export default function SettingsPage() {
         {/* Data */}
         <TabsContent value="data" className="mt-4 space-y-4">
           {/* Full JSON Export */}
-          <Card className="p-6 max-w-4xl">
+          <Card className="p-6">
             <div className="flex items-center justify-between gap-3 p-3 border rounded-md">
               <div>
                 <p className="font-medium">📦 Full JSON Export</p>
@@ -451,7 +451,7 @@ export default function SettingsPage() {
           </Card>
 
           {/* CSV Exports */}
-          <Card className="p-6 space-y-3 max-w-4xl">
+          <Card className="p-6 space-y-3">
             <div className="flex items-center gap-2">
               <FileSpreadsheet className="h-4 w-4 text-primary" />
               <h3 className="font-semibold">CSV Exports</h3>
@@ -482,7 +482,7 @@ export default function SettingsPage() {
           </Card>
 
           {/* Danger Zone */}
-          <Card className="p-6 max-w-4xl">
+          <Card className="p-6">
             <h3 className="font-semibold text-destructive mb-3">⚠️ Danger Zone</h3>
             <div className="flex items-center justify-between gap-3 p-3 border rounded-md border-destructive/40 bg-destructive/5">
               <div>

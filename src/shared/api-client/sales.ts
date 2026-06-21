@@ -1,10 +1,18 @@
 /**
- * Typed fetch wrapper for the sales API.
+ * Typed client using Next.js Server Actions.
  */
-import { apiFetch } from "./fetch";
 import type { Sale, SaleReturn } from "@/features/sales/types";
-
-const BASE = "/api/sales";
+import {
+  listSalesAction,
+  getSaleByIdAction,
+  getSalesByCustomerAction,
+  createSaleAction,
+  voidSaleAction,
+  refundSaleAction,
+  updateSaleAction,
+  deleteSaleAction,
+  deleteReturnAction,
+} from "@/server/actions/sales";
 
 export interface PaginatedResponse<T> {
   items: T[];
@@ -14,27 +22,23 @@ export interface PaginatedResponse<T> {
 
 export const salesApi = {
   list(channel?: string, customerId?: string): Promise<PaginatedResponse<Sale>> {
-    const params = new URLSearchParams();
-    if (channel) params.set("channel", channel);
-    if (customerId) params.set("customerId", customerId);
-    const qs = params.toString();
-    return apiFetch<PaginatedResponse<Sale>>(`${BASE}${qs ? `?${qs}` : ""}`);
+    return listSalesAction(channel as any, customerId) as unknown as Promise<PaginatedResponse<Sale>>;
   },
 
   getById(id: string): Promise<Sale | null> {
-    return apiFetch<Sale | null>(`${BASE}/${id}`);
+    return getSaleByIdAction(id) as unknown as Promise<Sale | null>;
   },
 
   byCustomer(customerId: string): Promise<Sale[]> {
-    return apiFetch<Sale[]>(`${BASE}/by-customer?customerId=${encodeURIComponent(customerId)}`);
+    return getSalesByCustomerAction(customerId) as unknown as Promise<Sale[]>;
   },
 
   create(input: Record<string, unknown>): Promise<Sale> {
-    return apiFetch<Sale>(BASE, { method: "POST", body: JSON.stringify(input) });
+    return createSaleAction(input) as unknown as Promise<Sale>;
   },
 
   void(saleId: string, reason: string): Promise<void> {
-    return apiFetch<void>(`${BASE}/${saleId}/void`, { method: "POST", body: JSON.stringify({ reason }) });
+    return voidSaleAction(saleId, reason) as unknown as Promise<void>;
   },
 
   refund(input: {
@@ -45,10 +49,7 @@ export const salesApi = {
     reason: string;
     note?: string;
   }): Promise<SaleReturn> {
-    return apiFetch<SaleReturn>(`${BASE}/${input.saleId}/refund`, {
-      method: "POST",
-      body: JSON.stringify(input),
-    });
+    return refundSaleAction(input.saleId, input) as unknown as Promise<SaleReturn>;
   },
 
   listReturns(): Promise<SaleReturn[]> {
@@ -59,14 +60,14 @@ export const salesApi = {
   },
 
   deleteReturn(id: string): Promise<void> {
-    return apiFetch<void>(`/api/returns/${id}`, { method: "DELETE" });
+    return deleteReturnAction(id).then(() => undefined);
   },
 
   remove(id: string): Promise<void> {
-    return apiFetch<void>(`${BASE}/${id}`, { method: "DELETE" });
+    return deleteSaleAction(id).then(() => undefined);
   },
 
   update(id: string, input: Record<string, unknown>): Promise<Sale> {
-    return apiFetch<Sale>(`${BASE}/${id}`, { method: "PATCH", body: JSON.stringify(input) });
+    return updateSaleAction(id, input) as unknown as Promise<Sale>;
   },
 };

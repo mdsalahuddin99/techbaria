@@ -14,6 +14,7 @@ export function serialiseOne(p: any) {
     ...p,
     // Override Decimal fields from spread with plain numbers
     price: Number(p.price),
+    cost: Number(p.cost),
     category: (p as any).category?.name ?? (p as any).category ?? "",
     // Frontend type uses `active` but Prisma stores `isPublished`
     active: p.isPublished,

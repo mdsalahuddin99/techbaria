@@ -7,14 +7,14 @@ import { accountsService } from "@/server/services/accountsService";
 import type { Ctx } from "@/server/lib/ctx";
 
 /**
- * GET /api/pos/init[?branchId=<id>]
+ * GET /api/pos/init[?warehouseId=<id>]
  *
  * Returns all invoice-page data in a single response.
- * When `branchId` is supplied, products are filtered to those with
- * an active BranchStock entry (qty > 0) for that branch — not the
+ * When `warehouseId` is supplied, products are filtered to those with
+ * an active WarehouseStock entry (qty > 0) for that warehouse — not the
  * global aggregate stock — enforcing the warehouse-scoped stock rule.
  *
- * Without `branchId`, falls back to the global stock filter
+ * Without `warehouseId`, falls back to the global stock filter
  * (stock > 0 && purchaseItems.some) for backward compatibility.
  */
 export const GET = apiHandler(async (ctx: Ctx, req: Request) => {
@@ -47,6 +47,14 @@ export const GET = apiHandler(async (ctx: Ctx, req: Request) => {
             supplierId: true,
             warrantyStartDate: true,
             warrantyMonths: true,
+            purchaseItems: {
+              orderBy: { purchase: { createdAt: "desc" } },
+              take: 1,
+              select: {
+                warrantyStartDate: true,
+                warrantyMonths: true,
+              },
+            },
             category: { select: { name: true } },
             images: { select: { url: true }, take: 1, orderBy: { position: "asc" as const } },
             brand: { select: { name: true } },
@@ -95,6 +103,14 @@ export const GET = apiHandler(async (ctx: Ctx, req: Request) => {
             supplierId: true,
             warrantyStartDate: true,
             warrantyMonths: true,
+            purchaseItems: {
+              orderBy: { purchase: { createdAt: "desc" } },
+              take: 1,
+              select: {
+                warrantyStartDate: true,
+                warrantyMonths: true,
+              },
+            },
             category: { select: { name: true } },
             images: { select: { url: true }, take: 1, orderBy: { position: "asc" as const } },
             brand: { select: { name: true } },
@@ -117,7 +133,22 @@ export const GET = apiHandler(async (ctx: Ctx, req: Request) => {
           take: 500,
         }),
     prisma.customer.findMany({
-      select: { id: true, name: true, phone: true, balance: true, due: true, group: true },
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        balance: true,
+        due: true,
+        group: true,
+        address: true,
+        email: true,
+        sales: {
+          select: {
+            id: true,
+            data: true
+          }
+        }
+      },
       orderBy: { createdAt: "desc" },
     }),
     accountsService.list(ctx),
@@ -169,8 +200,8 @@ export const GET = apiHandler(async (ctx: Ctx, req: Request) => {
       condition: p.condition ?? undefined,
       trackSerials: p.trackSerials ?? true,
       supplierId: p.supplierId ?? null,
-      warrantyStartDate: p.warrantyStartDate ?? undefined,
-      warrantyMonths: p.warrantyMonths ?? undefined,
+      warrantyStartDate: p.warrantyStartDate ?? p.purchaseItems?.[0]?.warrantyStartDate ?? undefined,
+      warrantyMonths: p.warrantyMonths ?? p.purchaseItems?.[0]?.warrantyMonths ?? undefined,
       type: "simple" as const,
       serials: (p.serialNumbers || []).map((s: any) => ({
         serialNumber: s.serial,
@@ -183,9 +214,26 @@ export const GET = apiHandler(async (ctx: Ctx, req: Request) => {
     };
   });
 
+  const serializedCustomers = customers.map((c: any) => ({
+    id: c.id,
+    name: c.name,
+    phone: c.phone ?? "",
+    balance: Number(c.balance ?? 0),
+    due: Number(c.due ?? 0),
+    group: c.group,
+    address: c.address ?? undefined,
+    email: c.email ?? undefined,
+    sales: (c.sales ?? []).map((s: any) => {
+      const d = (s.data ?? {}) as Record<string, any>;
+      return {
+        invoiceNo: (d.invoiceNo as string) ?? s.id.slice(0, 8).toUpperCase()
+      };
+    })
+  }));
+
   return {
     products: { items: products, nextCursor: null, hasMore: false },
-    customers,
+    customers: serializedCustomers,
     accounts,
     warehouses,
     categories,

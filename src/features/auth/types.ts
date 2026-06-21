@@ -19,7 +19,6 @@ export interface AuthUser {
   name: string;
   image?: string | null;
   role: UserRole;
-  shopId?: string;
 }
 
 export interface AuthSession {

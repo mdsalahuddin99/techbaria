@@ -15,6 +15,7 @@ export interface Customer {
   creditLimit?: number;
   address?: string;
   notes?: string;
+  sales?: Array<{ invoiceNo: string }>;
   createdAt: string;
 }
 

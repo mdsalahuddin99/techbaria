@@ -4,6 +4,7 @@ import React, { useMemo, useState, useEffect, useCallback, useRef } from "react"
 import { usePageTitle } from "@/shared/hooks/usePageTitle";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useSearchParams, useRouter } from "next/navigation";
+import { useAuth } from "@/features/auth/AuthProvider";
 
 import { Button } from "@/shared/ui/button";
 import { LoadingButton } from "@/shared/ui/loading-button";
@@ -26,7 +27,7 @@ import { customersApi } from "@/shared/api-client/customers";
 import { salesApi } from "@/shared/api-client/sales";
 import { apiFetch } from "@/shared/api-client/fetch";
 import { saleCreateSchema } from "@/shared/validators/sale";
-import { CheckCircle2, Printer, Plus, Pause, Trash2, Receipt } from "lucide-react";
+import { CheckCircle2, Printer, Plus, Pause, Trash2, Receipt, Search } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/shared/ui/popover";
 import { Input } from "@/shared/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
@@ -42,6 +43,7 @@ export default function NewSale() {
   const queryClient = useQueryClient();
   const editingSaleId = searchParams.get("saleId") ?? null;
   const cashAccounts = useAccountsByType("cash");
+  const { session } = useAuth();
 
   const [selectedWarehouseId, setSelectedWarehouseId] = useState<string | null>(null);
 
@@ -72,6 +74,15 @@ export default function NewSale() {
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [saleLoading, setSaleLoading] = useState(false);
   const [salesPerson, setSalesPerson] = useState("");
+  const salesPersonInitialized = useRef(false);
+
+  // Auto-set sales person to logged-in user for new invoices
+  useEffect(() => {
+    if (!editingSaleId && session?.user?.name && !salesPersonInitialized.current) {
+      setSalesPerson(session.user.name);
+      salesPersonInitialized.current = true;
+    }
+  }, [session, editingSaleId]);
   const [narration, setNarration] = useState("");
   const [vat, setVat] = useState<number>(0);
   const [extraCharges, setExtraCharges] = useState<number>(0);
@@ -79,6 +90,7 @@ export default function NewSale() {
   const [quickPhone, setQuickPhone] = useState("");
   const [heldOpen, setHeldOpen] = useState(false);
   const vSearchRef = useRef<HTMLInputElement>(null);
+
   const voucherRowRefs = useRef<
     Map<string, { serialRef: React.RefObject<HTMLButtonElement>; qtyRef: React.RefObject<HTMLInputElement> }>
   >(new Map());
@@ -348,11 +360,61 @@ export default function NewSale() {
     setVoucherSubcategory("all");
     setVoucherSearchQuery("");
     setShowSuggestions(false);
-    setSalesPerson("");
+    setSalesPerson(session?.user?.name ?? "");
     setNarration("");
     setVat(0);
     setExtraCharges(0);
-  }, []);
+  }, [session]);
+
+  // ── Context event listeners for global Command Palette ────────────────────
+  useEffect(() => {
+    const handleFocusProduct = () => {
+      vSearchRef.current?.focus();
+    };
+    const handleFocusCustomer = () => {
+      document.getElementById("pos-customer-search-btn")?.click();
+    };
+    const handleClearCart = () => {
+      clearVoucher();
+    };
+    const handleQuickDiscount = () => {
+      const discountInput = document.querySelector<HTMLInputElement>("input[name='row-discount']");
+      if (discountInput) {
+        discountInput.focus();
+        discountInput.select();
+      } else {
+        toast.info("Add an item first to apply a discount");
+      }
+    };
+    const handleAddProductById = (e: Event) => {
+      const customEvent = e as CustomEvent<string>;
+      if (customEvent.detail) {
+        addProductToVoucher(customEvent.detail);
+      }
+    };
+    const handleSelectCustomerById = (e: Event) => {
+      const customEvent = e as CustomEvent<string>;
+      if (customEvent.detail !== undefined) {
+        setVoucherCustomerId(customEvent.detail);
+      }
+    };
+
+    window.addEventListener("cmd:focus-product-search", handleFocusProduct);
+    window.addEventListener("cmd:focus-customer-search", handleFocusCustomer);
+    window.addEventListener("cmd:clear-cart", handleClearCart);
+    window.addEventListener("cmd:quick-discount", handleQuickDiscount);
+    window.addEventListener("cmd:add-product-by-id", handleAddProductById);
+    window.addEventListener("cmd:select-customer-by-id", handleSelectCustomerById);
+
+    return () => {
+      window.removeEventListener("cmd:focus-product-search", handleFocusProduct);
+      window.removeEventListener("cmd:focus-customer-search", handleFocusCustomer);
+      window.removeEventListener("cmd:clear-cart", handleClearCart);
+      window.removeEventListener("cmd:quick-discount", handleQuickDiscount);
+      window.removeEventListener("cmd:add-product-by-id", handleAddProductById);
+      window.removeEventListener("cmd:select-customer-by-id", handleSelectCustomerById);
+    };
+  }, [clearVoucher, addProductToVoucher]);
 
   // ── Held Sales ──────────────────────────────────────────────────────────
   const holdCurrentSale = async () => {
@@ -521,33 +583,144 @@ export default function NewSale() {
 
   // ── Render ───────────────────────────────────────────────────────────────
   return (
-    <div className="flex flex-col lg:flex-row gap-6 p-4 max-w-[1600px] mx-auto pb-10">
-      {/* Tier 1: Left Sidebar */}
-      <div className="w-full lg:w-64 shrink-0">
-        <CustomerSidebar
-          customers={customers}
-          customerId={voucherCustomerId}
-          onCustomerChange={setVoucherCustomerId}
-        />
+    <div className="w-full max-w-[1600px] mx-auto p-0 space-y-4">
+      {/* POS Top Actions Menu Bar */}
+      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 bg-card border border-border p-3.5 rounded-[4px] shadow-sm">
+        {/* Left Side: Invoice Title, Subtitle, and Date */}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+          <div>
+            <h1 className="text-sm md:text-base font-bold text-slate-800 tracking-tight flex items-center gap-2">
+              {editingSaleId ? "Edit Sale Invoice" : "New Sale Invoice"}
+              <span className="text-xs font-semibold text-slate-400">·</span>
+              <span className="text-xs font-semibold text-slate-500">
+                {new Date().toLocaleDateString("en-GB", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                })}
+              </span>
+            </h1>
+            <p className="text-[10px] md:text-[11px] text-slate-400">
+              {editingSaleId
+                ? "Update the existing invoice details."
+                : "Add products and record payment."}
+            </p>
+          </div>
+        </div>
+
+        {/* Right Side: Actions & Search */}
+        <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+          <Button
+            variant="outline"
+            onClick={() => router.push("/dashboard/sales")}
+            className="h-9 px-3.5 border-border bg-card text-xs font-semibold rounded-[4px] hover:bg-secondary text-slate-700 flex items-center gap-2"
+          >
+            <Search className="h-3.5 w-3.5 text-muted-foreground" />
+            Invoice Search
+          </Button>
+
+          <Popover open={heldOpen} onOpenChange={setHeldOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className="h-9 px-3.5 border-border bg-card text-xs font-semibold rounded-[4px] hover:bg-secondary text-slate-700 relative flex items-center gap-2"
+              >
+                <Pause className="h-3.5 w-3.5 text-muted-foreground" />
+                Draft Invoices
+                {heldSales.length > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 bg-primary text-primary-foreground text-[10px] h-5 w-5 flex items-center justify-center rounded-full font-bold">
+                    {heldSales.length}
+                  </span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-80 p-2 z-50">
+              {heldSales.length === 0 ? (
+                <p className="text-sm text-muted-foreground p-4 text-center">No held sales</p>
+              ) : (
+                <ul className="max-h-72 overflow-y-auto space-y-1">
+                  {heldSales.map((h: any) => (
+                    <li key={h.id} className="flex items-center gap-2 p-2 rounded-md hover:bg-secondary">
+                      <button
+                        type="button"
+                        className="flex-1 min-w-0 text-left"
+                        onClick={() => resumeHeldSale(h.id)}
+                      >
+                        <p className="text-sm font-medium truncate">{h.customerName || "Walk-in"}</p>
+                        <p className="text-[11px] text-muted-foreground">
+                          {h.cart.reduce((s: any, i: any) => s + i.qty, 0)} items
+                        </p>
+                      </button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8 text-destructive shrink-0"
+                        onClick={() => deleteHeldSale(h.id)}
+                        title="Discard"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </PopoverContent>
+          </Popover>
+
+          {voucherRows.length > 0 && (
+            <Button
+              variant="ghost"
+              onClick={clearVoucher}
+              className="h-9 px-3 text-xs font-semibold rounded-[4px] text-destructive hover:bg-destructive/10 hover:text-destructive flex items-center gap-1.5"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Clear Cart
+            </Button>
+          )}
+
+          {/* Global Search trigger bar inside the page */}
+          <div className="w-full sm:w-64 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
+            <Input
+              placeholder="Search products, customers, orders..."
+              onClick={() => {
+                window.dispatchEvent(new CustomEvent("cmd:open-palette"));
+              }}
+              className="pl-9 h-9 bg-secondary/40 hover:bg-secondary border-border text-xs rounded-[4px] cursor-pointer w-full"
+              readOnly
+            />
+          </div>
+        </div>
       </div>
 
-      {/* Right Content Grouped into Center (Tier 2) and Right (Tier 3) */}
-      <div className="flex-1 flex flex-col xl:flex-row gap-6 min-w-0">
-        {/* Tier 2: Center List (Invoice & Items) */}
-        <div className="flex-1 space-y-5 min-w-0">
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* Tier 1: Left Sidebar */}
+        <div className="w-full lg:w-72 shrink-0">
+          <CustomerSidebar
+            customers={customers}
+            customerId={voucherCustomerId}
+            onCustomerChange={setVoucherCustomerId}
+          />
+        </div>
+
+        {/* Right Content Column */}
+        <div className="flex-1 space-y-6 min-w-0 pb-20 relative">
           {/* Invoice card */}
           <div className="bg-card rounded-[4px] border border-border p-4 md:p-6 space-y-5">
-            <InvoiceHeader
-              warehouses={warehouses}
-              selectedWarehouseId={selectedWarehouseId}
-              onWarehouseChange={(id) => {
-                setSelectedWarehouseId(id);
-                clearVoucher();
-              }}
-              editMode={!!editingSaleId}
-            />
-
-            <div className="border-t border-border" />
+            {warehouses?.length > 1 && (
+              <>
+                <InvoiceHeader
+                  warehouses={warehouses}
+                  selectedWarehouseId={selectedWarehouseId}
+                  onWarehouseChange={(id) => {
+                    setSelectedWarehouseId(id);
+                    clearVoucher();
+                  }}
+                  editMode={!!editingSaleId}
+                />
+                <div className="border-t border-border" />
+              </>
+            )}
 
             {/* Product search + filter bar */}
             {!selectedWarehouseId ? (
@@ -610,67 +783,73 @@ export default function NewSale() {
             )}
           </div>
 
-          {/* Action buttons / additional fields for smaller screens (< xl) */}
-          <div className="xl:hidden space-y-5">
-              <div className="bg-card rounded-[4px] border border-border p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">
-                    Sales Person
-                  </label>
-                  <Select value={salesPerson} onValueChange={setSalesPerson}>
-                    <SelectTrigger className="h-9 border-border bg-card text-sm rounded-[4px]">
-                      <SelectValue placeholder="Select sales person…" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {users.map((u: any) => (
-                        <SelectItem key={u.id} value={u.name}>
-                          {u.name} ({u.role.toLowerCase()})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">
-                    Add VAT (৳)
-                  </label>
-                  <Input
-                    type="number"
-                    min={0}
-                    value={vat || ""}
-                    onChange={(e) => setVat(Math.max(0, parseFloat(e.target.value) || 0))}
-                    placeholder="0.00"
-                    className="h-9 text-right text-sm border-border bg-card rounded-[4px]"
-                  />
+          {/* Bottom Section: Payment & Details (only when there are items in the cart) */}
+          {voucherRows.length > 0 && (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              {/* Left Sub-column: Additional Details */}
+              <div className="lg:col-span-4 space-y-4">
+                <div className="bg-card rounded-[4px] border border-border p-4 space-y-4 shadow-sm">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 border-b border-border pb-2">
+                    Additional Details
+                  </h3>
+                  <div className="space-y-3.5">
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">
+                        Sales Person
+                      </label>
+                      <Input
+                        type="text"
+                        value={salesPerson}
+                        onChange={(e) => setSalesPerson(e.target.value)}
+                        placeholder="Write sales person name…"
+                        className="h-9 text-sm border-border bg-card rounded-[4px]"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">
+                        Invoice Notes / Narration
+                      </label>
+                      <textarea
+                        value={narration}
+                        onChange={(e) => setNarration(e.target.value)}
+                        placeholder="Write invoice notes or narration here..."
+                        rows={4}
+                        className="w-full text-sm border border-border bg-card rounded-[4px] p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
 
-            {/* Payment card */}
-            {voucherRows.length > 0 && (
-              <PaymentCollector
-                subtotal={subtotal}
-                vat={vat}
-                extraCharges={extraCharges}
-                payments={payments}
-                onAddPayment={(p) => setPayments((prev) => [...prev, p])}
-                onRemovePayment={(idx) => {
-                  const removed = payments[idx];
-                  if (removed?.method === "Wallet") {
-                    setWalletAutoApplied(false);
-                  }
-                  setPayments((prev) => prev.filter((_, i) => i !== idx));
-                }}
-                customerId={voucherCustomerId}
-                customers={customers}
-                quickName={quickName}
-                quickPhone={quickPhone}
-                onQuickNameChange={setQuickName}
-                onQuickPhoneChange={setQuickPhone}
-              />
-            )}
+              {/* Right Sub-column: Payment Collector */}
+              <div className="lg:col-span-8 space-y-4">
+                <PaymentCollector
+                  subtotal={subtotal}
+                  vat={vat}
+                  extraCharges={extraCharges}
+                  payments={payments}
+                  onAddPayment={(p) => setPayments((prev) => [...prev, p])}
+                  onRemovePayment={(idx) => {
+                    const removed = payments[idx];
+                    if (removed?.method === "Wallet") {
+                      setWalletAutoApplied(false);
+                    }
+                    setPayments((prev) => prev.filter((_, i) => i !== idx));
+                  }}
+                  customerId={voucherCustomerId}
+                  customers={customers}
+                  quickName={quickName}
+                  quickPhone={quickPhone}
+                  onQuickNameChange={setQuickName}
+                  onQuickPhoneChange={setQuickPhone}
+                />
+              </div>
+            </div>
+          )}
 
-            {/* Action buttons */}
-            <div className="flex flex-wrap items-center justify-between gap-3 bg-card border border-border p-4 rounded-[4px]">
+          {/* Checkout & Action Buttons (Sticky at bottom of viewport) */}
+          {voucherRows.length > 0 && (
+            <div className="sticky bottom-0 bg-card/95 backdrop-blur-md border-t border-x border-border p-4 rounded-t-[6px] shadow-[0_-8px_30px_rgba(0,0,0,0.12)] flex flex-wrap items-center justify-between gap-3 z-30 transition-all duration-300">
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
@@ -736,21 +915,21 @@ export default function NewSale() {
                   <>
                     <Button
                       variant="outline"
-                      className="border-border h-10 text-sm rounded-[4px] font-semibold hover:bg-secondary text-xs"
+                      className="border-border h-10 text-xs rounded-[4px] font-semibold hover:bg-secondary"
                       onClick={() => setReceiptView("thermal")}
                     >
                       <Printer className="h-4 w-4 mr-1.5" /> Thermal
                     </Button>
                     <Button
                       variant="outline"
-                      className="border-border h-10 text-sm rounded-[4px] font-semibold hover:bg-secondary text-xs"
+                      className="border-border h-10 text-xs rounded-[4px] font-semibold hover:bg-secondary"
                       onClick={() => setReceiptView("invoice")}
                     >
                       <Printer className="h-4 w-4 mr-1.5" /> A4
                     </Button>
                     <Button
                       variant="outline"
-                      className="border-border h-10 text-sm rounded-[4px] font-semibold hover:bg-secondary text-xs"
+                      className="border-border h-10 text-xs rounded-[4px] font-semibold hover:bg-secondary"
                       onClick={() => {
                         clearVoucher();
                         setReceipt(null);
@@ -772,193 +951,8 @@ export default function NewSale() {
                 </LoadingButton>
               </div>
             </div>
-          </div>
-        </div>
-
-        {/* Tier 3: Right Summary & Payment (shown side-by-side only on xl screens) */}
-        <div className="hidden xl:flex flex-col w-72 shrink-0 gap-5 sticky top-4 h-fit max-h-[calc(100vh-2rem)] overflow-y-auto pr-1">
-          {voucherRows.length === 0 ? (
-            <div className="bg-card rounded-[4px] border border-border p-6 text-center text-slate-400">
-              <Receipt className="h-10 w-10 mx-auto mb-2 opacity-25" />
-              <p className="text-xs font-bold uppercase tracking-wider text-slate-500">No active invoice</p>
-              <p className="text-[11px] text-slate-400 mt-1">Add items to configure payment details.</p>
-            </div>
-          ) : (
-            <>
-              {/* Additional Fields (Sales Person, VAT, Extra Charges) */}
-            <div className="bg-card rounded-[4px] border border-border p-3 space-y-2.5">
-              <h3 className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                Additional Details
-              </h3>
-              <div className="space-y-2">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
-                    Sales Person
-                  </label>
-                  <Select value={salesPerson} onValueChange={setSalesPerson}>
-                    <SelectTrigger className="h-8 border-border bg-card text-xs rounded-[4px]">
-                      <SelectValue placeholder="Select…" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {users.map((u: any) => (
-                        <SelectItem key={u.id} value={u.name}>
-                          {u.name} ({u.role.toLowerCase()})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
-                    VAT (৳)
-                  </label>
-                  <Input
-                    type="number"
-                    min={0}
-                    value={vat || ""}
-                    onChange={(e) => setVat(Math.max(0, parseFloat(e.target.value) || 0))}
-                    placeholder="0"
-                    className="h-8 text-right text-xs border-border bg-card rounded-[4px]"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Payment card */}
-            <PaymentCollector
-              subtotal={subtotal}
-              vat={vat}
-              extraCharges={extraCharges}
-              payments={payments}
-              onAddPayment={(p) => setPayments((prev) => [...prev, p])}
-              onRemovePayment={(idx) => {
-                const removed = payments[idx];
-                if (removed?.method === "Wallet") {
-                  setWalletAutoApplied(false);
-                }
-                setPayments((prev) => prev.filter((_, i) => i !== idx));
-              }}
-              customerId={voucherCustomerId}
-              customers={customers}
-              quickName={quickName}
-              quickPhone={quickPhone}
-              onQuickNameChange={setQuickName}
-              onQuickPhoneChange={setQuickPhone}
-            />
-
-            {/* Action buttons */}
-            <div className="bg-card border border-border p-5 rounded-[4px] space-y-4">
-              <div className="flex flex-col gap-2.5">
-                <LoadingButton
-                  loading={isCheckingOut || saleLoading}
-                  disabled={voucherRows.length === 0 || !selectedWarehouseId}
-                  className="w-full h-11 bg-primary text-primary-foreground shadow-none hover:bg-primary/95 rounded-[4px] font-bold text-sm"
-                  onClick={handleCheckout}
-                >
-                  <CheckCircle2 className="h-4 w-4 mr-1.5" />
-                  {editingSaleId ? "Update Invoice" : "Save Invoice"}
-                </LoadingButton>
-
-                {receipt && (
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button
-                      variant="outline"
-                      className="border-border h-10 text-xs rounded-[4px] font-semibold hover:bg-secondary"
-                      onClick={() => setReceiptView("thermal")}
-                    >
-                      <Printer className="h-4 w-4 mr-1.5" /> Thermal
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="border-border h-10 text-xs rounded-[4px] font-semibold hover:bg-secondary"
-                      onClick={() => setReceiptView("invoice")}
-                    >
-                      <Printer className="h-4 w-4 mr-1.5" /> A4
-                    </Button>
-                  </div>
-                )}
-
-                {receipt && (
-                  <Button
-                    variant="outline"
-                    className="w-full border-border h-10 text-xs rounded-[4px] font-semibold hover:bg-secondary"
-                    onClick={() => {
-                      clearVoucher();
-                      setReceipt(null);
-                      setReceiptView(null);
-                    }}
-                  >
-                    <Plus className="h-4 w-4 mr-1.5" /> New Invoice
-                  </Button>
-                )}
-              </div>
-
-              <div className="border-t border-border my-2" />
-
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  className="flex-1 border-border text-slate-600 h-10 rounded-[4px] font-semibold hover:bg-secondary text-xs"
-                  onClick={() => router.push("/dashboard/sales")}
-                >
-                  Cancel
-                </Button>
-
-                <Popover open={heldOpen} onOpenChange={setHeldOpen}>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className="h-10 relative rounded-[4px] font-semibold hover:bg-secondary text-xs">
-                      Held
-                      {heldSales.length > 0 && (
-                        <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-[10px] h-5 w-5 flex items-center justify-center rounded-full font-bold">
-                          {heldSales.length}
-                        </span>
-                      )}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent align="start" className="w-80 p-2 z-50">
-                    {heldSales.length === 0 ? (
-                      <p className="text-sm text-muted-foreground p-4 text-center">No held sales</p>
-                    ) : (
-                      <ul className="max-h-72 overflow-y-auto space-y-1">
-                        {heldSales.map((h: any) => (
-                          <li key={h.id} className="flex items-center gap-2 p-2 rounded-md hover:bg-secondary">
-                            <button
-                              type="button"
-                              className="flex-1 min-w-0 text-left"
-                              onClick={() => resumeHeldSale(h.id)}
-                            >
-                              <p className="text-sm font-medium truncate">{h.customerName || "Walk-in"}</p>
-                              <p className="text-[11px] text-muted-foreground">
-                                {h.cart.reduce((s: any, i: any) => s + i.qty, 0)} items
-                              </p>
-                            </button>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="h-8 w-8 text-destructive shrink-0"
-                              onClick={() => deleteHeldSale(h.id)}
-                              title="Discard"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </PopoverContent>
-                </Popover>
-
-                {voucherRows.length > 0 && !editingSaleId && (
-                  <Button variant="outline" className="h-10 rounded-[4px] font-semibold hover:bg-secondary text-xs" onClick={holdCurrentSale}>
-                    <Pause className="h-4 w-4 mr-1.5" /> Hold
-                  </Button>
-                )}
-              </div>
-            </div>
-          </>
           )}
         </div>
-      </div>
 
       {/* Camera barcode scanner */}
       <CameraScanner
@@ -980,6 +974,7 @@ export default function NewSale() {
           onPickInvoice={() => setReceiptView("invoice")}
         />
       )}
+      </div>
     </div>
   );
 }

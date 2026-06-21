@@ -9,10 +9,11 @@ import { ServiceError } from "@/server/lib/errors";
 import { paginate, type PaginationParams } from "@/server/lib/paginate";
 import type { Ctx } from "@/server/lib/ctx";
 import { auditLogService } from "./auditLogService";
+import { serializeCustomer } from "@/server/lib/serialize";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
-export interface CustomerCreateInput {
+export interface CustomerCreatePayload {
   name: string;
   phone?: string;
   email?: string;
@@ -22,7 +23,7 @@ export interface CustomerCreateInput {
   notes?: string;
 }
 
-export interface CustomerUpdateInput {
+export interface CustomerUpdatePayload {
   name?: string;
   phone?: string;
   email?: string;
@@ -45,12 +46,16 @@ export const customersService = {
         { email: { contains: search, mode: "insensitive" as const } },
       ];
     }
-    return paginate(
+    const res = await paginate(
       prisma.customer,
       { where },
       params,
       { orderBy: { createdAt: "desc" as const } },
     );
+    return {
+      ...res,
+      items: res.items.map(serializeCustomer),
+    };
   },
 
   /** Get a single customer by ID. */
@@ -60,12 +65,24 @@ export const customersService = {
       include: { sales: { orderBy: { createdAt: "desc" }, take: 10 } },
     });
     if (!customer) throw new ServiceError("NOT_FOUND", "Customer not found", 404);
-    return customer;
+    return {
+      ...serializeCustomer(customer),
+      sales: customer.sales ? customer.sales.map((s: any) => ({
+        ...s,
+        total: Number(s.total),
+        subtotal: Number(s.subtotal),
+        discount: Number(s.discount),
+        paid: Number(s.paid),
+        due: Number(s.due),
+        createdAt: s.createdAt.toISOString(),
+        editedAt: s.editedAt ? s.editedAt.toISOString() : null,
+      })) : undefined,
+    };
   },
 
   /** Create a new customer. */
-  async create(ctx: Ctx, input: CustomerCreateInput) {
-    return prisma.customer.create({
+  async create(ctx: Ctx, input: CustomerCreatePayload) {
+    const customer = await prisma.customer.create({
       data: {
         name: input.name,
         phone: input.phone,
@@ -74,12 +91,13 @@ export const customersService = {
         group: input.group,
         referencePerson: input.referencePerson,
         notes: input.notes,
-      },
+      } as any,
     });
+    return serializeCustomer(customer);
   },
 
   /** Update a customer. */
-  async update(ctx: Ctx, id: string, input: CustomerUpdateInput) {
+  async update(ctx: Ctx, id: string, input: CustomerUpdatePayload) {
     const existing = await prisma.customer.findUnique({
       where: { id },
       select: { id: true },
@@ -90,7 +108,7 @@ export const customersService = {
 
     await prisma.customer.update({
       where: { id },
-      data: input,
+      data: input as any,
     });
 
     await auditLogService.log(ctx, {
@@ -100,7 +118,8 @@ export const customersService = {
       diff: input as unknown as Record<string, unknown>,
     });
 
-    return prisma.customer.findUnique({ where: { id } });
+    const updated = await prisma.customer.findUnique({ where: { id } });
+    return serializeCustomer(updated!);
   },
 
   /** Delete a customer. */
@@ -127,9 +146,10 @@ export const customersService = {
 
   /** Get customers with outstanding dues. */
   async withDues(ctx: Ctx) {
-    return prisma.customer.findMany({
+    const customers = await prisma.customer.findMany({
       where: { due: { gt: 0 } },
       orderBy: { due: "desc" },
     });
+    return customers.map(serializeCustomer);
   },
 };
