@@ -4,7 +4,6 @@ import { useEffect } from "react";
 import { StorefrontHeader } from "@/features/storefront/components/layout/StorefrontHeader";
 import { StorefrontFooter } from "@/features/storefront/components/layout/StorefrontFooter";
 import { MobileBottomBar } from "@/features/storefront/components/layout/MobileBottomBar";
-import { LiveDealTicker } from "@/features/storefront/components/home/LiveDealTicker";
 import { QuickViewDialog } from "@/features/storefront/components/product/QuickViewDialog";
 import { CompareTray } from "@/features/storefront/components/compare/CompareTray";
 
@@ -28,7 +27,7 @@ export default function StorefrontLayout({
 
   return (
     <div
-      className="min-h-screen bg-[#020617] text-slate-100 antialiased selection:bg-indigo-500/40 pb-20 md:pb-0"
+      className="min-h-screen bg-mesh text-slate-900 antialiased selection:bg-indigo-500/20 pb-20 md:pb-0"
       style={{ fontFamily: "'Manrope', 'Hind Siliguri', system-ui, sans-serif" }}
     >
       <OrganizationJsonLd
@@ -40,7 +39,6 @@ export default function StorefrontLayout({
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
-      <LiveDealTicker />
       <StorefrontHeader />
       <main className="min-h-[60vh]">
         {children}

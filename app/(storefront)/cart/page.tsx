@@ -18,7 +18,7 @@ export default function StorefrontCart() {
         <ShoppingBag className="h-12 w-12 mx-auto text-slate-600 mb-3" />
         <h1 className="text-xl font-bold mb-2">Your cart is empty</h1>
         <p className="text-sm text-slate-400 mb-6">কেনার জন্য কিছু পণ্য যোগ করুন।</p>
-        <Link href="/storefront/shop">
+        <Link href="/shop">
           <Button className="bg-indigo-600 hover:bg-indigo-500 rounded-full">
             Continue shopping <ArrowRight className="h-4 w-4 ml-1" />
           </Button>
@@ -38,12 +38,12 @@ export default function StorefrontCart() {
         </div>
         <aside className="space-y-3">
           <CartSummary subtotal={subtotal} total={subtotal} />
-          <Link href="/storefront/checkout">
+          <Link href="/checkout">
             <Button className="w-full h-11 bg-indigo-600 hover:bg-indigo-500 rounded-full shadow-lg shadow-indigo-600/30">
               Checkout <ArrowRight className="h-4 w-4 ml-1" />
             </Button>
           </Link>
-          <Link href="/storefront/shop">
+          <Link href="/shop">
             <Button variant="ghost" className="w-full h-11 rounded-full border border-white/10 text-slate-200 hover:bg-card/5">
               Continue shopping
             </Button>

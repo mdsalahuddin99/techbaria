@@ -3,7 +3,7 @@
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { LayoutGrid, List, SlidersHorizontal, ChevronRight, Filter, Sparkles } from "lucide-react";
+import { LayoutGrid, List, ChevronRight, Filter } from "lucide-react";
 import { useStorefrontProducts, useSeo } from "@/features/storefront";
 import { useProducts } from "@/features/products/hooks";
 import { ProductGrid } from "@/features/storefront/components/product/ProductGrid";
@@ -94,49 +94,40 @@ export default function StorefrontCatalog() {
   });
 
   return (
-    <div className="max-w-7xl mx-auto px-3 sm:px-6 pt-4 sm:pt-6">
-      {/* Breadcrumb */}
-      <nav className="text-xs text-slate-400 flex items-center gap-1 mb-3" aria-label="Breadcrumb">
-        <Link href="/storefront" className="hover:text-indigo-300">Home</Link>
-        <ChevronRight className="h-3 w-3" />
-        <Link href="/storefront/shop" className="hover:text-indigo-300">Shop</Link>
+    <div className="max-w-7xl mx-auto px-3 sm:px-6 pt-3 sm:pt-4">
+      {/* Breadcrumb — Electro style */}
+      <nav className="text-xs text-slate-500 flex items-center gap-1.5 mb-4 bg-slate-50 border border-slate-200 px-3 py-2 rounded-md" aria-label="Breadcrumb">
+        <Link href="/" className="hover:text-yellow-600 font-medium">Home</Link>
+        <ChevronRight className="h-3 w-3 text-slate-300" />
+        <Link href="/shop" className="hover:text-yellow-600 font-medium">Shop</Link>
         {decoded && (
           <>
-            <ChevronRight className="h-3 w-3" />
-            <span className="text-slate-200">{decoded}</span>
+            <ChevronRight className="h-3 w-3 text-slate-300" />
+            <span className="text-slate-800 font-semibold">{decoded}</span>
           </>
         )}
       </nav>
 
-      {/* Hero band */}
-      <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-indigo-900/40 via-[#0b0b22] to-violet-900/20 p-5 sm:p-7 mb-6">
-        <div
-          className="absolute inset-0 opacity-50 pointer-events-none"
-          style={{
-            background:
-              "radial-gradient(50% 70% at 80% 20%, rgba(99,102,241,0.35), transparent 60%), radial-gradient(40% 60% at 20% 100%, rgba(168,85,247,0.25), transparent 60%)",
-          }}
-        />
-        <div className="relative flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
-          <div className="min-w-0">
-            <div className="inline-flex items-center gap-1.5 text-[11px] px-2 py-0.5 rounded-full bg-card/10 border border-white/15 text-indigo-200 mb-2">
-              <Sparkles className="h-3 w-3" /> Curated catalog
-            </div>
-            <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight">
+      {/* Category header — Electro style: compact with left yellow border accent */}
+      <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center gap-3">
+          <span className="w-1 h-7 bg-yellow-400 rounded-full shrink-0" />
+          <div>
+            <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900">
               {decoded ?? "All Products"}
             </h1>
-            <p className="text-xs sm:text-sm text-slate-400 mt-1">
-              {products.length.toLocaleString("en-BD")} products · ৳{bounds.min.toLocaleString("en-BD")} – ৳{bounds.max.toLocaleString("en-BD")}
+            <p className="text-xs text-slate-500 mt-0.5">
+              {products.length.toLocaleString("en-BD")} products
             </p>
           </div>
         </div>
       </div>
 
       {/* Layout: sidebar + content */}
-      <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-5">
         {/* Sidebar — desktop */}
         <aside className="hidden lg:block">
-          <div className="sticky top-24 rounded-2xl border border-white/10 bg-card/[0.03] backdrop-blur-sm p-4 max-h-[calc(100vh-7rem)] overflow-y-auto">
+          <div className="sticky top-24 rounded-lg border border-slate-200 bg-white p-4 max-h-[calc(100vh-7rem)] overflow-y-auto">
             <ShopFilters
               value={filters}
               bounds={bounds}
@@ -151,64 +142,66 @@ export default function StorefrontCatalog() {
         </aside>
 
         <div className="min-w-0">
-          {/* Toolbar */}
-          <div className="flex flex-wrap items-center gap-2 mb-4">
-            <Sheet>
-              <SheetTrigger asChild>
-                <button className="lg:hidden inline-flex items-center gap-1.5 h-9 px-3 rounded-xl bg-card/5 border border-white/10 text-sm text-slate-200 hover:border-indigo-400/40">
-                  <Filter className="h-4 w-4" /> Filters
+          {/* Toolbar — Electro style */}
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-4 bg-slate-50 border border-slate-200 rounded-md px-3 py-2">
+            <div className="flex items-center gap-2">
+              <Sheet>
+                <SheetTrigger asChild>
+                  <button className="lg:hidden inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-yellow-400 text-slate-900 text-sm font-bold hover:bg-yellow-500 transition">
+                    <Filter className="h-4 w-4" /> Filters
+                  </button>
+                </SheetTrigger>
+                <SheetContent side="left" className="bg-white border-slate-200 text-slate-900 w-[85vw] sm:w-96 overflow-y-auto">
+                  <div className="pt-4 px-2">
+                    <ShopFilters
+                      value={filters}
+                      bounds={bounds}
+                      onChange={(v) => {
+                        setFilters(v);
+                        setPage(1);
+                      }}
+                      onReset={reset}
+                      onCategoryNav={onCategoryNav}
+                    />
+                  </div>
+                </SheetContent>
+              </Sheet>
+
+              <div className="flex-1 min-w-0">
+                <ActiveFilterChips
+                  value={filters}
+                  bounds={bounds}
+                  onChange={(v) => {
+                    setFilters(v);
+                    setPage(1);
+                  }}
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 ml-auto">
+              <span className="text-xs text-slate-500 hidden sm:inline">{visible.length} items</span>
+              <div className="inline-flex rounded-md border border-slate-200 bg-white overflow-hidden">
+                <button
+                  onClick={() => setView("grid")}
+                  className={`h-8 w-8 grid place-items-center transition ${
+                    view === "grid" ? "bg-yellow-400 text-slate-900" : "text-slate-500 hover:bg-slate-50"
+                  }`}
+                  aria-label="Grid view"
+                >
+                  <LayoutGrid className="h-4 w-4" />
                 </button>
-              </SheetTrigger>
-              <SheetContent side="left" className="bg-[#0b0b22] border-white/10 text-slate-100 w-[85vw] sm:w-96 overflow-y-auto">
-                <div className="pt-4">
-                  <ShopFilters
-                    value={filters}
-                    bounds={bounds}
-                    onChange={(v) => {
-                      setFilters(v);
-                      setPage(1);
-                    }}
-                    onReset={reset}
-                    onCategoryNav={onCategoryNav}
-                  />
-                </div>
-              </SheetContent>
-            </Sheet>
+                <button
+                  onClick={() => setView("list")}
+                  className={`h-8 w-8 grid place-items-center border-l border-slate-200 transition ${
+                    view === "list" ? "bg-yellow-400 text-slate-900" : "text-slate-500 hover:bg-slate-50"
+                  }`}
+                  aria-label="List view"
+                >
+                  <List className="h-4 w-4" />
+                </button>
+              </div>
 
-            <div className="flex-1 min-w-0">
-              <ActiveFilterChips
-                value={filters}
-                bounds={bounds}
-                onChange={(v) => {
-                  setFilters(v);
-                  setPage(1);
-                }}
-              />
-            </div>
-
-            <div className="hidden sm:inline-flex rounded-xl bg-card/5 border border-white/10 p-0.5">
-              <button
-                onClick={() => setView("grid")}
-                className={`h-8 w-8 rounded-lg grid place-items-center transition ${
-                  view === "grid" ? "bg-indigo-600 text-white" : "text-slate-400 hover:text-white"
-                }`}
-                aria-label="Grid view"
-              >
-                <LayoutGrid className="h-4 w-4" />
-              </button>
-              <button
-                onClick={() => setView("list")}
-                className={`h-8 w-8 rounded-lg grid place-items-center transition ${
-                  view === "list" ? "bg-indigo-600 text-white" : "text-slate-400 hover:text-white"
-                }`}
-                aria-label="List view"
-              >
-                <List className="h-4 w-4" />
-              </button>
-            </div>
-
-            <div className="inline-flex items-center gap-1.5">
-              <SlidersHorizontal className="h-4 w-4 text-slate-400 hidden sm:block" />
               <SortMenu value={sort} onChange={setSort} />
             </div>
           </div>
@@ -235,7 +228,7 @@ export default function StorefrontCatalog() {
             <div className="mt-8 flex justify-center">
               <button
                 onClick={() => setPage((p) => p + 1)}
-                className="h-11 px-6 rounded-full bg-card/5 border border-white/10 text-sm font-semibold text-slate-200 hover:bg-indigo-600 hover:border-indigo-500 hover:text-white transition"
+                className="h-11 px-8 rounded-md bg-yellow-400 text-slate-900 text-sm font-extrabold hover:bg-yellow-500 transition shadow-sm"
               >
                 Load more ({products.length - visible.length} বাকি)
               </button>

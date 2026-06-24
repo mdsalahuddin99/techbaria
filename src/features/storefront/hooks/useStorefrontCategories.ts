@@ -93,3 +93,73 @@ export function useStorefrontBrands(): string[] {
     return [...set].sort();
   }, [products]);
 }
+
+export interface MegaMenuTree {
+  category: string;
+  subcategories: {
+    subcategory: string;
+    brands: string[];
+  }[];
+}
+
+export function useMegaMenuTree(): MegaMenuTree[] {
+  const { data: products = [] } = useQuery<Product[]>({
+    queryKey: ["storefront", "products"],
+    queryFn: async () => {
+      const res = await fetch("/api/storefront/products");
+      if (!res.ok) throw new Error("Failed to fetch storefront products");
+      return res.json();
+    },
+  });
+
+  return useMemo(() => {
+    // Map<Category, Map<Subcategory, Set<Brand>>>
+    const tree = new Map<string, Map<string, Set<string>>>();
+
+    for (const p of products) {
+      if (p.active === false) continue;
+      
+      const cat = p.category;
+      if (!cat) continue;
+      
+      if (!tree.has(cat)) {
+        tree.set(cat, new Map());
+      }
+      
+      const subMap = tree.get(cat)!;
+      // Use 'Others' or similar if no subcategory is present
+      const sub = p.subcategory || "Other";
+      
+      if (!subMap.has(sub)) {
+        subMap.set(sub, new Set());
+      }
+      
+      const brandSet = subMap.get(sub)!;
+      if (p.brand) {
+        brandSet.add(p.brand);
+      }
+    }
+
+    const result: MegaMenuTree[] = [];
+    for (const [cat, subMap] of tree.entries()) {
+      const subcategories = [];
+      for (const [sub, brandSet] of subMap.entries()) {
+        subcategories.push({
+          subcategory: sub,
+          brands: [...brandSet].sort(),
+        });
+      }
+      // Sort subcategories alphabetically
+      subcategories.sort((a, b) => a.subcategory.localeCompare(b.subcategory));
+      result.push({
+        category: cat,
+        subcategories,
+      });
+    }
+
+    // Sort categories alphabetically
+    result.sort((a, b) => a.category.localeCompare(b.category));
+    
+    return result;
+  }, [products]);
+}

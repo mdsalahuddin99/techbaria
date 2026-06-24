@@ -41,6 +41,7 @@ export interface ProductUnit {
 export interface Product {
   id: string;
   name: string;
+  slug: string;
   description?: string;
   shortDescription?: string;
   sku: string;

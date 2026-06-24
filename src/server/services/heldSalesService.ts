@@ -7,9 +7,11 @@ import type { Ctx } from "@/server/lib/ctx";
 export interface HeldSaleCreateInput {
   customerId?: string;
   customerName?: string;
-  cart: any; // The JSON cart payload
+  cart: any;
   discount: number;
   salesPerson?: string;
+  destination?: string;
+  attention?: string;
   notes?: string;
   vat?: number;
   extraCharges?: number;
@@ -58,12 +60,14 @@ export const heldSalesService = {
     
     const sale = await prisma.heldSale.create({
       data: {
-        userId: ctx.userId, // optionally record who held it
+        userId: ctx.userId,
         customerId: input.customerId,
         customerName: input.customerName,
         cart: input.cart,
         discount: input.discount,
         salesPerson: input.salesPerson,
+        destination: input.destination ?? null,
+        attention: input.attention ?? null,
         notes: input.notes,
         vat: input.vat ?? 0,
         extraCharges: input.extraCharges ?? 0,

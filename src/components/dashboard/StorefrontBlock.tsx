@@ -1,3 +1,5 @@
+"use client";
+
 import { useMemo } from "react";
 import Link from "next/link";
 import { LineChart, Line, ResponsiveContainer } from "recharts";

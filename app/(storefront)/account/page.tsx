@@ -59,7 +59,7 @@ export default function StorefrontAccount() {
             <ShoppingBag className="h-10 w-10 mx-auto text-slate-600 mb-2" />
             You have no orders yet.
             <div className="mt-3">
-              <Link href="/storefront/shop" className="text-indigo-300 hover:text-indigo-200">Start shopping →</Link>
+              <Link href="/shop" className="text-indigo-300 hover:text-indigo-200">Start shopping →</Link>
             </div>
           </div>
         ) : (

@@ -96,7 +96,7 @@ async function buildTree(): Promise<CategoryOutput[]> {
 export const categoriesService = {
   /** List all categories as a tree. */
   async list(ctx: Ctx): Promise<CategoryOutput[]> {
-    return buildTree();
+    return cache.fetch(cacheKeys.categories.tree("default"), TTL.CATEGORY_TREE, buildTree);
   },
 
   /** Get flat list (no nesting) for dropdowns. */

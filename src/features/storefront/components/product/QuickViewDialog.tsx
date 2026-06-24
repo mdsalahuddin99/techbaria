@@ -106,7 +106,7 @@ export function QuickViewDialog() {
                 <ShoppingBag className="h-4 w-4" /> Add to Cart
               </button>
               <Link
-                href={`/storefront/p/${encodeURIComponent(product.id)}`}
+                href={`/p/${encodeURIComponent(product.slug || product.id)}`}
                 onClick={close}
                 className="h-11 px-4 rounded-xl bg-card/5 border border-white/10 hover:bg-card/10 text-sm font-medium grid place-items-center"
               >

@@ -11,16 +11,16 @@ const messages = [
 export function LiveDealTicker() {
   const row = [...messages, ...messages];
   return (
-    <div className="relative overflow-hidden bg-gradient-to-r from-indigo-900/40 via-[#020617] to-indigo-900/40 border-y border-indigo-500/20">
+    <div className="relative overflow-hidden bg-slate-900 border-b border-slate-800">
       <div className="flex animate-[ticker_30s_linear_infinite] whitespace-nowrap py-2 gap-10">
         {row.map((m, i) => (
           <span
             key={i}
-            className="inline-flex items-center gap-2 text-xs sm:text-sm text-slate-200 font-medium"
+            className="inline-flex items-center gap-2 text-xs sm:text-sm text-slate-300 font-medium"
           >
-            <m.icon className="h-3.5 w-3.5 text-indigo-300" />
+            <m.icon className="h-3.5 w-3.5 text-indigo-400" />
             {m.text}
-            <span className="text-indigo-500/40 ml-6">•</span>
+            <span className="text-indigo-500/50 ml-6">•</span>
           </span>
         ))}
       </div>

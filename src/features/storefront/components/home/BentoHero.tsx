@@ -60,7 +60,7 @@ export function BentoHero({ featured, secondary = [] }: Props) {
             {["iPhone 15", "MacBook Air", "RTX 4090", "Hikvision", "Sony WH-1000XM5"].map((t) => (
               <Link
                 key={t}
-                href={`/storefront/search?q=${encodeURIComponent(t)}`}
+                href={`/search?q=${encodeURIComponent(t)}`}
                 className="px-2 py-0.5 rounded-full bg-card/5 border border-white/10 text-slate-300 hover:border-indigo-400/40 hover:text-indigo-200 transition"
               >
                 {t}
@@ -73,7 +73,7 @@ export function BentoHero({ featured, secondary = [] }: Props) {
         <div className="mt-8 sm:mt-12 grid grid-cols-6 grid-rows-2 gap-2 sm:gap-3 min-h-[320px] sm:min-h-[420px]">
           {/* Big featured */}
           <Link
-            href={featured ? `/storefront/p/${encodeURIComponent(featured.id)}` : "/storefront/shop"}
+            href={featured ? `/p/${encodeURIComponent(featured.slug || featured.id)}` : "/shop"}
             className="col-span-6 md:col-span-3 row-span-2 group relative rounded-3xl overflow-hidden border border-white/10 bg-gradient-to-br from-indigo-900/40 via-indigo-950/20 to-transparent hover:border-indigo-400/50 transition"
           >
             <div className="absolute inset-0">
@@ -115,7 +115,7 @@ export function BentoHero({ featured, secondary = [] }: Props) {
             return (
               <Link
                 key={i}
-                href={p ? `/storefront/p/${encodeURIComponent(p.id)}` : "/storefront/shop"}
+                href={p ? `/p/${encodeURIComponent(p.slug || p.id)}` : "/shop"}
                 className="col-span-3 md:col-span-2 row-span-1 group relative rounded-3xl overflow-hidden border border-white/10 bg-card/[0.04] hover:border-indigo-400/40 transition"
               >
                 <div className="absolute inset-0 grid place-items-center overflow-hidden">

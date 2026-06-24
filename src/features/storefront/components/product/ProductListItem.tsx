@@ -44,7 +44,7 @@ export function ProductListItem({ product, allProducts }: Props) {
 
   return (
     <Link
-      href={`/storefront/p/${encodeURIComponent(product.id)}`}
+      href={`/p/${encodeURIComponent(product.slug || product.id)}`}
       className="group relative flex gap-3 sm:gap-5 rounded-2xl bg-card/[0.04] border border-white/10 hover:border-indigo-400/40 hover:bg-card/[0.06] transition p-3 sm:p-4"
     >
       <div className="relative h-28 w-28 sm:h-40 sm:w-40 shrink-0 rounded-xl bg-gradient-to-br from-indigo-950/40 to-transparent overflow-hidden grid place-items-center">

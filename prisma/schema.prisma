@@ -384,6 +384,7 @@ model SaleItem {
   serialNumbers  SerialNumber[]
 
   @@index([productId])
+  @@index([saleId])
 }
 
 enum TenderType {
@@ -407,6 +408,9 @@ model SaleTender {
   account   FinancialAccount? @relation(fields: [accountId], references: [id])
   amount    Decimal           @db.Decimal(12, 2)
   ref       String?
+
+  @@index([saleId])
+  @@index([accountId])
 }
 
 model HeldSale {
@@ -419,6 +423,8 @@ model HeldSale {
   cart         Json
   discount     Decimal   @default(0) @db.Decimal(12, 2)
   salesPerson  String?
+  destination  String?
+  attention    String?
   notes        String?
   vat          Decimal   @default(0) @db.Decimal(12, 2)
   extraCharges Decimal   @default(0) @db.Decimal(12, 2)
@@ -467,6 +473,7 @@ model PurchaseItem {
   serialNumbers     SerialNumber[]
 
   @@index([productId])
+  @@index([purchaseId])
 }
 
 model PurchaseTender {
@@ -478,6 +485,9 @@ model PurchaseTender {
   account    FinancialAccount? @relation(fields: [accountId], references: [id])
   amount     Decimal           @db.Decimal(12, 2)
   ref        String?
+
+  @@index([purchaseId])
+  @@index([accountId])
 }
 
 model SupplierPayment {
@@ -489,6 +499,10 @@ model SupplierPayment {
   account    FinancialAccount? @relation(fields: [accountId], references: [id])
   date       DateTime          @default(now())
   notes      String?
+
+  @@index([supplierId])
+  @@index([accountId])
+  @@index([date])
 }
 
 // ============ SERIAL / IMEI TRACKING ============
@@ -520,6 +534,7 @@ model SerialNumber {
   @@index([status, createdAt])
   @@index([saleItemId])
   @@index([warehouseId])
+  @@index([purchaseItemId])
 }
 
 // ============ FINANCE ============
@@ -563,6 +578,10 @@ model AccountTransfer {
   amount        Decimal          @db.Decimal(14, 2)
   notes         String?
   date          DateTime         @default(now())
+
+  @@index([fromAccountId])
+  @@index([toAccountId])
+  @@index([date])
 }
 
 model Expense {
@@ -632,6 +651,9 @@ model TransferItem {
   transfer   Transfer @relation(fields: [transferId], references: [id], onDelete: Cascade)
   productId  String
   qty        Int
+
+  @@index([transferId])
+  @@index([productId])
 }
 
 // ============ AUDIT ============
@@ -659,6 +681,9 @@ model Notification {
   read      Boolean  @default(false)
   link      String?
   createdAt DateTime @default(now())
+
+  @@index([read, createdAt])
+  @@index([createdAt])
 }
 
 model CashShift {
@@ -673,4 +698,7 @@ model CashShift {
   cashierId      String
   cashierName    String
   status         String    @default("Open")
+
+  @@index([cashierId, status])
+  @@index([status])
 }

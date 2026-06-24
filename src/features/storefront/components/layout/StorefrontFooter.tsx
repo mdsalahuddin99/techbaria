@@ -3,9 +3,9 @@ import { Phone, MapPin, Mail, ShieldCheck, Truck, CreditCard, PackageCheck } fro
 
 export function StorefrontFooter() {
   return (
-    <footer className="mt-16 border-t border-white/5 bg-[#080820]">
+    <footer className="mt-16 border-t border-slate-800 bg-[#0f172a]">
       {/* Trust strip */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 border-b border-white/5">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 border-b border-slate-800">
         {[
           { icon: Truck, t: "Fast Delivery", s: "Dhaka 24h, Outside 2-3 days" },
           { icon: ShieldCheck, t: "Genuine Products", s: "100% authorized brands" },
@@ -38,18 +38,18 @@ export function StorefrontFooter() {
         <div>
           <div className="text-sm font-semibold text-white mb-3">Shop</div>
           <ul className="space-y-2 text-xs text-slate-400">
-            <li><Link href="/storefront/shop" className="hover:text-white">All Products</Link></li>
-            <li><Link href="/storefront/shop/Mobile" className="hover:text-white">Mobile</Link></li>
-            <li><Link href="/storefront/shop/Laptop" className="hover:text-white">Laptop</Link></li>
-            <li><Link href="/storefront/shop/CCTV%20Camera" className="hover:text-white">CCTV</Link></li>
+            <li><Link href="/shop" className="hover:text-white">All Products</Link></li>
+            <li><Link href="/shop/Mobile" className="hover:text-white">Mobile</Link></li>
+            <li><Link href="/shop/Laptop" className="hover:text-white">Laptop</Link></li>
+            <li><Link href="/shop/CCTV%20Camera" className="hover:text-white">CCTV</Link></li>
           </ul>
         </div>
 
         <div>
           <div className="text-sm font-semibold text-white mb-3">Help</div>
           <ul className="space-y-2 text-xs text-slate-400">
-            <li><Link href="/storefront/track" className="hover:text-white">Track Order</Link></li>
-            <li><Link href="/storefront/account" className="hover:text-white">My Account</Link></li>
+            <li><Link href="/track" className="hover:text-white">Track Order</Link></li>
+            <li><Link href="/account" className="hover:text-white">My Account</Link></li>
             <li><a className="hover:text-white" href="#">Return Policy</a></li>
             <li><a className="hover:text-white" href="#">Warranty</a></li>
           </ul>
@@ -65,7 +65,7 @@ export function StorefrontFooter() {
         </div>
       </div>
 
-      <div className="border-t border-white/5">
+      <div className="border-t border-slate-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 text-[11px] text-slate-500 text-center">
           © {new Date().getFullYear()} AmarShop. All rights reserved.
         </div>

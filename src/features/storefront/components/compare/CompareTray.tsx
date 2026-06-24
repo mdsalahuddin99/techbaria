@@ -49,7 +49,7 @@ export function CompareTray() {
           Clear
         </button>
         <Link
-          href="/storefront/compare"
+          href="/compare"
           className="shrink-0 h-9 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold grid place-items-center"
         >
           Compare ({items.length})

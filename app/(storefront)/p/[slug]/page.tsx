@@ -106,7 +106,7 @@ export default function StorefrontProduct() {
       <div className="max-w-5xl mx-auto px-4 py-20 text-center">
         <div className="text-5xl mb-3">🔍</div>
         <h1 className="text-xl font-bold">Product not found</h1>
-        <Link href="/storefront/shop" className="inline-block mt-4 text-indigo-300 hover:text-indigo-200">
+        <Link href="/shop" className="inline-block mt-4 text-indigo-300 hover:text-indigo-200">
           ← Back to shop
         </Link>
       </div>
@@ -180,25 +180,25 @@ export default function StorefrontProduct() {
   return (
     <div className="max-w-7xl mx-auto px-3 sm:px-6 pt-4 sm:pt-6 pb-20">
       {/* Breadcrumbs */}
-      <nav className="flex items-center gap-1 text-xs text-slate-400 mb-4 overflow-x-auto">
-        <Link href="/storefront" className="hover:text-white">Home</Link>
+      <nav className="flex items-center gap-1 text-xs text-slate-500 mb-4 overflow-x-auto">
+        <Link href="/" className="hover:text-indigo-600">Home</Link>
         <ChevronRight className="h-3 w-3 shrink-0" />
-        <Link href="/storefront/shop" className="hover:text-white">Shop</Link>
+        <Link href="/shop" className="hover:text-indigo-600">Shop</Link>
         {product.category && (
           <>
             <ChevronRight className="h-3 w-3 shrink-0" />
-            <Link href={`/storefront/shop?category=${encodeURIComponent(product.category)}`} className="hover:text-white truncate">
+            <Link href={`/storefront/shop?category=${encodeURIComponent(product.category)}`} className="hover:text-indigo-600 truncate">
               {product.category}
             </Link>
           </>
         )}
         <ChevronRight className="h-3 w-3 shrink-0" />
-        <span className="text-slate-500 truncate">{product.name}</span>
+        <span className="text-slate-700 font-medium truncate">{product.name}</span>
       </nav>
 
       <button
         onClick={() => router.back()}
-        className="inline-flex items-center gap-1 text-xs sm:text-sm text-slate-400 hover:text-white mb-4 md:hidden"
+        className="inline-flex items-center gap-1 text-xs sm:text-sm text-slate-500 hover:text-indigo-600 mb-4 md:hidden"
       >
         <ArrowLeft className="h-4 w-4" /> Back
       </button>
@@ -207,7 +207,7 @@ export default function StorefrontProduct() {
         {/* === Gallery === */}
         <div className="md:sticky md:top-20 self-start space-y-3">
           <div
-            className="group relative aspect-square rounded-3xl bg-gradient-to-br from-white/[0.07] to-white/[0.02] border border-white/10 grid place-items-center overflow-hidden cursor-zoom-in"
+            className="group relative aspect-square rounded-3xl bg-white border border-slate-200 shadow-sm grid place-items-center overflow-hidden cursor-zoom-in"
             onMouseMove={(e) => {
               const r = e.currentTarget.getBoundingClientRect();
               setZoom({ active: true, x: ((e.clientX - r.left) / r.width) * 100, y: ((e.clientY - r.top) / r.height) * 100 });
@@ -218,7 +218,7 @@ export default function StorefrontProduct() {
               <img
                 src={gallery[activeImage]}
                 alt={product.name}
-                className="absolute inset-0 h-full w-full object-cover transition-transform duration-300"
+                className="absolute inset-0 h-full w-full object-contain p-4 transition-transform duration-300"
                 style={
                   zoom.active
                     ? { transform: "scale(1.8)", transformOrigin: `${zoom.x}% ${zoom.y}%` }
@@ -226,47 +226,47 @@ export default function StorefrontProduct() {
                 }
               />
             ) : (
-              <div className="text-[10rem] sm:text-[14rem] drop-shadow-[0_20px_50px_rgba(79,70,229,0.4)]">
+              <div className="text-[10rem] sm:text-[14rem] drop-shadow-md">
                 {product.emoji || "📦"}
               </div>
             )}
 
             {/* Floating badges */}
-            <div className="absolute top-3 left-3 flex flex-col gap-1.5">
+            <div className="absolute top-4 left-4 flex flex-col gap-1.5">
               {savePct > 0 && (
-                <span className="text-[10px] font-bold px-2 py-1 rounded-md bg-rose-500/90 text-white">
+                <span className="text-[10px] font-bold px-2 py-1 rounded-md bg-rose-500 text-white shadow-sm">
                   -{savePct}%
                 </span>
               )}
               {product.condition && product.condition !== "New" && (
-                <span className="text-[10px] font-medium px-2 py-1 rounded-md bg-amber-500/90 text-black">
+                <span className="text-[10px] font-medium px-2 py-1 rounded-md bg-amber-100 text-amber-800 border border-amber-200">
                   {product.condition}
                 </span>
               )}
             </div>
             {product.brand && (
-              <span className="absolute top-3 right-3 text-[10px] font-medium px-2 py-1 rounded-md bg-black/40 backdrop-blur text-slate-200 border border-white/10">
+              <span className="absolute top-4 right-4 text-[10px] font-bold px-2 py-1 rounded-md bg-white/90 backdrop-blur text-slate-700 border border-slate-200 shadow-sm">
                 {product.brand}
               </span>
             )}
 
             {/* Action rail */}
-            <div className="absolute bottom-3 right-3 flex flex-col gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition">
+            <div className="absolute bottom-4 right-4 flex flex-col gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition">
               <button
                 onClick={() => toggleWishlist(product.id)}
                 className={cn(
-                  "h-9 w-9 grid place-items-center rounded-full backdrop-blur border border-white/10 transition",
-                  wishlisted ? "bg-rose-500 text-white" : "bg-black/40 text-white hover:bg-rose-500/80",
+                  "h-9 w-9 grid place-items-center rounded-full bg-white shadow-sm border border-slate-200 transition",
+                  wishlisted ? "bg-rose-50 border-rose-200 text-rose-500" : "text-slate-600 hover:text-rose-500",
                 )}
                 aria-label="Wishlist"
               >
-                <Heart className={cn("h-4 w-4", wishlisted && "fill-white")} />
+                <Heart className={cn("h-4 w-4", wishlisted && "fill-rose-500")} />
               </button>
               <button
                 onClick={handleCompare}
                 className={cn(
-                  "h-9 w-9 grid place-items-center rounded-full backdrop-blur border border-white/10 transition",
-                  compared ? "bg-indigo-500 text-white" : "bg-black/40 text-white hover:bg-indigo-500/80",
+                  "h-9 w-9 grid place-items-center rounded-full bg-white shadow-sm border border-slate-200 transition",
+                  compared ? "bg-indigo-50 border-indigo-200 text-indigo-600" : "text-slate-600 hover:text-indigo-600",
                 )}
                 aria-label="Compare"
               >
@@ -274,7 +274,7 @@ export default function StorefrontProduct() {
               </button>
               <button
                 onClick={handleShare}
-                className="h-9 w-9 grid place-items-center rounded-full bg-black/40 backdrop-blur border border-white/10 text-white hover:bg-card/10"
+                className="h-9 w-9 grid place-items-center rounded-full bg-white shadow-sm border border-slate-200 text-slate-600 hover:text-indigo-600 transition"
                 aria-label="Share"
               >
                 <Share2 className="h-4 w-4" />
@@ -284,14 +284,14 @@ export default function StorefrontProduct() {
 
           {/* Thumbnails */}
           {gallery.length > 1 && (
-            <div className="flex gap-2 overflow-x-auto pb-1">
+            <div className="flex gap-3 overflow-x-auto pb-1 px-1">
               {gallery.map((src, i) => (
                 <button
                   key={i}
                   onClick={() => setActiveImage(i)}
                   className={cn(
-                    "h-16 w-16 shrink-0 rounded-xl overflow-hidden border-2 transition",
-                    i === activeImage ? "border-indigo-400" : "border-white/10 opacity-60 hover:opacity-100",
+                    "h-16 w-16 shrink-0 rounded-xl overflow-hidden border-2 bg-white transition",
+                    i === activeImage ? "border-indigo-600 shadow-sm" : "border-transparent shadow-sm hover:border-slate-300",
                   )}
                 >
                   <img src={src} alt="" className="h-full w-full object-cover" />
@@ -306,70 +306,70 @@ export default function StorefrontProduct() {
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-xs">
               {product.category && (
-                <span className="text-indigo-300 font-medium uppercase tracking-wider">{product.category}</span>
+                <span className="text-indigo-600 font-medium uppercase tracking-wider">{product.category}</span>
               )}
-              <span className="inline-flex items-center gap-1 text-emerald-300">
+              <span className="inline-flex items-center gap-1 text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
                 <Sparkles className="h-3 w-3" /> Trending
               </span>
             </div>
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight leading-tight">{product.name}</h1>
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900 tracking-tight leading-tight">{product.name}</h1>
 
-            <div className="flex items-center gap-3 text-sm text-slate-400">
+            <div className="flex items-center gap-3 text-sm text-slate-500">
               <span className="inline-flex items-center gap-1">
                 <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                <span className="text-white font-semibold">{reviewStats.avg}</span>
+                <span className="text-slate-800 font-semibold">{reviewStats.avg}</span>
                 <span>({reviewStats.total} reviews)</span>
               </span>
-              <span className="h-4 w-px bg-card/10" />
+              <span className="h-4 w-px bg-slate-200" />
               <span className="inline-flex items-center gap-1">
-                <Check className="h-3.5 w-3.5 text-emerald-400" />
+                <Check className="h-3.5 w-3.5 text-emerald-500" />
                 <span>1.2k+ sold</span>
               </span>
             </div>
           </div>
 
           {/* Price block */}
-          <div className="rounded-2xl bg-gradient-to-br from-indigo-500/10 via-white/[0.03] to-transparent border border-white/10 p-4">
+          <div className="rounded-2xl bg-indigo-50/50 border border-indigo-100 p-4">
             <div className="flex items-baseline gap-3 flex-wrap">
-              <div className="text-3xl sm:text-4xl font-extrabold text-white">{formatPrice(product.price)}</div>
+              <div className="text-3xl sm:text-4xl font-extrabold text-indigo-900">{formatPrice(product.price)}</div>
               {oldPrice && (
                 <>
                   <div className="text-base text-slate-500 line-through">{formatPrice(oldPrice)}</div>
-                  <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                  <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-rose-100 text-rose-700 border border-rose-200">
                     Save {formatPrice(oldPrice - product.price)}
                   </span>
                 </>
               )}
             </div>
-            <div className="mt-1 text-xs text-slate-400">Tax inclusive • Free delivery over ৳1000</div>
+            <div className="mt-1 text-xs text-slate-500">Tax inclusive • Free delivery over ৳1000</div>
           </div>
 
           {/* Stock urgency */}
           <div className="space-y-2">
             <div className="flex items-center justify-between text-xs">
               {outOfStock ? (
-                <span className="text-rose-300 font-semibold">Out of stock</span>
+                <span className="text-rose-600 font-semibold">Out of stock</span>
               ) : lowStock ? (
-                <span className="text-amber-300 font-semibold inline-flex items-center gap-1">
+                <span className="text-amber-600 font-semibold inline-flex items-center gap-1">
                   <Zap className="h-3.5 w-3.5" /> Only {stock} left — hurry!
                 </span>
               ) : (
-                <span className="text-emerald-300 font-semibold inline-flex items-center gap-1">
+                <span className="text-emerald-600 font-semibold inline-flex items-center gap-1">
                   <Check className="h-3.5 w-3.5" /> In stock — {stock} available
                 </span>
               )}
               <span className="text-slate-500">SKU: {product.sku || product.id.slice(0, 8)}</span>
             </div>
-            <Progress value={outOfStock ? 0 : stockPct} className="h-1.5 bg-card/5" />
+            <Progress value={outOfStock ? 0 : stockPct} className="h-1.5 bg-slate-200" />
           </div>
 
           {/* Variant selectors */}
           {(colorOptions.length > 0 || storageOptions.length > 0) && (
-            <div className="space-y-3 rounded-2xl bg-card/[0.02] border border-white/10 p-4">
+            <div className="space-y-3 rounded-2xl bg-white shadow-sm border border-slate-200 p-4">
               {colorOptions.length > 0 && (
                 <div>
-                  <div className="text-xs text-slate-400 mb-2">
-                    Color: <span className="text-white font-semibold">{selectedColor || "Select"}</span>
+                  <div className="text-xs text-slate-500 mb-2">
+                    Color: <span className="text-slate-900 font-semibold">{selectedColor || "Select"}</span>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {colorOptions.map((c) => (
@@ -379,8 +379,8 @@ export default function StorefrontProduct() {
                         className={cn(
                           "px-3 h-9 rounded-full text-xs font-medium border transition",
                           selectedColor === c
-                            ? "border-indigo-400 bg-indigo-500/15 text-white"
-                            : "border-white/10 text-slate-300 hover:border-white/30 hover:text-white",
+                            ? "border-indigo-600 bg-indigo-50 text-indigo-700"
+                            : "border-slate-200 text-slate-600 hover:border-slate-300 hover:text-slate-900",
                         )}
                       >
                         {c}
@@ -391,8 +391,8 @@ export default function StorefrontProduct() {
               )}
               {storageOptions.length > 0 && (
                 <div>
-                  <div className="text-xs text-slate-400 mb-2">
-                    Storage: <span className="text-white font-semibold">{selectedStorage || "Select"}</span>
+                  <div className="text-xs text-slate-500 mb-2">
+                    Storage: <span className="text-slate-900 font-semibold">{selectedStorage || "Select"}</span>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {storageOptions.map((s) => (
@@ -402,8 +402,8 @@ export default function StorefrontProduct() {
                         className={cn(
                           "px-3 h-9 rounded-full text-xs font-medium border transition",
                           selectedStorage === s
-                            ? "border-indigo-400 bg-indigo-500/15 text-white"
-                            : "border-white/10 text-slate-300 hover:border-white/30 hover:text-white",
+                            ? "border-indigo-600 bg-indigo-50 text-indigo-700"
+                            : "border-slate-200 text-slate-600 hover:border-slate-300 hover:text-slate-900",
                         )}
                       >
                         {s}
@@ -418,16 +418,16 @@ export default function StorefrontProduct() {
           {/* Qty + actions */}
           <div className="space-y-3">
             <div className="flex items-center gap-3">
-              <div className="inline-flex items-center rounded-full bg-card/5 border border-white/10">
+              <div className="inline-flex items-center rounded-full bg-white border border-slate-200 shadow-sm">
                 <button
-                  className="h-11 w-11 grid place-items-center text-slate-300 hover:text-white"
+                  className="h-11 w-11 grid place-items-center text-slate-500 hover:text-slate-900"
                   onClick={() => setQty((q) => Math.max(1, q - 1))}
                 >
                   <Minus className="h-4 w-4" />
                 </button>
-                <span className="px-3 font-semibold tabular-nums min-w-[2ch] text-center">{qty}</span>
+                <span className="px-3 font-semibold text-slate-900 tabular-nums min-w-[2ch] text-center">{qty}</span>
                 <button
-                  className="h-11 w-11 grid place-items-center text-slate-300 hover:text-white disabled:text-slate-600"
+                  className="h-11 w-11 grid place-items-center text-slate-500 hover:text-slate-900 disabled:text-slate-300"
                   onClick={() => setQty((q) => Math.min(stock, q + 1))}
                   disabled={qty >= stock}
                 >
@@ -437,7 +437,7 @@ export default function StorefrontProduct() {
               <Button
                 onClick={() => handleAdd()}
                 disabled={outOfStock}
-                className="flex-1 h-11 bg-card/10 hover:bg-card/15 text-white rounded-full border border-white/10"
+                className="flex-1 h-11 bg-slate-100 hover:bg-slate-200 text-slate-900 rounded-full border border-slate-200 shadow-sm"
               >
                 <ShoppingBag className="h-4 w-4 mr-2" /> Add to cart
               </Button>
@@ -454,22 +454,22 @@ export default function StorefrontProduct() {
               <button
                 onClick={() => toggleWishlist(product.id)}
                 className={cn(
-                  "flex-1 h-10 rounded-full border text-xs font-medium inline-flex items-center justify-center gap-1.5 transition",
+                  "flex-1 h-10 rounded-full border text-xs font-medium inline-flex items-center justify-center gap-1.5 transition bg-white shadow-sm",
                   wishlisted
-                    ? "bg-rose-500/15 border-rose-500/40 text-rose-300"
-                    : "border-white/10 text-slate-300 hover:text-white hover:border-white/20",
+                    ? "border-rose-200 bg-rose-50 text-rose-600"
+                    : "border-slate-200 text-slate-600 hover:text-slate-900 hover:border-slate-300",
                 )}
               >
-                <Heart className={cn("h-3.5 w-3.5", wishlisted && "fill-rose-400")} />
+                <Heart className={cn("h-3.5 w-3.5", wishlisted && "fill-rose-500")} />
                 {wishlisted ? "Wishlisted" : "Wishlist"}
               </button>
               <button
                 onClick={handleCompare}
                 className={cn(
-                  "flex-1 h-10 rounded-full border text-xs font-medium inline-flex items-center justify-center gap-1.5 transition",
+                  "flex-1 h-10 rounded-full border text-xs font-medium inline-flex items-center justify-center gap-1.5 transition bg-white shadow-sm",
                   compared
-                    ? "bg-indigo-500/15 border-indigo-500/40 text-indigo-300"
-                    : "border-white/10 text-slate-300 hover:text-white hover:border-white/20",
+                    ? "border-indigo-200 bg-indigo-50 text-indigo-600"
+                    : "border-slate-200 text-slate-600 hover:text-slate-900 hover:border-slate-300",
                 )}
               >
                 <GitCompareArrows className="h-3.5 w-3.5" />
@@ -477,7 +477,7 @@ export default function StorefrontProduct() {
               </button>
               <button
                 onClick={handleShare}
-                className="flex-1 h-10 rounded-full border border-white/10 text-slate-300 hover:text-white hover:border-white/20 text-xs font-medium inline-flex items-center justify-center gap-1.5"
+                className="flex-1 h-10 rounded-full border border-slate-200 bg-white shadow-sm text-slate-600 hover:text-slate-900 hover:border-slate-300 text-xs font-medium inline-flex items-center justify-center gap-1.5 transition"
               >
                 <Share2 className="h-3.5 w-3.5" /> Share
               </button>
@@ -504,10 +504,10 @@ export default function StorefrontProduct() {
               { icon: RotateCcw, t: "Easy return", s: "7-day policy" },
               { icon: CreditCard, t: "Secure pay", s: "All methods" },
             ].map((x) => (
-              <div key={x.t} className="rounded-xl bg-card/[0.03] border border-white/10 p-3">
-                <x.icon className="h-4 w-4 text-indigo-300 mb-1.5" />
-                <div className="text-xs font-semibold text-white">{x.t}</div>
-                <div className="text-[10px] text-slate-400">{x.s}</div>
+              <div key={x.t} className="rounded-xl bg-white shadow-sm border border-slate-200 p-3">
+                <x.icon className="h-4 w-4 text-indigo-600 mb-1.5" />
+                <div className="text-xs font-semibold text-slate-800">{x.t}</div>
+                <div className="text-[10px] text-slate-500">{x.s}</div>
               </div>
             ))}
           </div>
@@ -517,29 +517,29 @@ export default function StorefrontProduct() {
       {/* === Tabs === */}
       <section className="mt-12 sm:mt-16">
         <Tabs defaultValue="description" className="w-full">
-          <TabsList className="bg-card/[0.04] border border-white/10 rounded-full p-1 h-auto flex flex-wrap gap-1">
-            <TabsTrigger value="description" className="rounded-full data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-300 px-4 py-2 text-xs sm:text-sm">
+          <TabsList className="bg-slate-100 border border-slate-200 rounded-full p-1 h-auto flex flex-wrap gap-1">
+            <TabsTrigger value="description" className="rounded-full data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-600 px-4 py-2 text-xs sm:text-sm">
               Description
             </TabsTrigger>
-            <TabsTrigger value="specs" className="rounded-full data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-300 px-4 py-2 text-xs sm:text-sm">
+            <TabsTrigger value="specs" className="rounded-full data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-600 px-4 py-2 text-xs sm:text-sm">
               Specifications
             </TabsTrigger>
-            <TabsTrigger value="shipping" className="rounded-full data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-300 px-4 py-2 text-xs sm:text-sm">
+            <TabsTrigger value="shipping" className="rounded-full data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-600 px-4 py-2 text-xs sm:text-sm">
               Shipping
             </TabsTrigger>
-            <TabsTrigger value="returns" className="rounded-full data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-300 px-4 py-2 text-xs sm:text-sm">
+            <TabsTrigger value="returns" className="rounded-full data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-600 px-4 py-2 text-xs sm:text-sm">
               Return Policy
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="description" className="mt-6">
-            <div className="rounded-2xl bg-card/[0.03] border border-white/10 p-5 sm:p-6 text-slate-300 leading-relaxed text-sm sm:text-base">
+            <div className="rounded-2xl bg-white shadow-sm border border-slate-200 p-5 sm:p-6 text-slate-600 leading-relaxed text-sm sm:text-base">
               {product.description ? (
                 <p className="whitespace-pre-line">{product.description}</p>
               ) : (
                 <div className="space-y-3">
                   <p>
-                    <span className="text-white font-semibold">{product.name}</span> — a premium choice
+                    <span className="text-slate-900 font-semibold">{product.name}</span> — a premium choice
                     {product.brand ? ` from ${product.brand}` : ""}, crafted for everyday excellence.
                     Built with quality materials and modern design to deliver a reliable experience.
                   </p>
@@ -551,7 +551,7 @@ export default function StorefrontProduct() {
                       "Backed by our customer care",
                     ].map((x) => (
                       <li key={x} className="flex items-start gap-2 text-sm">
-                        <Check className="h-4 w-4 text-emerald-400 mt-0.5 shrink-0" />
+                        <Check className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
                         <span>{x}</span>
                       </li>
                     ))}
@@ -562,8 +562,8 @@ export default function StorefrontProduct() {
           </TabsContent>
 
           <TabsContent value="specs" className="mt-6">
-            <div className="rounded-2xl bg-card/[0.03] border border-white/10 overflow-hidden">
-              <dl className="divide-y divide-white/5">
+            <div className="rounded-2xl bg-white shadow-sm border border-slate-200 overflow-hidden">
+              <dl className="divide-y divide-slate-100">
                 {[
                   ["Brand", product.brand],
                   ["Model", product.model],
@@ -579,8 +579,8 @@ export default function StorefrontProduct() {
                   .filter(([, v]) => Boolean(v))
                   .map(([k, v]) => (
                     <div key={k as string} className="grid grid-cols-3 gap-2 px-4 sm:px-5 py-3 text-sm">
-                      <dt className="text-slate-400">{k}</dt>
-                      <dd className="col-span-2 text-white font-medium">{v as string}</dd>
+                      <dt className="text-slate-500">{k}</dt>
+                      <dd className="col-span-2 text-slate-900 font-medium">{v as string}</dd>
                     </div>
                   ))}
               </dl>
@@ -594,19 +594,19 @@ export default function StorefrontProduct() {
                 { icon: Package, t: "Outside Dhaka", s: "2-3 business days. ৳120 charge." },
                 { icon: ShieldCheck, t: "Secure packaging", s: "Every order is sealed & quality-checked." },
               ].map((x) => (
-                <div key={x.t} className="rounded-2xl bg-card/[0.03] border border-white/10 p-5">
-                  <x.icon className="h-5 w-5 text-indigo-300 mb-2" />
-                  <div className="font-semibold text-white">{x.t}</div>
-                  <div className="text-sm text-slate-400 mt-1">{x.s}</div>
+                <div key={x.t} className="rounded-2xl bg-white shadow-sm border border-slate-200 p-5">
+                  <x.icon className="h-5 w-5 text-indigo-600 mb-2" />
+                  <div className="font-semibold text-slate-800">{x.t}</div>
+                  <div className="text-sm text-slate-500 mt-1">{x.s}</div>
                 </div>
               ))}
             </div>
           </TabsContent>
 
           <TabsContent value="returns" className="mt-6">
-            <div className="rounded-2xl bg-card/[0.03] border border-white/10 p-5 sm:p-6 space-y-3 text-sm text-slate-300">
-              <div className="flex items-center gap-2 text-white font-semibold">
-                <RotateCcw className="h-5 w-5 text-indigo-300" /> 7-Day Easy Return
+            <div className="rounded-2xl bg-white shadow-sm border border-slate-200 p-5 sm:p-6 space-y-3 text-sm text-slate-600">
+              <div className="flex items-center gap-2 text-slate-900 font-semibold">
+                <RotateCcw className="h-5 w-5 text-indigo-600" /> 7-Day Easy Return
               </div>
               <ul className="space-y-2">
                 {[
@@ -616,7 +616,7 @@ export default function StorefrontProduct() {
                   "Warranty claims follow the manufacturer's policy.",
                 ].map((x) => (
                   <li key={x} className="flex items-start gap-2">
-                    <Check className="h-4 w-4 text-emerald-400 mt-0.5 shrink-0" />
+                    <Check className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
                     <span>{x}</span>
                   </li>
                 ))}
@@ -629,29 +629,29 @@ export default function StorefrontProduct() {
       {/* === Customer Reviews === */}
       <section className="mt-12">
         <div className="flex items-end justify-between mb-4 flex-wrap gap-3">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight">Customer Reviews</h2>
-          <Button variant="ghost" className="border border-white/10 rounded-full text-white hover:bg-card/5 text-xs">
+          <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">Customer Reviews</h2>
+          <Button variant="ghost" className="border border-slate-200 rounded-full text-slate-700 hover:bg-slate-50 text-xs shadow-sm">
             <MessageSquare className="h-3.5 w-3.5 mr-1.5" /> Write a review
           </Button>
         </div>
 
         <div className="grid md:grid-cols-[280px_1fr] gap-5">
           {/* Summary */}
-          <div className="rounded-2xl bg-gradient-to-br from-indigo-500/10 via-white/[0.03] to-transparent border border-white/10 p-5 text-center">
-            <div className="text-5xl font-extrabold text-white">{reviewStats.avg}</div>
+          <div className="rounded-2xl bg-indigo-50/50 border border-indigo-100 p-5 text-center">
+            <div className="text-5xl font-extrabold text-indigo-900">{reviewStats.avg}</div>
             <div className="flex justify-center gap-0.5 mt-1">
               {Array.from({ length: 5 }).map((_, i) => (
-                <Star key={i} className={cn("h-4 w-4", i < Math.round(reviewStats.avg) ? "fill-amber-400 text-amber-400" : "text-slate-600")} />
+                <Star key={i} className={cn("h-4 w-4", i < Math.round(reviewStats.avg) ? "fill-amber-400 text-amber-400" : "text-slate-300")} />
               ))}
             </div>
-            <div className="text-xs text-slate-400 mt-1">Based on {reviewStats.total} reviews</div>
+            <div className="text-xs text-slate-500 mt-1">Based on {reviewStats.total} reviews</div>
 
             <div className="mt-4 space-y-1.5">
               {reviewStats.breakdown.map((b) => (
                 <div key={b.star} className="flex items-center gap-2 text-xs">
-                  <span className="w-6 text-slate-400 text-right">{b.star}★</span>
-                  <Progress value={(b.count / reviewStats.total) * 100} className="h-1.5 flex-1 bg-card/5" />
-                  <span className="w-8 text-slate-400 tabular-nums">{b.count}</span>
+                  <span className="w-6 text-slate-500 text-right">{b.star}★</span>
+                  <Progress value={(b.count / reviewStats.total) * 100} className="h-1.5 flex-1 bg-slate-200" />
+                  <span className="w-8 text-slate-500 tabular-nums">{b.count}</span>
                 </div>
               ))}
             </div>
@@ -664,14 +664,14 @@ export default function StorefrontProduct() {
               { name: "Sadia A.", rating: 5, date: "1 month ago", text: "Genuine product, exactly as described. Packaging was secure and arrived in perfect condition.", helpful: 8 },
               { name: "Tanvir K.", rating: 4, date: "1 month ago", text: "Good value for money. Works as expected. Star less only for slightly delayed shipping.", helpful: 3 },
             ].map((r, i) => (
-              <article key={i} className="rounded-2xl bg-card/[0.03] border border-white/10 p-4">
+              <article key={i} className="rounded-2xl bg-white shadow-sm border border-slate-200 p-4">
                 <header className="flex items-center justify-between gap-2 mb-2">
                   <div className="flex items-center gap-2">
-                    <div className="h-9 w-9 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 grid place-items-center text-white font-semibold text-sm">
+                    <div className="h-9 w-9 rounded-full bg-gradient-to-br from-indigo-500 to-indigo-600 grid place-items-center text-white font-semibold text-sm">
                       {r.name.charAt(0)}
                     </div>
                     <div>
-                      <div className="text-sm font-semibold text-white inline-flex items-center gap-1.5">
+                      <div className="text-sm font-semibold text-slate-900 inline-flex items-center gap-1.5">
                         {r.name}
                         <BadgeVerified />
                       </div>
@@ -680,12 +680,12 @@ export default function StorefrontProduct() {
                   </div>
                   <div className="flex gap-0.5">
                     {Array.from({ length: 5 }).map((_, j) => (
-                      <Star key={j} className={cn("h-3.5 w-3.5", j < r.rating ? "fill-amber-400 text-amber-400" : "text-slate-600")} />
+                      <Star key={j} className={cn("h-3.5 w-3.5", j < r.rating ? "fill-amber-400 text-amber-400" : "text-slate-300")} />
                     ))}
                   </div>
                 </header>
-                <p className="text-sm text-slate-300 leading-relaxed">{r.text}</p>
-                <button className="mt-3 inline-flex items-center gap-1 text-[11px] text-slate-400 hover:text-white">
+                <p className="text-sm text-slate-600 leading-relaxed">{r.text}</p>
+                <button className="mt-3 inline-flex items-center gap-1 text-[11px] text-slate-500 hover:text-indigo-600">
                   <ThumbsUp className="h-3 w-3" /> Helpful ({r.helpful})
                 </button>
               </article>
@@ -697,7 +697,7 @@ export default function StorefrontProduct() {
       {/* === Related === */}
       {related.length > 0 && (
         <section className="mt-14">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight mb-4">You may also like</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight mb-4">You may also like</h2>
           <ProductGrid products={related} allProducts={related} />
         </section>
       )}
@@ -707,16 +707,16 @@ export default function StorefrontProduct() {
 
 function Spec({ k, v }: { k: string; v: string }) {
   return (
-    <div className="rounded-lg bg-card/[0.03] border border-white/5 px-3 py-2">
+    <div className="rounded-lg bg-white shadow-sm border border-slate-200 px-3 py-2">
       <div className="text-[10px] sm:text-xs text-slate-500">{k}</div>
-      <div className="text-sm font-medium text-white truncate">{v}</div>
+      <div className="text-sm font-medium text-slate-900 truncate">{v}</div>
     </div>
   );
 }
 
 function BadgeVerified() {
   return (
-    <span className="inline-flex items-center gap-0.5 text-[9px] font-medium px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/20">
+    <span className="inline-flex items-center gap-0.5 text-[9px] font-medium px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
       <Check className="h-2.5 w-2.5" /> Verified
     </span>
   );

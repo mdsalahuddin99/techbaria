@@ -1,6 +1,11 @@
-import { redirect } from "next/navigation";
+import StorefrontLayout from "./(storefront)/layout";
+import StorefrontHome from "./(storefront)/storefront/page";
 
 export default function HomePage() {
-  redirect("/shop");
+  return (
+    <StorefrontLayout>
+      <StorefrontHome />
+    </StorefrontLayout>
+  );
 }
 

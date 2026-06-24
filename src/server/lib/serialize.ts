@@ -146,8 +146,10 @@ export function mapPaymentMethodToTenderType(method: string): $Enums.TenderType 
 // ═══════════════════════════════════════════════════════════════════════════
 
 type PrismaSale = Prisma.SaleGetPayload<{
-  include: { items: { include: { serialNumbers: true } }; tenders: true; customer: true; user: true; editedBy: true };
-}>;
+  include: { items: true; tenders: true; customer: true; user: true; editedBy: true };
+}> & {
+  items: Array<{ serialNumbers?: Array<{ serial: string }> } & Record<string, any>>;
+};
 
 export function serializeSale(raw: PrismaSale): Sale {
   const paid = toNumber(raw.paid);
@@ -163,7 +165,7 @@ export function serializeSale(raw: PrismaSale): Sale {
     customerReferencePerson: raw.customer?.referencePerson ?? undefined,
     customerEmail: raw.customer?.email ?? undefined,
     customerAddress: raw.customer?.address ?? undefined,
-    items: (raw.items ?? []).map((i) => ({
+    items: (raw.items ?? []).map((i: typeof raw.items[number] & { serialNumbers?: Array<{ serial: string }> }) => ({
       productId: i.productId,
       name: i.name ?? "",
       price: toNumber(i.price),

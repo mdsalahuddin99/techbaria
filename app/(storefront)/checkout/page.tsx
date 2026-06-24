@@ -43,7 +43,7 @@ export default function StorefrontCheckout() {
     return (
       <div className="max-w-md mx-auto px-4 py-20 text-center">
         <h1 className="text-xl font-bold mb-2">Cart is empty</h1>
-        <Link href="/storefront/shop" className="text-indigo-300 hover:text-indigo-200">← Back to shop</Link>
+        <Link href="/shop" className="text-indigo-300 hover:text-indigo-200">← Back to shop</Link>
       </div>
     );
   }

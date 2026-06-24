@@ -50,7 +50,7 @@ export default function StorefrontOrderSuccess() {
     return (
       <div className="max-w-md mx-auto px-4 py-20 text-center">
         <h1 className="text-xl font-bold mb-2">Order not found</h1>
-        <Link href="/storefront" className="text-indigo-300 hover:text-indigo-200">← Back to home</Link>
+        <Link href="/" className="text-indigo-300 hover:text-indigo-200">← Back to home</Link>
       </div>
     );
   }
@@ -98,12 +98,12 @@ export default function StorefrontOrderSuccess() {
       </div>
 
       <div className="mt-6 flex gap-3 justify-center">
-        <Link href="/storefront/shop">
+        <Link href="/shop">
           <Button variant="ghost" className="rounded-full border border-white/10 text-white hover:bg-card/5">
             Continue shopping
           </Button>
         </Link>
-        <Link href="/storefront/account">
+        <Link href="/account">
           <Button className="bg-indigo-600 hover:bg-indigo-500 rounded-full">
             View my orders <ArrowRight className="h-4 w-4 ml-1" />
           </Button>

@@ -15,7 +15,7 @@ export function CartLineItem({ line }: Props) {
   return (
     <div className="flex gap-3 p-3 rounded-2xl bg-card/[0.04] border border-white/10">
       <Link
-        href={`/storefront/p/${encodeURIComponent(line.productId)}`}
+        href={`/p/${encodeURIComponent((line as any).slug || line.productId)}`}
         className="shrink-0 h-16 w-16 sm:h-20 sm:w-20 rounded-xl bg-card/5 border border-white/10 grid place-items-center overflow-hidden"
       >
         {line.imageUrl ? (
@@ -26,7 +26,7 @@ export function CartLineItem({ line }: Props) {
       </Link>
       <div className="flex-1 min-w-0">
         <Link
-          href={`/storefront/p/${encodeURIComponent(line.productId)}`}
+          href={`/p/${encodeURIComponent((line as any).slug || line.productId)}`}
           className="text-sm font-semibold line-clamp-2 hover:text-indigo-300"
         >
           {line.name}

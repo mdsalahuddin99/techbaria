@@ -19,10 +19,10 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 47.4% 11.2%;
 
-    /* Primary — Modern ERP Style (Teal/Emerald) */
-    --primary: 175 77% 26%; /* #0f766e Tailwind Teal-700 */
+    /* Primary — Indigo */
+    --primary: 243 75% 59%; /* #4f46e5 Tailwind Indigo-600 */
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 175 77% 26%;
+    --primary-glow: 243 75% 59%;
 
     /* Secondary - Restored to cool grey for UI elements like Search Bars */
     --secondary: 220 13% 91%;
@@ -31,8 +31,9 @@
     --muted: 220 13% 91%;
     --muted-foreground: 215.4 16.3% 46.9%;
 
-    --accent: 220 13% 88%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Accent — Rose */
+    --accent: 346 87% 61%; /* #f43f5e Tailwind Rose-500 */
+    --accent-foreground: 0 0% 100%;
 
     --success: 142.1 76.2% 36.3%;
     --success-foreground: 355.7 100% 97.3%;
@@ -45,7 +46,7 @@
 
     --border: 220 13% 85%; /* Crisp, defined borders in cool slate grey */
     --input: 220 13% 85%;
-    --ring: 175 77% 26%;
+    --ring: 243 75% 59%;
 
     /* Sharp corners for a physical card feel */
     --radius: 4px;
@@ -53,12 +54,12 @@
     /* Sidebar — Premium Dark Sidebar for High Contrast */
     --sidebar-background: 222.2 47.4% 11.2%; /* slate-900 */
     --sidebar-foreground: 210 40% 98%; /* slate-50 */
-    --sidebar-primary: 175 77% 26%; /* Teal */
+    --sidebar-primary: 243 75% 59%; /* Indigo */
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 217.2 32.6% 17.5%; /* slate-800 */
     --sidebar-accent-foreground: 210 40% 98%; 
     --sidebar-border: 217.2 32.6% 17.5%;
-    --sidebar-ring: 175 77% 26%;
+    --sidebar-ring: 243 75% 59%;
 
     /* Premium, soft drop shadows for modern depth and hover animations */
     --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.02);
@@ -158,6 +159,29 @@
   }
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+  /* Premium Design Utilities */
+  .glass-card {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+  }
+
+  .text-gradient {
+    background: linear-gradient(135deg, #4f46e5 0%, #f43f5e 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .bg-mesh {
+    background-color: #f8fafc;
+    background-image: radial-gradient(at 40% 20%, hsla(243,75%,59%,0.1) 0px, transparent 50%),
+                      radial-gradient(at 80% 0%, hsla(346,87%,61%,0.1) 0px, transparent 50%),
+                      radial-gradient(at 0% 50%, hsla(243,75%,59%,0.05) 0px, transparent 50%);
+  }
 }
 
 /* Page Header & Table Header Module Themes - Swappable branding colors */
@@ -168,21 +192,21 @@
 }
 
 .theme-inventory {
-  --theme-color: #6366f1; /* Indigo */
-  --theme-bg-light: rgba(99, 102, 241, 0.04);
-  --theme-border-light: rgba(99, 102, 241, 0.12);
+  --theme-color: #4f46e5; /* Indigo */
+  --theme-bg-light: rgba(79, 70, 229, 0.04);
+  --theme-border-light: rgba(79, 70, 229, 0.12);
 }
 
 .theme-commerce {
-  --theme-color: #0f766e; /* Teal */
-  --theme-bg-light: rgba(15, 118, 110, 0.04);
-  --theme-border-light: rgba(15, 118, 110, 0.12);
+  --theme-color: #4f46e5; /* Indigo */
+  --theme-bg-light: rgba(79, 70, 229, 0.04);
+  --theme-border-light: rgba(79, 70, 229, 0.12);
 }
 
 .theme-ecommerce {
-  --theme-color: #db2777; /* Pink */
-  --theme-bg-light: rgba(219, 39, 119, 0.04);
-  --theme-border-light: rgba(219, 39, 119, 0.12);
+  --theme-color: #f43f5e; /* Rose */
+  --theme-bg-light: rgba(244, 63, 94, 0.04);
+  --theme-border-light: rgba(244, 63, 94, 0.12);
 }
 
 .theme-people {
@@ -204,9 +228,9 @@
 }
 
 .theme-main {
-  --theme-color: #0f766e; /* Teal */
-  --theme-bg-light: rgba(15, 118, 110, 0.04);
-  --theme-border-light: rgba(15, 118, 110, 0.12);
+  --theme-color: #4f46e5; /* Indigo */
+  --theme-bg-light: rgba(79, 70, 229, 0.04);
+  --theme-border-light: rgba(79, 70, 229, 0.12);
 }
 
 /* Apply themes to Table Headers inside these categories */
@@ -226,7 +250,7 @@
 
 /* Page Header custom style for solid background */
 .page-header-solid {
-  background-color: var(--theme-color, #0f766e) !important;
+  background-color: var(--theme-color, #4f46e5) !important;
   border: none !important;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
 }

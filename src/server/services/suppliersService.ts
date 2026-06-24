@@ -33,32 +33,39 @@ export interface SupplierUpdateInput {
 export const suppliersService = {
   /** List all suppliers for the shop (paginated). */
   async list(ctx: Ctx, params?: PaginationParams) {
+    // Fetch paginated suppliers (no join — avoids N+1)
     const raw = await paginate<any>(
       prisma.supplier,
-      {
-        include: { purchases: { select: { total: true } } },
-      },
+      {},
       params,
       { orderBy: { name: "asc" as const } },
     );
 
+    // Aggregate total purchased per supplier in one query
+    const supplierIds = raw.items.map((s: any) => s.id);
+    const purchaseTotals = await prisma.purchase.groupBy({
+      by: ["supplierId"],
+      where: { supplierId: { in: supplierIds } },
+      _sum: { total: true },
+    });
+    const totalMap = new Map(
+      purchaseTotals.map((p: any) => [p.supplierId, Number(p._sum.total ?? 0)])
+    );
+
     return {
       ...raw,
-      items: raw.items.map((s: any) => {
-        const totalPurchased = s.purchases?.reduce((sum: number, p: any) => sum + Number(p.total), 0) ?? 0;
-        return {
-          id: s.id,
-          name: s.name,
-          contactPerson: s.contactPerson || "",
-          phone: s.phone || "",
-          email: s.email || "",
-          address: s.address || "",
-          notes: s.notes || "",
-          payableBalance: Number(s.payable),
-          totalPurchased,
-          createdAt: s.createdAt.toISOString(),
-        };
-      }),
+      items: raw.items.map((s: any) => ({
+        id: s.id,
+        name: s.name,
+        contactPerson: s.contactPerson || "",
+        phone: s.phone || "",
+        email: s.email || "",
+        address: s.address || "",
+        notes: s.notes || "",
+        payableBalance: Number(s.payable),
+        totalPurchased: totalMap.get(s.id) ?? 0,
+        createdAt: s.createdAt.toISOString(),
+      })),
     };
   },
 

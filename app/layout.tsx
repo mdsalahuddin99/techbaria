@@ -1,6 +1,20 @@
 import type { Metadata, Viewport } from 'next';
+import { Inter } from 'next/font/google';
 import { Providers } from './providers';
 import '@/index.css';
+
+// ─── Font ────────────────────────────────────────────────────────────────────
+// next/font/google self-hosts Inter at build time:
+//   • Zero external network request to fonts.googleapis.com
+//   • Zero render-blocking (no <link rel="stylesheet"> in <head>)
+//   • Font is served from the same origin → faster, no CORS
+const inter = Inter({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-inter',
+  display: 'swap',   // fallback font shown instantly; Inter swaps in when ready
+  preload: true,
+});
 
 const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://shebatech360.com";
 
@@ -55,18 +69,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-          rel="stylesheet"
-        />
-      </head>
-      <body>
+    // inter.variable injects --font-inter CSS variable into <html>
+    // Use it in CSS/Tailwind: font-family: var(--font-inter)
+    <html lang="en" className={inter.variable}>
+      <body className={inter.className}>
         <Providers>{children}</Providers>
       </body>
     </html>
   );
 }
+

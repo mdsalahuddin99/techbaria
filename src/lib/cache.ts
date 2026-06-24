@@ -65,6 +65,8 @@ export const TTL = {
   SESSION: 60 * 60 * 24 * 30,
   /** Short-lived data (e.g. rate limit counters) */
   SHORT: 10,
+  /** Notification unread count — 30 s (changes on mark-read / new push) */
+  UNREAD_COUNT: 30,
 } as const;
 
 // ─── Key helpers ────────────────────────────────────────────────────────────
@@ -91,17 +93,36 @@ export const cacheKeys = {
   shop: {
     config: (shopId: string) => `shop:${shopId}:config`,
   },
+  notifications: {
+    unreadCount: (shopId: string) => `shop:${shopId}:notifications:unreadCount`,
+  },
 } as const;
 
 // ─── Cache service ──────────────────────────────────────────────────────────
 
+const memoryCache = new Map<string, { value: any; expiresAt: number }>();
+
 export const cache = {
-  /** Get a value from cache. Returns `null` on miss or when Redis is down. */
+  /** Get a value from cache. Checks memory L1 first, then Redis. */
   async get<T>(key: string): Promise<T | null> {
+    const now = Date.now();
+    const memEntry = memoryCache.get(key);
+    if (memEntry) {
+      if (memEntry.expiresAt > now) {
+        return memEntry.value as T;
+      }
+      memoryCache.delete(key);
+    }
+
     const r = getRedis();
     if (!r) return null;
     try {
-      return (await r.get(key)) as T | null;
+      const val = (await r.get(key)) as T | null;
+      if (val !== null && val !== undefined) {
+        // Populate memory L1 cache with remaining TTL or default 5 mins
+        memoryCache.set(key, { value: val, expiresAt: Date.now() + 60 * 1000 });
+      }
+      return val;
     } catch (err) {
       console.error("[cache] get error:", err);
       return null;
@@ -110,6 +131,9 @@ export const cache = {
 
   /** Set a value with optional TTL (seconds). Default: 5 min. */
   async set(key: string, value: unknown, ttl: number = TTL.CATALOG): Promise<void> {
+    const now = Date.now();
+    memoryCache.set(key, { value, expiresAt: now + ttl * 1000 });
+
     const r = getRedis();
     if (!r) return;
     try {
@@ -120,11 +144,15 @@ export const cache = {
   },
 
   /** Delete a specific key. */
-  async del(key: string): Promise<void> {
+  async del(...keys: string[]): Promise<void> {
+    for (const key of keys) {
+      memoryCache.delete(key);
+    }
+
     const r = getRedis();
     if (!r) return;
     try {
-      await r.del(key);
+      await r.del(...keys);
     } catch (err) {
       console.error("[cache] del error:", err);
     }
@@ -132,10 +160,18 @@ export const cache = {
 
   /**
    * Invalidate all keys matching a pattern.
-   * Uses Upstash Redis SCAN under the hood.
    * Example: `cache.invalidate("shop:abc:products:*")`
    */
   async invalidate(pattern: string): Promise<void> {
+    // Escape regex characters except asterisk, and convert asterisk to .*
+    const regexStr = "^" + pattern.replace(/[-[\]{}()+?.,\\^$|#\s]/g, "\\$&").replace(/\*/g, ".*") + "$";
+    const regex = new RegExp(regexStr);
+    for (const key of memoryCache.keys()) {
+      if (regex.test(key)) {
+        memoryCache.delete(key);
+      }
+    }
+
     const r = getRedis();
     if (!r) return;
     try {
@@ -157,31 +193,18 @@ export const cache = {
    * Gracefully falls back to the compute function on cache miss/error.
    */
   async fetch<T>(key: string, ttl: number, fn: () => Promise<T>): Promise<T> {
-    const r = getRedis();
-    if (r) {
-      try {
-        const cached = await r.get(key);
-        if (cached !== null && cached !== undefined) {
-          return cached as T;
-        }
-      } catch {
-        // fall through to compute
-      }
+    const cached = await cache.get<T>(key);
+    if (cached !== null && cached !== undefined) {
+      return cached;
     }
     const value = await fn();
-    if (r) {
-      try {
-        await r.set(key, value, { ex: ttl });
-      } catch {
-        // cache write failure is non-fatal
-      }
-    }
+    await cache.set(key, value, ttl);
     return value;
   },
 
   /** Helper: invalidate all product caches for a shop. */
   invalidateProducts(shopId: string) {
-    return this.invalidate(`shop:${shopId}:products:*`);
+    return cache.invalidate(`shop:${shopId}:products:*`);
   },
 
   /** Helper: invalidate specific product caches (by ID) and product list. */
@@ -192,12 +215,12 @@ export const cache = {
       cacheKeys.products.list(shopId),
       ...productIds.map(productId => cacheKeys.products.byId(shopId, productId))
     ];
-    await this.del(...keys);
+    await cache.del(...keys);
   },
 
   /** Helper: invalidate all category caches for a shop. */
   invalidateCategories(shopId: string) {
-    return this.del(
+    return cache.del(
       cacheKeys.categories.list(shopId),
       cacheKeys.categories.tree(shopId)
     );
@@ -205,21 +228,21 @@ export const cache = {
 
   /** Helper: invalidate all sales caches for a shop. */
   invalidateSales(shopId: string) {
-    return this.del(cacheKeys.sales.list(shopId));
+    return cache.del(cacheKeys.sales.list(shopId));
   },
 
   /** Helper: invalidate all purchases caches for a shop. */
   invalidatePurchases(shopId: string) {
-    return this.del(cacheKeys.purchases.list(shopId));
+    return cache.del(cacheKeys.purchases.list(shopId));
   },
 
   /** Helper: invalidate inventory caches for a shop. */
   invalidateInventory(shopId: string) {
-    return this.del(cacheKeys.inventory.snapshot(shopId));
+    return cache.del(cacheKeys.inventory.snapshot(shopId));
   },
 
   /** Helper: invalidate shop config cache. */
   invalidateShopConfig(shopId: string) {
-    return this.del(cacheKeys.shop.config(shopId));
+    return cache.del(cacheKeys.shop.config(shopId));
   },
 };

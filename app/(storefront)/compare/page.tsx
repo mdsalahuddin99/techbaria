@@ -21,7 +21,7 @@ export default function StorefrontCompare() {
         <GitCompareArrows className="h-12 w-12 mx-auto text-slate-600 mb-3" />
         <h1 className="text-xl font-bold">Compare খালি</h1>
         <p className="text-sm text-slate-400 mt-1">৪টি পর্যন্ত পণ্য পাশাপাশি তুলনা করুন।</p>
-        <Link href="/storefront/shop" className="inline-block mt-5 px-5 h-10 leading-10 rounded-full bg-indigo-600 text-white text-sm font-semibold">
+        <Link href="/shop" className="inline-block mt-5 px-5 h-10 leading-10 rounded-full bg-indigo-600 text-white text-sm font-semibold">
           Browse shop
         </Link>
       </div>

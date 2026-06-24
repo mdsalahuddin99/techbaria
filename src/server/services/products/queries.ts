@@ -29,19 +29,7 @@ async function runListQuery(ctx: Ctx, params?: PaginationParams, filter?: Produc
       include: {
         category: true,
         images: { orderBy: { position: "asc" as const } },
-        serialNumbers: {
-          where: { status: "IN_STOCK" },
-          select: {
-            id: true,
-            serial: true,
-            purchaseItem: {
-              select: {
-                warrantyMonths: true,
-                warrantyStartDate: true,
-              },
-            },
-          },
-        },
+        // serialNumbers omitted from list — only needed in getById detail view
         brand: true,
         model: true,
         series: true,
@@ -107,23 +95,37 @@ export async function getById(ctx: Ctx, id: string) {
 
 /** Get a product by slug (for storefront). */
 export async function getBySlug(shopId: string, slug: string) {
-  const product = await prisma.product.findUnique({
-    where: { slug },
-    include: {
-      category: true,
-      images: { orderBy: { position: "asc" } },
-      variants: true,
-      brand: true,
-      model: true,
-      series: true,
-    },
+  const cacheKey = cacheKeys.products.bySlug(shopId, slug);
+  return cache.fetch(cacheKey, TTL.CATALOG, async () => {
+    const product = await prisma.product.findFirst({
+      where: { OR: [{ slug }, { id: slug }] },
+      include: {
+        category: true,
+        images: { orderBy: { position: "asc" } },
+        variants: true,
+        brand: true,
+        model: true,
+        series: true,
+      },
+    });
+    if (!product) throw new ServiceError("NOT_FOUND", "Product not found", 404);
+    return serialise(product);
   });
-  if (!product) throw new ServiceError("NOT_FOUND", "Product not found", 404);
-  return serialise(product);
 }
 
 /** List published products for public storefront. */
 export async function publicList(shopId: string, filter?: { categoryId?: string; search?: string }) {
+  const isUnfiltered = !filter?.categoryId && !filter?.search;
+  if (isUnfiltered) {
+    const cacheKey = `shop:${shopId}:products:storefront:unfiltered`;
+    return cache.fetch(cacheKey, TTL.CATALOG, async () => {
+      return runPublicListQuery(shopId, filter);
+    });
+  }
+  return runPublicListQuery(shopId, filter);
+}
+
+async function runPublicListQuery(shopId: string, filter?: { categoryId?: string; search?: string }) {
   return serialise(
     await prisma.product.findMany({
       where: {

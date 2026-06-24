@@ -213,6 +213,12 @@ function buildDraftInvoiceHtml(
   const customerEmail = cust?.email || "";
   const customerReferencePerson = cust?.referencePerson || "";
 
+  // destination/attention are now proper DB columns, with cart fallback for legacy drafts
+  const cartMeta = (draft.cart as any[]).find((r: any) => r._meta);
+  const cartItems = (draft.cart as any[]).filter((r: any) => !r._meta);
+  const draftDestination = (draft as any).destination || cartMeta?.destination || "";
+  const draftAttention = (draft as any).attention || cartMeta?.attention || customerReferencePerson;
+
   const d = new Date(draft.heldAt);
   const dateStr = d.toLocaleDateString("en-GB");
   const timeStr = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: true });
@@ -220,20 +226,20 @@ function buildDraftInvoiceHtml(
   const printStr = `${printNow.toLocaleDateString("en-GB")}  ${printNow.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: true })}`;
 
   const subtotal = round2(
-    draft.cart.reduce((s, r) => s + r.price * r.qty - (r.discount || 0), 0)
+    cartItems.reduce((s: number, r: any) => s + r.price * r.qty - (r.discount || 0), 0)
   );
   const total = round2(Math.max(0, subtotal + (draft.vat || 0) + (draft.extraCharges || 0)));
-  const totalQty = draft.cart.reduce((s, i) => s + i.qty, 0);
+  const totalQty = cartItems.reduce((s: number, i: any) => s + i.qty, 0);
   const words = numberToWords(total) + " Only";
-  const totalDiscount = round2(draft.cart.reduce((s, r) => s + (r.discount || 0), 0));
+  const totalDiscount = round2(cartItems.reduce((s: number, r: any) => s + (r.discount || 0), 0));
 
   const warrantyLabel = (m?: number) => {
     if (!m || m <= 0) return "NO WARRANTY";
     return `${m} MONTH${m > 1 ? "S" : ""}`;
   };
 
-  const itemRows = draft.cart
-    .map((i, idx) => {
+  const itemRows = cartItems
+    .map((i: any, idx: number) => {
       const serialStr = i.serials?.length
         ? `<div style="font-size:9px; color:#444; font-weight:normal; margin-left:12px; margin-top:2px;">S/N: ${esc(i.serials.join(", "))}</div>`
         : "";
@@ -376,8 +382,8 @@ function buildDraftInvoiceHtml(
             <tr><td style="width:85px; font-weight:bold; padding:2px 0;">Customer</td><td style="font-weight:bold; padding:2px 0;">: ${esc(customerName)}</td></tr>
             <tr><td style="font-weight:bold; padding:2px 0;">Address</td><td style="padding:2px 0;">: ${esc(customerAddress)}</td></tr>
             <tr><td style="font-weight:bold; padding:2px 0;">Mobile</td><td style="padding:2px 0;">: ${esc(customerPhone)}</td></tr>
-            <tr><td style="font-weight:bold; padding:2px 0;">Attention</td><td style="padding:2px 0;">: ${esc((draft as any).attention || customerReferencePerson)}</td></tr>
-            <tr><td style="font-weight:bold; padding:2px 0;">Destination</td><td style="padding:2px 0;">: ${esc((draft as any).destination || "")}</td></tr>
+            <tr><td style="font-weight:bold; padding:2px 0;">Attention</td><td style="padding:2px 0;">: ${esc(draftAttention)}</td></tr>
+            <tr><td style="font-weight:bold; padding:2px 0;">Destination</td><td style="padding:2px 0;">: ${esc(draftDestination)}</td></tr>
           </table>
         </td>
         <td style="width:35%; vertical-align:top; border:1px solid #000; padding:0;">

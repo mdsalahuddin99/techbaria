@@ -62,22 +62,20 @@ export function ProductCard({ product, allProducts }: Props) {
 
   return (
     <Link
-      href={`/storefront/p/${encodeURIComponent(product.id)}`}
-      className="group relative flex flex-col rounded-2xl bg-gradient-to-b from-white/[0.06] to-white/[0.02] border border-white/10 overflow-hidden hover:border-indigo-400/50 transition-all duration-300 hover:shadow-2xl hover:shadow-indigo-900/40 hover:-translate-y-1"
+      href={`/p/${encodeURIComponent(product.slug || product.id)}`}
+      className="group relative flex flex-col rounded-xl bg-white shadow-sm border border-slate-100 overflow-hidden hover:border-indigo-400 transition-all duration-300 hover:shadow-lg hover:-translate-y-1.5"
     >
-      <div className="relative aspect-square bg-gradient-to-br from-indigo-950/40 via-transparent to-transparent grid place-items-center overflow-hidden">
-        {/* Spotlight on hover */}
-        <div className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition duration-500 bg-[radial-gradient(circle_at_50%_30%,rgba(99,102,241,0.35),transparent_60%)]" />
+      <div className="relative aspect-square bg-white grid place-items-center overflow-hidden border-b border-slate-100">
 
         {product.imageUrl ? (
           <img
             src={product.imageUrl}
             alt={productDisplayName(product)}
             loading="lazy"
-            className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-110 group-hover:rotate-1"
+            className="absolute inset-0 h-full w-full object-contain p-4 transition duration-700 group-hover:scale-110"
           />
         ) : (
-          <div className="text-5xl sm:text-6xl transition duration-500 group-hover:scale-125 group-hover:-rotate-6 drop-shadow-[0_10px_30px_rgba(79,70,229,0.3)]">
+          <div className="text-5xl sm:text-6xl transition duration-500 group-hover:scale-125 group-hover:-rotate-6">
             {product.emoji || "📦"}
           </div>
         )}
@@ -88,7 +86,7 @@ export function ProductCard({ product, allProducts }: Props) {
           </span>
         )}
         {product.brand && (
-          <span className="absolute top-2 right-2 text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-black/50 backdrop-blur text-slate-200 border border-white/10">
+          <span className="absolute top-2 right-2 text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-white/90 backdrop-blur text-slate-700 border border-slate-200 shadow-sm">
             {product.brand}
           </span>
         )}
@@ -97,18 +95,18 @@ export function ProductCard({ product, allProducts }: Props) {
         <div className="absolute right-2 bottom-2 flex flex-col gap-1.5 translate-x-12 group-hover:translate-x-0 opacity-0 group-hover:opacity-100 transition-all duration-300">
           <button
             onClick={stopAnd(() => wishToggle(product.id))}
-            className={`h-8 w-8 rounded-full border grid place-items-center backdrop-blur transition ${
+            className={`h-8 w-8 rounded-full border grid place-items-center backdrop-blur shadow-sm transition ${
               isWish
-                ? "bg-rose-500/30 border-rose-400/50 text-rose-200"
-                : "bg-black/50 border-white/10 text-slate-200 hover:text-rose-300"
+                ? "bg-rose-50 border-rose-200 text-rose-500"
+                : "bg-white/90 border-slate-200 text-slate-600 hover:text-rose-500 hover:bg-white"
             }`}
             aria-label="Wishlist"
           >
-            <Heart className={`h-3.5 w-3.5 ${isWish ? "fill-rose-400" : ""}`} />
+            <Heart className={`h-3.5 w-3.5 ${isWish ? "fill-rose-500" : ""}`} />
           </button>
           <button
             onClick={stopAnd(() => openQuick(product.id))}
-            className="h-8 w-8 rounded-full bg-black/50 backdrop-blur border border-white/10 grid place-items-center text-slate-200 hover:text-indigo-300 transition"
+            className="h-8 w-8 rounded-full bg-white/90 backdrop-blur border border-slate-200 shadow-sm grid place-items-center text-slate-600 hover:text-indigo-600 hover:bg-white transition"
             aria-label="Quick view"
           >
             <Eye className="h-3.5 w-3.5" />
@@ -118,10 +116,10 @@ export function ProductCard({ product, allProducts }: Props) {
               const ok = cmpToggle(product.id);
               if (!ok) toast({ title: `Max ${COMPARE_MAX} products compare করা যাবে`, variant: "destructive" });
             })}
-            className={`h-8 w-8 rounded-full border grid place-items-center backdrop-blur transition ${
+            className={`h-8 w-8 rounded-full border grid place-items-center backdrop-blur shadow-sm transition ${
               isCmp
-                ? "bg-indigo-500/30 border-indigo-400/50 text-indigo-200"
-                : "bg-black/50 border-white/10 text-slate-200 hover:text-indigo-300"
+                ? "bg-indigo-50 border-indigo-200 text-indigo-600"
+                : "bg-white/90 border-slate-200 text-slate-600 hover:text-indigo-600 hover:bg-white"
             }`}
             aria-label="Compare"
           >
@@ -130,26 +128,26 @@ export function ProductCard({ product, allProducts }: Props) {
         </div>
 
         {outOfStock && (
-          <div className="absolute inset-0 bg-black/60 grid place-items-center">
-            <span className="text-xs font-semibold text-rose-300 px-2 py-1 rounded-full bg-rose-500/20 border border-rose-400/30">
+          <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] grid place-items-center">
+            <span className="text-xs font-semibold text-rose-600 px-2 py-1 rounded-full bg-rose-50 border border-rose-200 shadow-sm">
               Out of stock
             </span>
           </div>
         )}
       </div>
 
-      <div className="flex flex-col gap-1.5 p-2.5 sm:p-3">
-        <div className="text-[10px] sm:text-xs text-slate-400 truncate">{product.category}</div>
-        <div className="text-xs sm:text-sm font-semibold line-clamp-2 leading-snug min-h-[2.2rem] group-hover:text-indigo-200 transition">
+      <div className="flex flex-col gap-2 p-4">
+        <div className="text-[10px] sm:text-xs text-slate-400 font-semibold tracking-wide uppercase">{product.category}</div>
+        <div className="text-xs sm:text-sm font-bold text-slate-800 line-clamp-2 leading-relaxed min-h-[2.5rem] group-hover:text-indigo-700 transition-colors">
           {productDisplayName(product)}
         </div>
 
-        <div className="flex items-center gap-1 text-[10px] sm:text-xs text-slate-400">
+        <div className="flex items-center gap-1 text-[10px] sm:text-xs text-slate-500">
           <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-          <span className="text-slate-200 font-medium">4.8</span>
+          <span className="text-slate-700 font-medium">4.8</span>
           <span>·</span>
           {stock > 0 && stock < 5 ? (
-            <span className="text-amber-300">Only {stock} left</span>
+            <span className="text-amber-600 font-medium">Only {stock} left</span>
           ) : stock > 0 ? (
             <span>In stock</span>
           ) : null}
@@ -157,18 +155,18 @@ export function ProductCard({ product, allProducts }: Props) {
 
         <div className="flex items-end justify-between mt-1 gap-1">
           <div className="min-w-0">
-            <div className="text-sm sm:text-base font-bold text-white truncate">{formatPrice(product.price)}</div>
             {oldPrice && (
-              <div className="text-[10px] sm:text-xs text-slate-500 line-through">{formatPrice(oldPrice)}</div>
+              <div className="text-[10px] sm:text-xs text-slate-400 line-through mb-0.5">{formatPrice(oldPrice)}</div>
             )}
+            <div className="text-sm sm:text-base font-extrabold text-slate-900 truncate">{formatPrice(product.price)}</div>
           </div>
           <button
             onClick={handleAdd}
             disabled={outOfStock}
-            className="shrink-0 h-9 px-2.5 rounded-full bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 disabled:text-slate-500 text-white flex items-center gap-1 text-xs font-semibold transition shadow-lg shadow-indigo-600/30 group-hover:shadow-indigo-500/50 group-hover:scale-105"
+            className="shrink-0 h-9 px-4 rounded-full bg-slate-100 text-slate-700 hover:bg-indigo-600 hover:text-white disabled:bg-slate-50 disabled:text-slate-400 flex items-center gap-1.5 text-xs font-extrabold transition-colors group-hover:shadow-md group-hover:bg-indigo-600 group-hover:text-white"
             aria-label="Add to cart"
           >
-            <ShoppingBag className="h-3.5 w-3.5" />
+            <ShoppingBag className="h-4 w-4" />
             <span className="hidden sm:inline">Add</span>
           </button>
         </div>

@@ -9,6 +9,7 @@ import { ServiceError } from "@/server/lib/errors";
 import { paginate, type PaginationParams, type Paginated } from "@/server/lib/paginate";
 import type { Ctx } from "@/server/lib/ctx";
 import type { AppNotification, NotificationType } from "@/features/notifications/types";
+import { cache, cacheKeys, TTL } from "@/lib/cache";
 
 export interface NotificationCreateInput {
   type: NotificationType;
@@ -41,11 +42,13 @@ export const notificationsService = {
     };
   },
 
-  /** Get unread count. */
+  /** Get unread count (cached 30 s). */
   async unreadCount(ctx: Ctx) {
-    return prisma.notification.count({
-      where: { read: false },
-    });
+    return cache.fetch(
+      cacheKeys.notifications.unreadCount("default"),
+      TTL.UNREAD_COUNT,
+      () => prisma.notification.count({ where: { read: false } }),
+    );
   },
 
   /** Push / Create a new notification. */
@@ -59,6 +62,8 @@ export const notificationsService = {
         read: false,
       },
     });
+
+    await cache.del(cacheKeys.notifications.unreadCount("default"));
 
     return {
       id: n.id,
@@ -81,6 +86,8 @@ export const notificationsService = {
     if (updated.count === 0) {
       throw new ServiceError("NOT_FOUND", "Notification not found", 404);
     }
+
+    await cache.del(cacheKeys.notifications.unreadCount("default"));
   },
 
   /** Mark all notifications for the shop as read. */
@@ -89,11 +96,14 @@ export const notificationsService = {
       where: { read: false },
       data: { read: true },
     });
+
+    await cache.del(cacheKeys.notifications.unreadCount("default"));
   },
 
   /** Clear all notifications for the shop. */
   async clear(ctx: Ctx) {
     await prisma.notification.deleteMany({});
+    await cache.del(cacheKeys.notifications.unreadCount("default"));
   },
 
   /** Adapter compatibility methods. */

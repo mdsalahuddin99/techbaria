@@ -7,8 +7,8 @@ import { useCartCount } from "../../store/useCartStore";
 import { useWishlistCount } from "../../store/useWishlistStore";
 
 const cx = (active: boolean) =>
-  `flex flex-col items-center justify-center gap-0.5 flex-1 py-2 text-[10px] ${
-    active ? "text-indigo-300" : "text-slate-400"
+  `flex flex-col items-center justify-center gap-0.5 flex-1 py-2 text-[10px] transition ${
+    active ? "text-indigo-600 font-medium" : "text-slate-500 hover:text-slate-700"
   }`;
 
 export function MobileBottomBar() {
@@ -17,17 +17,17 @@ export function MobileBottomBar() {
   const wishCount = useWishlistCount();
 
   return (
-    <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-[#020617]/95 backdrop-blur-xl border-t border-white/10 pb-safe">
+    <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-xl border-t border-slate-200 shadow-[0_-4px_12px_rgb(0,0,0,0.03)] pb-safe">
       <div className="flex">
-        <Link href="/storefront" className={cx(pathname === "/storefront")}>
+        <Link href="/" className={cx(pathname === "/")}>
           <Home className="h-5 w-5" />
           <span>Home</span>
         </Link>
-        <Link href="/storefront/shop" className={cx(pathname === "/storefront/shop")}>
+        <Link href="/shop" className={cx(pathname === "/shop")}>
           <Grid2x2 className="h-5 w-5" />
           <span>Shop</span>
         </Link>
-        <Link href="/storefront/wishlist" className={cx(pathname === "/storefront/wishlist")}>
+        <Link href="/wishlist" className={cx(pathname === "/wishlist")}>
           <div className="relative">
             <Heart className="h-5 w-5" />
             {wishCount > 0 && (
@@ -38,7 +38,7 @@ export function MobileBottomBar() {
           </div>
           <span>Wishlist</span>
         </Link>
-        <Link href="/storefront/cart" className={cx(pathname === "/storefront/cart")}>
+        <Link href="/cart" className={cx(pathname === "/cart")}>
           <div className="relative">
             <ShoppingBag className="h-5 w-5" />
             {cartCount > 0 && (
@@ -49,7 +49,7 @@ export function MobileBottomBar() {
           </div>
           <span>Cart</span>
         </Link>
-        <Link href="/storefront/account" className={cx(pathname === "/storefront/account")}>
+        <Link href="/account" className={cx(pathname === "/account")}>
           <User className="h-5 w-5" />
           <span>Account</span>
         </Link>

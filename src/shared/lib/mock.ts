@@ -4,7 +4,7 @@ import { genInvoiceNo } from "./format";
 // Helper to add new fields with sensible defaults
 const wholesaleOf = (price: number) => Math.round(price * 0.9);
 
-const baseProducts: Array<Omit<Product, "wholesalePrice" | "supplierId"> & { supplierId?: string }> = [
+const baseProducts: Array<Omit<Product, "wholesalePrice" | "supplierId" | "slug"> & { supplierId?: string }> = [
   // ===== CCTV Cameras (serialized — per-unit tracking) =====
   { id: "p1", name: "Hikvision 2MP Dome Camera DS-2CE56D0T", sku: "CAM-HIK-DM2", barcode: "8901201000001", category: "CCTV Camera", price: 1850, costPrice: 1450, stock: 25, minStock: 5, unit: "pcs", active: true, emoji: "📹", supplierId: "sup1", brand: "Hikvision", warrantyMonths: 24 },
   { id: "p2", name: "Hikvision 5MP Bullet Camera DS-2CE16H0T", sku: "CAM-HIK-BL5", barcode: "8901202000000", category: "CCTV Camera", price: 2950, costPrice: 2350, stock: 18, minStock: 5, unit: "pcs", active: true, emoji: "📹", supplierId: "sup1", brand: "Hikvision", warrantyMonths: 24 },
@@ -45,6 +45,7 @@ const baseProducts: Array<Omit<Product, "wholesalePrice" | "supplierId"> & { sup
 
 export const mockProducts: Product[] = baseProducts.map((p) => ({
   ...p,
+  slug: p.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, ""),
   wholesalePrice: wholesaleOf(p.price),
 }));
 

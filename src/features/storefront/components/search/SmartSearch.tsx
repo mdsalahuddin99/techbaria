@@ -43,7 +43,7 @@ export function SmartSearch({ className = "", variant = "header" }: Props) {
     pushRecent(t);
     setOpen(false);
     setQ("");
-    router.push(`/storefront/search?q=${encodeURIComponent(t)}`);
+    router.push(`/search?q=${encodeURIComponent(t)}`);
   };
 
   const startVoice = () => {
@@ -110,7 +110,7 @@ export function SmartSearch({ className = "", variant = "header" }: Props) {
           onFocus={() => setOpen(true)}
           type="search"
           placeholder={variant === "hero" ? "iPhone 15 Pro, RTX 4090, Hikvision CCTV…" : "Search products…"}
-          className={`w-full ${sizeCls} bg-card/[0.06] border border-white/10 placeholder:text-slate-500 text-slate-100 focus:outline-none focus:border-indigo-400/60 focus:bg-card/[0.09] transition`}
+          className={`w-full ${sizeCls} bg-white border border-slate-200 shadow-sm placeholder:text-slate-400 text-slate-800 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition`}
         />
         <div
           className={`absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 ${
@@ -121,7 +121,7 @@ export function SmartSearch({ className = "", variant = "header" }: Props) {
             <button
               type="button"
               onClick={() => setQ("")}
-              className="p-1.5 rounded-full text-slate-400 hover:text-white hover:bg-card/5"
+              className="p-1.5 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100"
               aria-label="Clear"
             >
               <X className="h-3.5 w-3.5" />
@@ -132,8 +132,8 @@ export function SmartSearch({ className = "", variant = "header" }: Props) {
             onClick={startVoice}
             className={`p-1.5 rounded-full transition ${
               listening
-                ? "bg-rose-500/20 text-rose-300 animate-pulse"
-                : "text-slate-400 hover:text-indigo-300 hover:bg-card/5"
+                ? "bg-rose-50 text-rose-500 animate-pulse"
+                : "text-slate-400 hover:text-indigo-600 hover:bg-slate-100"
             }`}
             aria-label="Voice search"
           >
@@ -151,7 +151,7 @@ export function SmartSearch({ className = "", variant = "header" }: Props) {
       </form>
 
       {open && (
-        <div className="absolute left-0 right-0 top-full mt-2 z-50 rounded-2xl bg-[#0b0b22]/95 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/60 overflow-hidden animate-fade-in">
+        <div className="absolute left-0 right-0 top-full mt-2 z-50 rounded-xl bg-white backdrop-blur-xl border border-slate-200 shadow-[0_10px_40px_rgb(0,0,0,0.08)] overflow-hidden animate-fade-in">
           <div className="max-h-[70vh] overflow-y-auto p-2">
             {q.trim() && suggestions.length > 0 && (
               <div className="p-2">
@@ -161,15 +161,15 @@ export function SmartSearch({ className = "", variant = "header" }: Props) {
                 {suggestions.map((p) => (
                   <Link
                     key={p.id}
-                    href={`/storefront/p/${encodeURIComponent(p.id)}`}
+                    href={`/p/${encodeURIComponent(p.slug || p.id)}`}
                     onClick={() => {
                       pushRecent(q);
                       setOpen(false);
                       setQ("");
                     }}
-                    className="flex items-center gap-3 p-2 rounded-xl hover:bg-card/5"
+                    className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50"
                   >
-                    <div className="h-10 w-10 rounded-lg bg-card/5 border border-white/10 grid place-items-center overflow-hidden shrink-0">
+                    <div className="h-10 w-10 rounded-lg bg-slate-50 border border-slate-200 grid place-items-center overflow-hidden shrink-0">
                       {p.imageUrl ? (
                         <img src={p.imageUrl} alt="" className="h-full w-full object-cover" />
                       ) : (
@@ -177,10 +177,10 @@ export function SmartSearch({ className = "", variant = "header" }: Props) {
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="text-sm font-medium text-slate-100 truncate">{productDisplayName(p)}</div>
+                      <div className="text-sm font-medium text-slate-800 truncate">{productDisplayName(p)}</div>
                       <div className="text-[11px] text-slate-500">{categoryName(p)}</div>
                     </div>
-                    <div className="text-sm font-semibold text-indigo-300">{formatPrice(p.price)}</div>
+                    <div className="text-sm font-semibold text-indigo-600">{formatPrice(p.price)}</div>
                   </Link>
                 ))}
               </div>
@@ -204,7 +204,7 @@ export function SmartSearch({ className = "", variant = "header" }: Props) {
                     <button
                       key={r}
                       onClick={() => submit(r)}
-                      className="px-2.5 py-1 rounded-full bg-card/5 border border-white/10 text-xs text-slate-200 hover:bg-card/10"
+                      className="px-2.5 py-1 rounded-full bg-slate-100 border border-slate-200 text-xs text-slate-700 hover:bg-slate-200"
                     >
                       {r}
                     </button>
@@ -222,13 +222,13 @@ export function SmartSearch({ className = "", variant = "header" }: Props) {
                   {categories.slice(0, 6).map((c) => (
                     <Link
                       key={c.value}
-                      href={`/storefront/shop/${encodeURIComponent(c.value)}`}
+                      href={`/shop/${encodeURIComponent(c.value)}`}
                       onClick={() => setOpen(false)}
-                      className="flex items-center gap-2 p-2 rounded-xl hover:bg-card/5 text-sm text-slate-200"
+                      className="flex items-center gap-2 p-2 rounded-xl hover:bg-slate-50 text-sm text-slate-700 hover:text-indigo-600"
                     >
-                      <c.icon className="h-4 w-4 text-indigo-300" />
+                      <c.icon className="h-4 w-4 text-indigo-500" />
                       <span className="truncate">{c.label}</span>
-                      <span className="ml-auto text-[10px] text-slate-500">{c.count}</span>
+                      <span className="ml-auto text-[10px] text-slate-400">{c.count}</span>
                     </Link>
                   ))}
                 </div>

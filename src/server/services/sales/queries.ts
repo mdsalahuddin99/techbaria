@@ -20,7 +20,8 @@ async function runSaleListQuery(ctx: Ctx, params?: PaginationParams, filter?: Sa
 
   const raw = await paginate(
     prisma.sale,
-    { where, include: { items: { include: { serialNumbers: true } }, tenders: true, customer: true, editedBy: true, user: true } } as any,
+    // serialNumbers omitted from list — only needed in getById detail view
+    { where, include: { items: true, tenders: true, customer: true, editedBy: true, user: true } } as any,
     params,
     { orderBy: { createdAt: "desc" as const } },
   );
@@ -64,8 +65,9 @@ export async function getById(ctx: Ctx, id: string) {
 export async function byCustomer(ctx: Ctx, customerId: string) {
   const raw = await prisma.sale.findMany({
     where: { customerId },
-    include: { items: { include: { serialNumbers: true } }, tenders: true, customer: true, editedBy: true, user: true },
+    include: { items: true, tenders: true, customer: true, editedBy: true, user: true },
     orderBy: { createdAt: "desc" },
+    take: 50,
   });
   return raw.map(serializeSale);
 }

@@ -438,6 +438,8 @@ export default function NewSale() {
           cart: voucherRows,
           discount: 0,
           salesPerson: salesPerson || undefined,
+          destination: destination || undefined,
+          attention: attention || undefined,
           notes: narration || undefined,
           vat,
           extraCharges,
@@ -454,9 +456,11 @@ export default function NewSale() {
   const resumeHeldSale = async (id: string) => {
     const sale = heldSales.find((h: any) => h.id === id);
     if (!sale) return;
-    setVoucherRows(sale.cart);
+    setVoucherRows(sale.cart || []);
     setVoucherCustomerId(sale.customerId || null);
     if (sale.salesPerson) setSalesPerson(sale.salesPerson);
+    if (sale.destination) setDestination(sale.destination);
+    if (sale.attention) setAttention(sale.attention);
     if (sale.notes) setNarration(sale.notes);
     if (sale.vat) setVat(sale.vat);
     if (sale.extraCharges) setExtraCharges(sale.extraCharges);
@@ -677,11 +681,12 @@ export default function NewSale() {
               ) : (
                 <ul className="max-h-80 overflow-y-auto divide-y divide-border">
                   {heldSales.map((h: any) => {
+                    const cartItems = (h.cart || []).filter((i: any) => !i._meta);
                     const draftTotal = round2(
-                      h.cart.reduce((s: number, i: any) => s + i.price * i.qty - (i.discount || 0), 0)
+                      cartItems.reduce((s: number, i: any) => s + i.price * i.qty - (i.discount || 0), 0)
                       + (h.vat || 0) + (h.extraCharges || 0)
                     );
-                    const itemCount = h.cart.reduce((s: number, i: any) => s + i.qty, 0);
+                    const itemCount = cartItems.reduce((s: number, i: any) => s + i.qty, 0);
                     const heldDate = new Date(h.heldAt);
                     return (
                       <li key={h.id} className="p-2.5 hover:bg-secondary/50 transition-colors">
