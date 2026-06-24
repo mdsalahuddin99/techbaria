@@ -7,6 +7,8 @@
 "use client";
 
 import { useState } from "react";
+import type { AccountType, FinancialAccount } from "@/features/accounts/types";
+import { ACCOUNT_TYPE_LABEL } from "@/features/accounts/types";
 import {
   Dialog,
   DialogContent,
@@ -38,7 +40,7 @@ interface Props {
   customerId: string;
   customerName: string;
   currentBalance: number;
-  accounts: Array<{ id: string; name: string }>;
+  accounts: FinancialAccount[];
 }
 
 export function CustomerWalletDialog({
@@ -51,9 +53,12 @@ export function CustomerWalletDialog({
 }: Props) {
   const [action, setAction] = useState<WalletAction>("deposit");
   const [amount, setAmount] = useState("");
+  const [method, setMethod] = useState<AccountType | "">("");
   const [accountId, setAccountId] = useState("");
   const [reference, setReference] = useState("");
   const [notes, setNotes] = useState("");
+
+  const filteredAccounts = method ? accounts.filter((a) => a.type === method) : [];
 
   const deposit = useDepositAdvance();
   const withdraw = useWithdrawPayment();
@@ -85,6 +90,7 @@ export function CustomerWalletDialog({
 
   const resetForm = () => {
     setAmount("");
+    setMethod("");
     setAccountId("");
     setReference("");
     setNotes("");
@@ -166,17 +172,40 @@ export function CustomerWalletDialog({
             />
           </div>
 
+          {/* ── Method ── */}
+          <div className="space-y-2">
+            <Label htmlFor="method">Payment Method *</Label>
+            <Select
+              value={method}
+              onValueChange={(v) => {
+                setMethod(v as AccountType);
+                setAccountId(""); // reset account when method changes
+              }}
+            >
+              <SelectTrigger id="method">
+                <SelectValue placeholder="Select method" />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(ACCOUNT_TYPE_LABEL).map(([key, label]) => (
+                  <SelectItem key={key} value={key}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           {/* ── Account ── */}
           <div className="space-y-2">
             <Label htmlFor="account">
               {action === "deposit" ? "Deposit to Account *" : "Withdraw from Account *"}
             </Label>
-            <Select value={accountId} onValueChange={setAccountId}>
+            <Select value={accountId} onValueChange={setAccountId} disabled={!method}>
               <SelectTrigger id="account">
                 <SelectValue placeholder="Select account" />
               </SelectTrigger>
               <SelectContent>
-                {accounts.map((a) => (
+                {filteredAccounts.map((a) => (
                   <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
                 ))}
               </SelectContent>
