@@ -67,24 +67,26 @@ export interface PaginatedLedger {
 /**
  * Map a TransactionType to a signed delta for the customer balance field.
  * balance = advance deposit (always ≥ 0). Positive means customer has advance.
- * SALE      → no change to balance (affects due, not balance)
- * PAYMENT   → -abs(amount)  (customer pays due → reduces their advance if applicable)
- * REFUND    → +abs(amount)  (refund adds back to advance)
- * WRITE_OFF → -abs(amount)  (write-off reduces advance)
- * ADJUSTMENT → signed — caller decides direction
+ * SALE       → no change to balance (affects due, not balance)
+ * PAYMENT    → no delta here; due collection does NOT change wallet balance
+ * REFUND     → +abs(amount)  (refund adds back to advance)
+ * WRITE_OFF  → -abs(amount)  (write-off reduces advance)
+ * ADJUSTMENT → signed by caller:
+ *              +amount for advance deposit (depositAdvance)
+ *              signed for manual corrections
  */
 function balanceDelta(type: TransactionType, amount: number): number {
   switch (type) {
     case "SALE":
       return 0; // credit sale affects due, not balance
     case "PAYMENT":
-      return -Math.abs(amount);
+      return 0; // due collection does NOT change wallet balance
     case "REFUND":
       return Math.abs(amount);
     case "WRITE_OFF":
       return -Math.abs(amount);
     case "ADJUSTMENT":
-      return amount;
+      return amount; // positive = deposit, negative = manual deduction
     default:
       return amount;
   }
@@ -295,13 +297,15 @@ export const customerLedgerService = {
     const amt = Math.abs(amount);
 
     return prisma.$transaction(async (tx) => {
+      // Fetch both `balance` (wallet advance) and `due` so we can snapshot correctly
       const cust = await tx.customer.findUnique({
         where: { id: customerId },
-        select: { id: true, due: true },
+        select: { id: true, due: true, balance: true },
       });
       if (!cust) throw new ServiceError("NOT_FOUND", "Customer not found", 404);
 
       const currentDue = Number(cust.due);
+      const currentBalance = Number(cust.balance); // wallet advance — for ledger snapshot
       const newDue = Math.max(0, currentDue - amt);
 
       await tx.customer.update({
@@ -317,16 +321,18 @@ export const customerLedgerService = {
         });
       }
 
+      // balanceBefore/After tracks wallet balance (not due) — consistent with ledger convention.
+      // notes field carries the due change context.
       return tx.customerTransaction.create({
         data: {
           customerId,
           type: "PAYMENT",
           amount: amt,
-          balanceBefore: currentDue,
-          balanceAfter: newDue,
+          balanceBefore: currentBalance,
+          balanceAfter: currentBalance, // wallet advance unchanged by due collection
           accountId: accountId ?? null,
           reference: reference ?? null,
-          notes: notes ?? `Due collection: ${amt}`,
+          notes: notes ?? `Due collection: ${amt} (due: ${currentDue} → ${newDue})`,
           createdById: ctx.userId,
         },
       });
@@ -374,8 +380,9 @@ export const customerLedgerService = {
 
       const transaction = await tx.customerTransaction.create({
         data: {
+          // ADJUSTMENT type distinguishes advance top-up from due collection (PAYMENT)
+          type: "ADJUSTMENT",
           customerId,
-          type: "PAYMENT",
           amount: amt,
           balanceBefore: currentBalance,
           balanceAfter: newBalance,

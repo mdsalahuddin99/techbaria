@@ -418,6 +418,10 @@ model HeldSale {
   customerName String?
   cart         Json
   discount     Decimal   @default(0) @db.Decimal(12, 2)
+  salesPerson  String?
+  notes        String?
+  vat          Decimal   @default(0) @db.Decimal(12, 2)
+  extraCharges Decimal   @default(0) @db.Decimal(12, 2)
   heldAt       DateTime  @default(now())
 
   @@index([userId])

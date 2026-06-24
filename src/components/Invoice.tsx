@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Sale, ShopSettings } from "@/shared/lib/types";
 import { formatCurrency, formatDateTime } from "@/shared/lib/format";
 import { Button } from "@/shared/ui/button";
@@ -18,6 +18,7 @@ interface Props {
 
 export default function Invoice({ sale, settings, open, onClose }: Props) {
   const [thermalOpen, setThermalOpen] = useState(false);
+  const isDownloading = useRef(false);
   const { data: balanceData } = useCustomerBalance(sale?.customerId ?? null);
 
   if (!sale) return null;
@@ -29,6 +30,8 @@ export default function Invoice({ sale, settings, open, onClose }: Props) {
   const currentDueAmount = Math.max(0, totalDueAmount - Math.min(sale.amountPaid, sale.total));
 
   const handleDownload = async () => {
+    if (isDownloading.current) return;
+    isDownloading.current = true;
     const html = buildStandaloneInvoice(sale, settings, previousDue, totalDueAmount, currentDueAmount);
     const host = document.createElement("div");
     host.style.position = "fixed";
@@ -57,6 +60,7 @@ export default function Invoice({ sale, settings, open, onClose }: Props) {
       downloadHtml(html, sale.invoiceNo);
     } finally {
       host.remove();
+      isDownloading.current = false;
     }
   };
 
@@ -313,8 +317,8 @@ function buildStandaloneInvoice(
             <tr><td style="width:85px; font-weight:bold; padding:2px 0;">Customer</td><td style="font-weight:bold; padding:2px 0;">: ${esc(sale.customerName)}</td></tr>
             <tr><td style="font-weight:bold; padding:2px 0;">Address</td><td style="padding:2px 0;">: ${esc(sale.customerAddress || "")}</td></tr>
             <tr><td style="font-weight:bold; padding:2px 0;">Mobile</td><td style="padding:2px 0;">: ${esc(sale.customerPhone || "")}</td></tr>
-            <tr><td style="font-weight:bold; padding:2px 0;">Attention</td><td style="padding:2px 0;">: ${esc(sale.customerReferencePerson || "")}</td></tr>
-            <tr><td style="font-weight:bold; padding:2px 0;">Destination</td><td style="padding:2px 0;">: </td></tr>
+            <tr><td style="font-weight:bold; padding:2px 0;">Attention</td><td style="padding:2px 0;">: ${esc(sale.attention || sale.customerReferencePerson || "")}</td></tr>
+            <tr><td style="font-weight:bold; padding:2px 0;">Destination</td><td style="padding:2px 0;">: ${esc(sale.destination || "")}</td></tr>
           </table>
         </td>
         <td style="width:35%; vertical-align:top; border:1px solid #000; padding:0;">

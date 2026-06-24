@@ -48,12 +48,15 @@ export function useRestocks(): RestockOrder[] {
 // ---------- Shared invalidator ----------
 
 function invalidateProcurement(qc: ReturnType<typeof useQueryClient>) {
+  // Critical: purchases & products must refresh immediately (stock changed)
   qc.invalidateQueries({ queryKey: purchaseKeys.all });
   qc.invalidateQueries({ queryKey: restockKeys.all });
   qc.invalidateQueries({ queryKey: productKeys.all });
-  qc.invalidateQueries({ queryKey: supplierKeys.all });
-  qc.invalidateQueries({ queryKey: accountKeys.all });
-  qc.invalidateQueries({ queryKey: ledgerKeys.all });
+  // Non-critical: mark stale but don't trigger an immediate network fetch.
+  // These will be re-fetched lazily the next time their page is visited.
+  qc.invalidateQueries({ queryKey: supplierKeys.all, refetchType: "none" });
+  qc.invalidateQueries({ queryKey: accountKeys.all, refetchType: "none" });
+  qc.invalidateQueries({ queryKey: ledgerKeys.all, refetchType: "none" });
 }
 
 // ---------- Mutations ----------

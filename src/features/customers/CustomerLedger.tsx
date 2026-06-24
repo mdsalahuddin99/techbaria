@@ -16,7 +16,7 @@ import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
 import { Skeleton } from "@/shared/ui/skeleton";
-import { ChevronLeft, ChevronRight, Receipt, Wallet, Undo2, SlidersHorizontal, FileX } from "lucide-react";
+import { ChevronLeft, ChevronRight, Receipt, Wallet, Undo2, SlidersHorizontal, FileX, ArrowDownToLine } from "lucide-react";
 import { formatCurrency, formatDate, formatDateTime } from "@/shared/lib/format";
 import { useCustomerLedger } from "./ledgerHooks";
 
@@ -25,11 +25,11 @@ interface Props {
 }
 
 const typeMeta: Record<string, { label: string; color: "default" | "secondary" | "destructive" | "outline"; icon: typeof Receipt }> = {
-  SALE: { label: "Sale", color: "default", icon: Receipt },
-  PAYMENT: { label: "Payment", color: "secondary", icon: Wallet },
-  REFUND: { label: "Refund", color: "destructive", icon: Undo2 },
-  ADJUSTMENT: { label: "Adjustment", color: "outline", icon: SlidersHorizontal },
-  WRITE_OFF: { label: "Write Off", color: "destructive", icon: FileX },
+  SALE:       { label: "Sale (Credit)",    color: "default",     icon: Receipt },
+  PAYMENT:    { label: "Due Collection",   color: "secondary",   icon: Wallet },
+  REFUND:     { label: "Refund",           color: "destructive", icon: Undo2 },
+  ADJUSTMENT: { label: "Advance Deposit",  color: "outline",     icon: ArrowDownToLine },
+  WRITE_OFF:  { label: "Write Off",        color: "destructive", icon: FileX },
 };
 
 export function CustomerLedger({ customerId }: Props) {
@@ -73,9 +73,37 @@ export function CustomerLedger({ customerId }: Props) {
           </TableHeader>
           <TableBody>
             {entries.map((entry) => {
-              const meta = typeMeta[entry.type] ?? { label: entry.type, color: "outline" as const, icon: Receipt };
-              const Icon = meta.icon;
-              const isCredit = entry.type === "PAYMENT" || entry.type === "REFUND" || entry.type === "WRITE_OFF";
+              // Smart back-compat: old `depositAdvance` records were saved with type=PAYMENT
+              // (before the fix). Detect them by their notes and display correctly.
+              const isLegacyDeposit =
+                entry.type === "PAYMENT" &&
+                (entry.notes?.toLowerCase().includes("advance deposit") ||
+                  entry.balanceAfter > entry.balanceBefore); // balance went UP → was a deposit
+
+              // Negative ADJUSTMENT = sale reversal (from our new update path)
+              const isSaleReversal =
+                entry.type === "ADJUSTMENT" && entry.amount < 0;
+
+              const effectiveType = isLegacyDeposit
+                ? "ADJUSTMENT"
+                : entry.type;
+
+              const meta =
+                typeMeta[effectiveType] ??
+                { label: entry.type, color: "outline" as const, icon: Receipt };
+              const Icon = isSaleReversal ? Undo2 : meta.icon;
+              const effectiveLabel = isSaleReversal ? "Sale Reversal" : meta.label;
+
+              const isDebit =
+                !isLegacyDeposit &&
+                (entry.type === "SALE" ||
+                  entry.type === "WRITE_OFF" ||
+                  (entry.type === "PAYMENT" && !isLegacyDeposit) ||
+                  isSaleReversal);
+              // ADJUSTMENT (positive) = advance deposit → '+'
+              // ADJUSTMENT (negative) = sale reversal → '-'
+              // REFUND = wallet credit → '+'
+              // SALE/PAYMENT/WRITE_OFF = debit → '-'
               return (
                 <TableRow key={entry.id}>
                   <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
@@ -84,11 +112,13 @@ export function CustomerLedger({ customerId }: Props) {
                   <TableCell>
                     <Badge variant={meta.color} className="gap-1 text-[10px]">
                       <Icon className="h-3 w-3" />
-                      {meta.label}
+                      {effectiveLabel}
                     </Badge>
                   </TableCell>
-                  <TableCell className={`text-right font-medium tabular-nums ${isCredit ? "text-emerald-600" : "text-destructive"}`}>
-                    {isCredit ? "-" : "+"}{formatCurrency(Math.abs(entry.amount))}
+                  <TableCell className={`text-right font-medium tabular-nums ${
+                    isDebit ? "text-destructive" : "text-emerald-600"
+                  }`}>
+                    {isDebit ? "-" : "+"}{formatCurrency(Math.abs(entry.amount))}
                   </TableCell>
                   <TableCell className="text-right tabular-nums hidden sm:table-cell text-muted-foreground">
                     {formatCurrency(entry.balanceBefore)}

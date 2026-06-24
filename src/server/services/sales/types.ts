@@ -7,6 +7,9 @@ export interface SaleCreateInput {
   discount?: number;
   notes?: string;
   salesPerson?: string;
+  date?: string;
+  destination?: string;
+  attention?: string;
   vat?: number;
   extraCharges?: number;
 

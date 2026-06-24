@@ -111,6 +111,19 @@ export async function create(ctx: Ctx, input: PurchaseCreateInput) {
       });
     }
 
+    // ── Batch-check existing warrantyStartDate (one query instead of N) ──
+    const itemsNeedingWarranty = input.items.filter((i) => i.warrantyStartDate);
+    const existingWarrantyMap = new Map<string, Date | null>();
+    if (itemsNeedingWarranty.length > 0) {
+      const existingWarranties = await tx.product.findMany({
+        where: { id: { in: itemsNeedingWarranty.map((i) => i.productId) } },
+        select: { id: true, warrantyStartDate: true },
+      });
+      for (const p of existingWarranties) {
+        existingWarrantyMap.set(p.id, p.warrantyStartDate);
+      }
+    }
+
     // ── Batch-update stock/cost/price for all items (parallel) ──
     await Promise.all(input.items.map(async (item) => {
       const updateData: any = {
@@ -121,11 +134,8 @@ export async function create(ctx: Ctx, input: PurchaseCreateInput) {
 
       // Set warrantyStartDate only if not already set on the product
       if (item.warrantyStartDate) {
-        const existing = await tx.product.findUnique({
-          where: { id: item.productId },
-          select: { warrantyStartDate: true },
-        });
-        if (!existing?.warrantyStartDate) {
+        const existing = existingWarrantyMap.get(item.productId);
+        if (!existing) {
           updateData.warrantyStartDate = new Date(item.warrantyStartDate);
         }
       }
@@ -183,9 +193,7 @@ export async function create(ctx: Ctx, input: PurchaseCreateInput) {
 
       // For tracked products, sync Product.stock = actual IN_STOCK serial count (Fix #4)
       const trackedProductIds = [...new Set(serialEntries.map((s) => s.productId))];
-      for (const productId of trackedProductIds) {
-        await inventoryService.syncStockCount(tx, warehouseId, productId);
-      }
+      await inventoryService.syncStockCounts(tx, warehouseId, trackedProductIds);
     }
 
     return created;

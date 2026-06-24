@@ -142,12 +142,8 @@ export const GET = apiHandler(async (ctx: Ctx, req: Request) => {
         group: true,
         address: true,
         email: true,
-        sales: {
-          select: {
-            id: true,
-            data: true
-          }
-        }
+        // NOTE: sales join removed — was loading all sale rows per customer (N+1).
+        // Invoice numbers are available from the sales list query when needed.
       },
       orderBy: { createdAt: "desc" },
     }),
@@ -223,12 +219,8 @@ export const GET = apiHandler(async (ctx: Ctx, req: Request) => {
     group: c.group,
     address: c.address ?? undefined,
     email: c.email ?? undefined,
-    sales: (c.sales ?? []).map((s: any) => {
-      const d = (s.data ?? {}) as Record<string, any>;
-      return {
-        invoiceNo: (d.invoiceNo as string) ?? s.id.slice(0, 8).toUpperCase()
-      };
-    })
+    // sales removed from init payload — load on demand via customer detail
+    sales: [],
   }));
 
   return {

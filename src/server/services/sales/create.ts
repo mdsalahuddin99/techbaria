@@ -46,6 +46,7 @@ async function __validateItemsStock(
   const serialCounts = new Map<string, number>(serialCountRows.map((c: any) => [c.productId, c._count.productId]));
   const productSnapshots = new Map<string, { cost: number; name: string }>();
 
+  const updates: Promise<any>[] = [];
   for (const item of input.items) {
     const product = productMap.get(item.productId);
     if (!product) throw new ServiceError("NOT_FOUND", `Product ${item.productId} not found`);
@@ -56,7 +57,7 @@ async function __validateItemsStock(
         throw new ServiceError("OUT_OF_STOCK", `${product.name} has insufficient serial stock (${serialCount} serials available, ${item.qty} requested)`);
       }
       if (Number(product.stock) < item.qty) {
-        await tx.product.update({ where: { id: product.id }, data: { stock: serialCount } });
+        updates.push(tx.product.update({ where: { id: product.id }, data: { stock: serialCount } }));
       }
     } else if (warehouseId) {
       const warehouseStock = warehouseStockMap.get(item.productId);
@@ -70,19 +71,26 @@ async function __validateItemsStock(
     }
     productSnapshots.set(item.productId, { cost: Number(product.cost), name: product.name });
   }
+
+  if (updates.length > 0) {
+    await Promise.all(updates);
+  }
+
   return { productMap, warehouseStockMap, productSnapshots };
 }
 
 /** Post-create: audit log + cache invalidation. */
 async function __postProcess(ctx: Ctx, raw: any, productIds: string[]) {
-  await auditLogService.log(ctx, {
-    entity: "Sale",
-    entityId: raw.id,
-    action: "CREATE",
-    diff: { items: raw.items?.length ?? 0, total: Number(raw.total), tenders: raw.tenders?.length ?? 0 },
-  });
-  await cache.invalidateSales("default");
-  await cache.invalidateSpecificProducts("default", productIds);
+  await Promise.all([
+    auditLogService.log(ctx, {
+      entity: "Sale",
+      entityId: raw.id,
+      action: "CREATE",
+      diff: { items: raw.items?.length ?? 0, total: Number(raw.total), tenders: raw.tenders?.length ?? 0 },
+    }),
+    cache.invalidateSales("default"),
+    cache.invalidateSpecificProducts("default", productIds),
+  ]);
 }
 
 /** Create a new sale — validates stock → creates records → assigns serials → logs. */
@@ -92,7 +100,7 @@ export async function create(ctx: Ctx, input: SaleCreateInput) {
   }
   const warehouseId = input.warehouseId;
 
-  // Scoping validations for customer and accounts
+  // Scoping validations for customer and accounts (runs in parallel internally)
   await salesAccounting.validateCustomerAndAccounts(ctx, input.customerId, input.tenders);
 
   // Step 1: Validate stock + prepare data (inside transaction)
@@ -100,10 +108,10 @@ export async function create(ctx: Ctx, input: SaleCreateInput) {
     const { warehouseStockMap, productSnapshots } = await __validateItemsStock(tx, ctx, input, warehouseId);
 
     // Calculate totals — DUE tenders are credit, not actual payment
-    const count = await tx.sale.count();
-    const shop = await tx.shop.findFirst({
-      select: { settings: true },
-    });
+    const [count, shop] = await Promise.all([
+      tx.sale.count(),
+      tx.shop.findFirst({ select: { settings: true } }),
+    ]);
     const stored = (shop?.settings ?? {}) as Record<string, any>;
     const prefix = (stored.invoiceNumberPrefix as string) ?? "STAN";
     const startSeq = (stored.invoiceNumberStartSeq as number) ?? 500;
@@ -127,11 +135,14 @@ export async function create(ctx: Ctx, input: SaleCreateInput) {
         status: "COMPLETED",
         subtotal, discount: input.discount ?? 0, total, paid, due,
         notes: input.notes ?? null,
+        createdAt: input.date ? new Date(input.date) : undefined,
         data: {
           invoiceNo,
           vat: input.vat ?? 0,
           extraCharges: input.extraCharges ?? 0,
           salesPerson: input.salesPerson ?? null,
+          destination: input.destination ?? null,
+          attention: input.attention ?? null,
         },
 
         items: {
@@ -154,18 +165,26 @@ export async function create(ctx: Ctx, input: SaleCreateInput) {
       include: { items: { include: { serialNumbers: true } }, tenders: true, customer: true, editedBy: true, user: true },
     });
 
-    // Decrement stock (sequential to avoid race conditions)
+    // Aggregate quantities by productId to perform single update for duplicate cart items
+    const productQtyMap = new Map<string, number>();
     for (const item of input.items) {
-      await tx.product.update({ where: { id: item.productId }, data: { stock: { decrement: item.qty } } });
-      if (warehouseId) {
-        const warehouseStock = warehouseStockMap.get(item.productId);
-        if (warehouseStock) {
-          await tx.warehouseStock.update({ where: { id: warehouseStock.id }, data: { qty: { decrement: item.qty } } });
-        } else {
-          await tx.warehouseStock.create({ data: { warehouseId, productId: item.productId, qty: -item.qty } });
-        }
-      }
+      productQtyMap.set(item.productId, (productQtyMap.get(item.productId) ?? 0) + item.qty);
     }
+
+    // Decrement stock (parallelized inside the transaction)
+    await Promise.all(
+      Array.from(productQtyMap.entries()).map(async ([productId, qty]) => {
+        await tx.product.update({ where: { id: productId }, data: { stock: { decrement: qty } } });
+        if (warehouseId) {
+          const warehouseStock = warehouseStockMap.get(productId);
+          if (warehouseStock) {
+            await tx.warehouseStock.update({ where: { id: warehouseStock.id }, data: { qty: { decrement: qty } } });
+          } else {
+            await tx.warehouseStock.create({ data: { warehouseId, productId, qty: -qty } });
+          }
+        }
+      })
+    );
 
     // Update customer due + record ledger transaction
     if (input.customerId) {

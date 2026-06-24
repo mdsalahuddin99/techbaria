@@ -36,7 +36,7 @@ export function useAdjustmentsQuery() {
     queryKey: inventoryKeys.scope("adjustments"),
     queryFn: () => inventoryService.listAdjustments(),
     enabled: status !== "loading" && !!session,
-    ...QueryTier.INVENTORY,
+    ...QueryTier.MASTER_DATA,  // no polling — mutation onSuccess invalidates
   });
 }
 

@@ -188,33 +188,34 @@ export const cache = {
   async invalidateSpecificProducts(shopId: string, productIds: string[]) {
     if (productIds.length === 0) return;
 
-    // Invalidate the product list cache
-    await this.del(cacheKeys.products.list(shopId));
-
-    // Invalidate each individual product cache
-    for (const productId of productIds) {
-      await this.del(cacheKeys.products.byId(shopId, productId));
-    }
+    const keys = [
+      cacheKeys.products.list(shopId),
+      ...productIds.map(productId => cacheKeys.products.byId(shopId, productId))
+    ];
+    await this.del(...keys);
   },
 
   /** Helper: invalidate all category caches for a shop. */
   invalidateCategories(shopId: string) {
-    return this.invalidate(`shop:${shopId}:categories:*`);
+    return this.del(
+      cacheKeys.categories.list(shopId),
+      cacheKeys.categories.tree(shopId)
+    );
   },
 
   /** Helper: invalidate all sales caches for a shop. */
   invalidateSales(shopId: string) {
-    return this.invalidate(`shop:${shopId}:sales:*`);
+    return this.del(cacheKeys.sales.list(shopId));
   },
 
   /** Helper: invalidate all purchases caches for a shop. */
   invalidatePurchases(shopId: string) {
-    return this.invalidate(`shop:${shopId}:purchases:*`);
+    return this.del(cacheKeys.purchases.list(shopId));
   },
 
   /** Helper: invalidate inventory caches for a shop. */
   invalidateInventory(shopId: string) {
-    return this.invalidate(`shop:${shopId}:inventory:*`);
+    return this.del(cacheKeys.inventory.snapshot(shopId));
   },
 
   /** Helper: invalidate shop config cache. */

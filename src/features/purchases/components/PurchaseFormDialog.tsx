@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { LoadingButton } from "@/shared/ui/loading-button";
 import { AutoSuggest } from "@/shared/ui/auto-suggest";
 import { formatCurrency, formatDate, productDisplayName } from "@/shared/lib/format";
-import { Plus, X, ShoppingCart, ScanLine, Package, Camera, Wallet, Building2, Warehouse as WarehouseIcon, User, Phone, Mail, FileText } from "lucide-react";
+import { Plus, X, ShoppingCart, ScanLine, Package, Camera, Wallet, Building2, Warehouse as WarehouseIcon, User, Phone, Mail, FileText, QrCode } from "lucide-react";
 import dynamic from "next/dynamic";
 const CameraScanner = dynamic(() => import("@/components/CameraScanner"), { ssr: false });
 import { SupplierFormDialog } from "@/features/suppliers/SupplierFormDialog";
@@ -195,6 +195,45 @@ function SupplierSidebar({ supplierId }: { supplierId: string }) {
   );
 }
 
+function ScanField({
+  productId,
+  onAdd,
+  onCamera,
+  autoFocus
+}: {
+  productId: string;
+  onAdd: (productId: string, serial: string) => void;
+  onCamera: () => void;
+  autoFocus?: boolean;
+}) {
+  const [val, setVal] = useState("");
+  return (
+    <div className="flex gap-2">
+      <div className="relative flex-1">
+        <ScanLine className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+        <Input
+          autoFocus={autoFocus}
+          value={val}
+          onChange={(e) => setVal(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              onAdd(productId, val);
+              setVal("");
+            }
+          }}
+          placeholder="Scan barcode / type serial…"
+          className="pl-10 font-mono"
+        />
+      </div>
+      <Button type="button" variant="outline" size="icon" onClick={onCamera} title="Camera scan" className="shrink-0 w-10">
+        <QrCode className="h-5 w-5" />
+      </Button>
+      <Button type="button" variant="secondary" onClick={() => { onAdd(productId, val); setVal(""); }} className="shrink-0">Add</Button>
+    </div>
+  );
+}
+
 export function PurchaseFormDialog({
   open, onOpenChange, editId, onSuccess,
   products, suppliers, accounts, accountsTree, balances, defaultAccountId,
@@ -249,7 +288,7 @@ export function PurchaseFormDialog({
         }
         onOpenChange(val);
       }}>
-        <DialogContent className="sm:max-w-[95vw] lg:max-w-5xl max-h-[92vh] flex flex-col p-0">
+        <DialogContent className="sm:max-w-[95vw] lg:max-w-5xl max-h-[92vh] flex flex-col p-0" onInteractOutside={(e) => e.preventDefault()}>
           <DialogHeader className="p-6 pb-2 shrink-0">
             <DialogTitle>{editId ? "Edit Purchase Order" : "New Purchase Order"}</DialogTitle>
             <DialogDescription>
@@ -304,15 +343,17 @@ export function PurchaseFormDialog({
                   <div className="flex gap-2">
                     <div className="flex-1">
                       <AutoSuggest
+                        key={form.lines.length}
                         value={form.activeProductId}
                         onValueChange={form.setActiveProductId}
-                        options={products.filter((p) => p.active).map((p) => ({
-                          value: p.id,
-                          label: productDisplayName(p),
-                          disabled: form.lines.some((l) => l.productId === p.id),
-                          description: p.subcategory || undefined,
-                          badge: `Stock: ${p.stock ?? 0}`,
-                        }))}
+                        options={products
+                          .filter((p) => p.active && !form.lines.some((l) => l.productId === p.id))
+                          .map((p) => ({
+                            value: p.id,
+                            label: productDisplayName(p),
+                            description: p.subcategory || undefined,
+                            badge: `Stock: ${p.stock ?? 0}`,
+                          }))}
                         placeholder="Search product…"
                         emptyMessage="No product found"
                         allowClear
@@ -341,7 +382,6 @@ export function PurchaseFormDialog({
                   const totalCost = lineCost(l);
                   const isCollapsed = form.collapsedSet.has(l.productId);
                   const units = form.lineUnits(l);
-                  const isScanActive = l.productId === form.activeProductId;
                   return (
                     <Card key={l.productId} className={isCollapsed ? "p-2.5" : "p-3 space-y-3 border-primary"}>
                       <div className="flex items-center justify-between gap-2">
@@ -419,7 +459,7 @@ export function PurchaseFormDialog({
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[160px_140px_1fr] gap-4 items-start">
                         <div>
                           <label className="text-xs text-muted-foreground">Expected Date *</label>
                           <Input type="date" value={l.expectedDate ?? ""} onChange={(e) => form.updateLine(l.productId, { expectedDate: e.target.value || undefined })} />
@@ -433,55 +473,41 @@ export function PurchaseFormDialog({
                             </p>
                           )} 
                         </div>
-                      </div>
 
-                      {!l.trackSerials ? (
-                        <div className="flex items-center gap-2">
-                          <label className="text-xs text-muted-foreground">Quantity</label>
-                          <Input type="number" min={1} className="w-28" value={l.manualQty} onChange={(e) => form.setManualQty(l.productId, Number(e.target.value) || 1)} />
-                          <span className="text-[11px] text-muted-foreground">(এই product serial-tracked না)</span>
-                        </div>
-                      ) : (
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <label className="text-xs text-muted-foreground">Scan serials / barcodes</label>
-                            {!isScanActive && (
-                              <Button size="sm" variant="ghost" onClick={() => form.setActiveProductId(l.productId)}>
-                                <ScanLine className="h-3.5 w-3.5 mr-1" />Activate scan
-                              </Button>
-                            )}
-                          </div>
-                          {isScanActive && (
-                            <div className="flex flex-col sm:flex-row gap-2">
-                              <div className="relative flex-1">
-                                <ScanLine className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Input
-                                  ref={form.scanRef}
-                                  autoFocus
-                                  placeholder="Scan barcode / type serial then Enter…"
-                                  value={form.scanInput}
-                                  onChange={(e) => form.setScanInput(e.target.value)}
-                                  onKeyDown={(e) => {
-                                    if (e.key === "Enter") {
-                                      e.preventDefault();
-                                      form.addSerial(form.scanInput);
-                                    }
-                                  }}
-                                  className="pl-9 font-mono"
-                                />
-                              </div>
-                              <div className="flex gap-2">
-                                <Button variant="outline" size="icon" onClick={() => form.setCameraOpen(true)} title="Camera scan">
-                                  <Camera className="h-4 w-4" />
-                                </Button>
-                                <Button variant="outline" onClick={() => form.addSerial(form.scanInput)}>Add</Button>
+                        <div className="sm:col-span-2 lg:col-span-1">
+                          {!l.trackSerials ? (
+                            <div className="flex flex-col gap-1">
+                              <label className="text-xs text-muted-foreground">Quantity</label>
+                              <div className="flex items-center gap-2">
+                                <Input type="number" min={1} className="w-28" value={l.manualQty} onChange={(e) => form.setManualQty(l.productId, Number(e.target.value) || 1)} />
+                                <span className="text-[11px] text-muted-foreground">(এই product serial-tracked না)</span>
                               </div>
                             </div>
+                          ) : (
+                            <div className="flex flex-col gap-1">
+                              <div className="flex items-center justify-between h-[18px]">
+                                <label className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
+                                  <ScanLine className="h-4 w-4 text-primary" /> Scan serials / barcodes
+                                </label>
+                              </div>
+                              <ScanField 
+                                productId={l.productId} 
+                                onAdd={form.addSerial} 
+                                onCamera={() => {
+                                  form.setActiveScanId(l.productId);
+                                  form.setCameraOpen(true);
+                                }}
+                                autoFocus={form.activeScanId === l.productId}
+                              />
+                            </div>
                           )}
-                          {l.serials.length > 0 && (
+                        </div>
+
+                        {l.trackSerials && l.serials.length > 0 && (
+                          <div className="col-span-1 lg:col-span-4 mt-1">
                             <div className="flex flex-wrap gap-1.5">
                               {l.serials.map((s) => (
-                                <Badge key={s} variant="outline" className="font-mono gap-1 pr-1">
+                                <Badge key={s} variant="outline" className="font-mono gap-1 pr-1 bg-background">
                                   {s}
                                   <button type="button" onClick={() => form.removeSerial(l.productId, s)} className="hover:text-destructive">
                                     <X className="h-3 w-3" />
@@ -489,9 +515,9 @@ export function PurchaseFormDialog({
                                 </Badge>
                               ))}
                             </div>
-                          )}
-                        </div>
-                      )}
+                          </div>
+                        )}
+                      </div>
                       </>)}
                     </Card>
                   );
@@ -633,7 +659,11 @@ export function PurchaseFormDialog({
       <CameraScanner
         open={form.cameraOpen}
         onClose={() => form.setCameraOpen(false)}
-        onDetected={(code) => form.addSerial(code)}
+        onDetected={(code) => {
+          if (form.activeScanId) {
+            form.addSerial(form.activeScanId, code);
+          }
+        }}
         scanCount={form.activeLine?.serials.length ?? 0}
         addedCount={form.activeLine?.serials.length ?? 0}
       />

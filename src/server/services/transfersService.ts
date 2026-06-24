@@ -279,6 +279,7 @@ export const transfersService = {
       });
       const trackedIds = new Set(trackedProducts.map((p) => p.id));
 
+      const trackedItemProductIds: string[] = [];
       for (const item of transfer.items) {
         if (!trackedIds.has(item.productId)) continue;
 
@@ -309,9 +310,12 @@ export const transfersService = {
           data: { warehouseId: transfer.toWarehouseId },
         });
 
-        // Sync physical serial counts
-        await inventoryService.syncStockCount(tx, transfer.fromWarehouseId, item.productId);
-        await inventoryService.syncStockCount(tx, transfer.toWarehouseId, item.productId);
+        trackedItemProductIds.push(item.productId);
+      }
+
+      if (trackedItemProductIds.length > 0) {
+        await inventoryService.syncStockCounts(tx, transfer.fromWarehouseId, trackedItemProductIds);
+        await inventoryService.syncStockCounts(tx, transfer.toWarehouseId, trackedItemProductIds);
       }
 
       await tx.transfer.update({

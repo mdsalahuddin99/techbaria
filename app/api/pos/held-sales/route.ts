@@ -8,6 +8,10 @@ const createSchema = z.object({
   customerName: z.string().optional(),
   cart: z.array(z.any()),
   discount: z.number().default(0),
+  salesPerson: z.string().optional(),
+  notes: z.string().optional(),
+  vat: z.number().default(0),
+  extraCharges: z.number().default(0),
 });
 
 export const GET = apiHandler(async (ctx: Ctx) => {

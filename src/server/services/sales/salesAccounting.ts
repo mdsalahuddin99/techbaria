@@ -10,27 +10,32 @@ export const salesAccounting = {
     customerId?: string,
     tenders?: Array<{ accountId?: string }>
   ): Promise<void> {
-    if (customerId) {
-      const customer = await prisma.customer.findFirst({
-        where: { id: customerId },
-        select: { id: true },
-      });
-      if (!customer) {
-        throw new ServiceError("NOT_FOUND", "Customer not found", 404);
-      }
-    }
+    const customerPromise = customerId
+      ? prisma.customer.findFirst({
+          where: { id: customerId },
+          select: { id: true },
+        })
+      : Promise.resolve({ id: customerId });
 
     const accountIds = (tenders ?? [])
       .map((t) => t.accountId)
       .filter((id): id is string => !!id);
-    if (accountIds.length > 0) {
-      const accounts = await prisma.financialAccount.findMany({
-        where: { id: { in: accountIds } },
-        select: { id: true },
-      });
-      if (accounts.length !== new Set(accountIds).size) {
-        throw new ServiceError("VALIDATION", "Invalid or unauthorized financial account", 400);
-      }
+
+    const accountsPromise = accountIds.length > 0
+      ? prisma.financialAccount.findMany({
+          where: { id: { in: accountIds } },
+          select: { id: true },
+        })
+      : Promise.resolve([]);
+
+    const [customer, accounts] = await Promise.all([customerPromise, accountsPromise]);
+
+    if (customerId && !customer) {
+      throw new ServiceError("NOT_FOUND", "Customer not found", 404);
+    }
+
+    if (accountIds.length > 0 && accounts.length !== new Set(accountIds).size) {
+      throw new ServiceError("VALIDATION", "Invalid or unauthorized financial account", 400);
     }
   },
 
@@ -45,18 +50,64 @@ export const salesAccounting = {
     oldDue = 0
   ): Promise<void> {
     if (isUpdate) {
-      // Revert old due first
+      // Fetch current customer state for ledger snapshots
+      const cust = await tx.customer.findUniqueOrThrow({
+        where: { id: customerId },
+        select: { due: true, creditLimit: true },
+      });
+      let runningDue = Number(cust.due);
+
+      // Revert old due — create a compensating ADJUSTMENT ledger entry
       if (oldDue > 0) {
+        const dueAfterRevert = Math.max(0, runningDue - oldDue);
         await tx.customer.update({
           where: { id: customerId },
-          data: { due: { decrement: oldDue } },
+          data: { due: dueAfterRevert },
         });
+        // Record reversal so ledger shows the correction
+        await tx.customerTransaction.create({
+          data: {
+            customerId,
+            type: "ADJUSTMENT",
+            amount: -oldDue, // negative = due reduced
+            balanceBefore: runningDue,
+            balanceAfter: dueAfterRevert,
+            saleId: sale.id,
+            reference: `EDIT-${sale.id.slice(0, 8).toUpperCase()}`,
+            notes: `Sale edited — old due ৳${oldDue} reversed`,
+            createdById: ctx.userId,
+          },
+        });
+        runningDue = dueAfterRevert;
       }
-      // Apply new due
+
+      // Apply new due — create a new SALE ledger entry
       if (due > 0) {
+        const creditLimit = Number(cust.creditLimit);
+        const newDue = runningDue + due;
+        if (creditLimit > 0 && newDue > creditLimit) {
+          throw new ServiceError(
+            "CONFLICT",
+            `Credit limit exceeded. Limit: ${creditLimit}, Current: ${runningDue}, Attempted: ${due}`,
+            409,
+          );
+        }
         await tx.customer.update({
           where: { id: customerId },
-          data: { due: { increment: due } },
+          data: { due: newDue },
+        });
+        await tx.customerTransaction.create({
+          data: {
+            customerId,
+            type: "SALE",
+            amount: due,
+            balanceBefore: runningDue,
+            balanceAfter: newDue,
+            saleId: sale.id,
+            reference: `EDIT-${sale.id.slice(0, 8).toUpperCase()}`,
+            notes: `Sale edited — new due ৳${due}`,
+            createdById: ctx.userId,
+          },
         });
       }
     } else if (due > 0) {

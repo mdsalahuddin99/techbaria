@@ -115,9 +115,9 @@ export function usePosScreenData(warehouseId?: string | null) {
   const { data, isLoading } = useQuery({
     queryKey: warehouseId ? posInitKeys.byWarehouse(warehouseId) : posInitKeys.all,
     queryFn: () => fetchPosInit(warehouseId),
-    staleTime: 0,           // always fresh — wallet balance must be real-time
-    refetchOnWindowFocus: true,
-    enabled: true,
+    staleTime: 60_000,       // 1 min cache — wallet balance kept fresh via invalidation on checkout
+    gcTime: 5 * 60_000,      // 5 min in memory for instant back-navigation
+    refetchOnWindowFocus: false, // tab switch এ refetch নয় — checkout invalidation যথেষ্ট
   });
 
   const products = (data?.products?.items ?? []) as any[];

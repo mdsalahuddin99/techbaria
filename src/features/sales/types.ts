@@ -37,6 +37,8 @@ export interface Sale {
   vat?: number;
   extraCharges?: number;
   salesPerson?: string;
+  destination?: string;
+  attention?: string;
   notes?: string;
   /** Primary method (first tender) — kept for backward compatibility. */
   paymentMethod: PaymentMethod;

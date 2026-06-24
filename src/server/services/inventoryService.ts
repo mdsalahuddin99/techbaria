@@ -178,4 +178,67 @@ export const inventoryService = {
       data: { stock: totalSerialCount },
     });
   },
+
+  /** Reconcile physical serial counts in a warehouse/shop for multiple products at once (batched). */
+  async syncStockCounts(tx: any, warehouseId: string | null | undefined, productIds: string[]) {
+    if (!productIds || productIds.length === 0) return;
+    
+    const uniqueProductIds = [...new Set(productIds)];
+
+    const products = await tx.product.findMany({
+      where: { id: { in: uniqueProductIds } },
+      select: { id: true, trackSerials: true },
+    });
+    const trackedProductIds = products.filter((p: any) => p.trackSerials).map((p: any) => p.id);
+    if (trackedProductIds.length === 0) return;
+
+    let warehouseStockUpserts: Promise<any>[] = [];
+    if (warehouseId) {
+      const warehouseCounts = await tx.serialNumber.groupBy({
+        by: ["productId"],
+        where: {
+          productId: { in: trackedProductIds },
+          warehouseId,
+          status: "IN_STOCK",
+        },
+        _count: { productId: true },
+      });
+
+      const warehouseCountMap = new Map<string, number>(
+        warehouseCounts.map((c: any) => [c.productId, c._count.productId])
+      );
+
+      warehouseStockUpserts = trackedProductIds.map((productId) => {
+        const qty = warehouseCountMap.get(productId) ?? 0;
+        return tx.warehouseStock.upsert({
+          where: { warehouseId_productId: { warehouseId, productId } },
+          create: { warehouseId, productId, qty },
+          update: { qty },
+        });
+      });
+    }
+
+    const globalCounts = await tx.serialNumber.groupBy({
+      by: ["productId"],
+      where: {
+        productId: { in: trackedProductIds },
+        status: "IN_STOCK",
+      },
+      _count: { productId: true },
+    });
+
+    const globalCountMap = new Map<string, number>(
+      globalCounts.map((c: any) => [c.productId, c._count.productId])
+    );
+
+    const productStockUpdates = trackedProductIds.map((productId) => {
+      const stock = globalCountMap.get(productId) ?? 0;
+      return tx.product.update({
+        where: { id: productId },
+        data: { stock },
+      });
+    });
+
+    await Promise.all([...warehouseStockUpserts, ...productStockUpdates]);
+  },
 };

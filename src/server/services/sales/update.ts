@@ -99,11 +99,14 @@ export async function update(ctx: Ctx, id: string, input: SaleUpdateInput) {
         channel: input.channel ?? sale.channel,
         subtotal, discount: input.discount ?? 0, total, paid, due,
         notes: input.notes,
+        createdAt: input.date ? new Date(input.date) : undefined,
         data: {
           invoiceNo,
           vat: input.vat ?? 0,
           extraCharges: input.extraCharges ?? 0,
           salesPerson: input.salesPerson,
+          destination: input.destination,
+          attention: input.attention,
         },
 
         editedById: ctx.userId,

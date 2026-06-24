@@ -2,7 +2,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { notificationsService } from "@/services";
 import type { AppNotification } from "@/shared/lib/types";
 import { useAuth } from "@/features/auth";
-import { QueryTier } from "@/lib/queryConfig";
 
 export function useNotifications() {
   const { session, status } = useAuth();
@@ -10,7 +9,10 @@ export function useNotifications() {
     queryKey: ["notifications"],
     queryFn: () => notificationsService.list(),
     enabled: status !== "loading" && !!session,
-    ...QueryTier.INVENTORY,
+    staleTime: 2 * 60_000,   // 2 min — নতুন notification আসলে invalidate হয়
+    gcTime: 10 * 60_000,
+    refetchOnWindowFocus: false,
+    refetchInterval: false,  // polling বন্ধ — event-driven invalidation যথেষ্ট
   });
   return ((data as any)?.items ?? []) as any[];
 }

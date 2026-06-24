@@ -15,6 +15,8 @@ import CameraScanner from "@/components/CameraScanner";
 import {
   InvoicePreview,
   type ReceiptView,
+  DraftInvoicePreview,
+  type HeldSaleForPrint,
   InvoiceHeader,
   ProductFilterBar,
   InvoiceLineItems,
@@ -27,7 +29,7 @@ import { customersApi } from "@/shared/api-client/customers";
 import { salesApi } from "@/shared/api-client/sales";
 import { apiFetch } from "@/shared/api-client/fetch";
 import { saleCreateSchema } from "@/shared/validators/sale";
-import { CheckCircle2, Printer, Plus, Pause, Trash2, Receipt, Search } from "lucide-react";
+import { CheckCircle2, Printer, Plus, Pause, Trash2, Receipt, Search, FileText, Clock } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/shared/ui/popover";
 import { Input } from "@/shared/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
@@ -74,21 +76,19 @@ export default function NewSale() {
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [saleLoading, setSaleLoading] = useState(false);
   const [salesPerson, setSalesPerson] = useState("");
-  const salesPersonInitialized = useRef(false);
-
-  // Auto-set sales person to logged-in user for new invoices
-  useEffect(() => {
-    if (!editingSaleId && session?.user?.name && !salesPersonInitialized.current) {
-      setSalesPerson(session.user.name);
-      salesPersonInitialized.current = true;
-    }
-  }, [session, editingSaleId]);
+  const [destination, setDestination] = useState("");
+  const [attention, setAttention] = useState("");
+  const [invoiceDate, setInvoiceDate] = useState<string>(() => {
+    const tzoffset = (new Date()).getTimezoneOffset() * 60000;
+    return (new Date(Date.now() - tzoffset)).toISOString().split('T')[0];
+  });
   const [narration, setNarration] = useState("");
   const [vat, setVat] = useState<number>(0);
   const [extraCharges, setExtraCharges] = useState<number>(0);
   const [quickName, setQuickName] = useState("");
   const [quickPhone, setQuickPhone] = useState("");
   const [heldOpen, setHeldOpen] = useState(false);
+  const [draftPreview, setDraftPreview] = useState<HeldSaleForPrint | null>(null);
   const vSearchRef = useRef<HTMLInputElement>(null);
 
   const voucherRowRefs = useRef<
@@ -149,6 +149,12 @@ export default function NewSale() {
             ];
         setPayments(tenders);
         setSalesPerson(sale.salesPerson ?? "");
+        setDestination(sale.destination ?? "");
+        setAttention(sale.attention ?? "");
+        if (sale.date) {
+          const tzoffset = (new Date()).getTimezoneOffset() * 60000;
+          setInvoiceDate(new Date(new Date(sale.date).getTime() - tzoffset).toISOString().split('T')[0]);
+        }
         setNarration(sale.notes ?? "");
         setVat(sale.vat ?? 0);
         setExtraCharges(sale.extraCharges ?? 0);
@@ -360,7 +366,11 @@ export default function NewSale() {
     setVoucherSubcategory("all");
     setVoucherSearchQuery("");
     setShowSuggestions(false);
-    setSalesPerson(session?.user?.name ?? "");
+    setSalesPerson("");
+    setDestination("");
+    setAttention("");
+    const tzoffset = (new Date()).getTimezoneOffset() * 60000;
+    setInvoiceDate((new Date(Date.now() - tzoffset)).toISOString().split('T')[0]);
     setNarration("");
     setVat(0);
     setExtraCharges(0);
@@ -424,24 +434,32 @@ export default function NewSale() {
         method: "POST",
         body: JSON.stringify({
           customerId: voucherCustomerId,
-          customerName: voucherCustomerId ? customers.find((c: any) => c.id === voucherCustomerId)?.name : quickName || "Walk-in",
+          customerName: voucherCustomerId ? customers.find((c: any) => c.id === voucherCustomerId)?.name : quickName || "",
           cart: voucherRows,
           discount: 0,
+          salesPerson: salesPerson || undefined,
+          notes: narration || undefined,
+          vat,
+          extraCharges,
         }),
       });
-      toast.success("Sale put on hold");
+      toast.success("Draft saved!");
       refetchHeldSales();
       clearVoucher();
     } catch (err: any) {
-      toast.error(err.message || "Failed to hold sale");
+      toast.error(err.message || "Failed to save draft");
     }
   };
 
   const resumeHeldSale = async (id: string) => {
-    const sale = heldSales.find((h) => h.id === id);
+    const sale = heldSales.find((h: any) => h.id === id);
     if (!sale) return;
     setVoucherRows(sale.cart);
     setVoucherCustomerId(sale.customerId || null);
+    if (sale.salesPerson) setSalesPerson(sale.salesPerson);
+    if (sale.notes) setNarration(sale.notes);
+    if (sale.vat) setVat(sale.vat);
+    if (sale.extraCharges) setExtraCharges(sale.extraCharges);
     try {
       await apiFetch(`/api/pos/held-sales?id=${id}`, { method: "DELETE" });
       refetchHeldSales();
@@ -532,7 +550,10 @@ export default function NewSale() {
       warehouseId: selectedWarehouseId ?? undefined,
       discount: 0,
       channel: "POS" as const,
+      date: invoiceDate ? new Date(invoiceDate).toISOString() : undefined,
       salesPerson: salesPerson || undefined,
+      destination: destination || undefined,
+      attention: attention || undefined,
       notes: narration || undefined,
       vat,
       extraCharges,
@@ -559,12 +580,21 @@ export default function NewSale() {
       const sale = editingSaleId
         ? await salesApi.update(editingSaleId, payload)
         : await salesApi.create(payload);
-      queryClient.invalidateQueries({ queryKey: ["sales"] });
-      queryClient.invalidateQueries({ queryKey: posInitKeys.byWarehouse(selectedWarehouseId) });
+
+      // Show success UI immediately — do NOT await invalidation
       setReceipt(sale);
       setReceiptView("invoice");
       toast.success(editingSaleId ? "Invoice updated!" : "Invoice saved!");
       if (!editingSaleId) clearVoucher();
+
+      // Invalidate in background — sales list will re-fetch behind the scenes
+      // without blocking the receipt modal from appearing.
+      queryClient.invalidateQueries({ queryKey: ["sales"] });
+      // Mark POS init data (products/customers) stale — will refetch next interaction
+      queryClient.invalidateQueries({
+        queryKey: posInitKeys.byWarehouse(selectedWarehouseId),
+        refetchType: "none",
+      });
     } catch (err: any) {
       toast.error(err?.message ?? "Checkout failed");
     } finally {
@@ -625,7 +655,7 @@ export default function NewSale() {
                 variant="outline"
                 className="h-9 px-3.5 border-border bg-card text-xs font-semibold rounded-[4px] hover:bg-secondary text-slate-700 relative flex items-center gap-2"
               >
-                <Pause className="h-3.5 w-3.5 text-muted-foreground" />
+                <FileText className="h-3.5 w-3.5 text-muted-foreground" />
                 Draft Invoices
                 {heldSales.length > 0 && (
                   <span className="absolute -top-1.5 -right-1.5 bg-primary text-primary-foreground text-[10px] h-5 w-5 flex items-center justify-center rounded-full font-bold">
@@ -634,34 +664,81 @@ export default function NewSale() {
                 )}
               </Button>
             </PopoverTrigger>
-            <PopoverContent align="start" className="w-80 p-2 z-50">
+            <PopoverContent align="start" className="w-96 p-0 z-50">
+              <div className="px-3 py-2.5 border-b bg-muted/40">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-600">Draft Invoices / Quotations</h3>
+              </div>
               {heldSales.length === 0 ? (
-                <p className="text-sm text-muted-foreground p-4 text-center">No held sales</p>
+                <div className="p-6 text-center">
+                  <FileText className="h-8 w-8 mx-auto text-muted-foreground/40 mb-2" />
+                  <p className="text-sm text-muted-foreground">No draft invoices</p>
+                  <p className="text-[11px] text-muted-foreground/60 mt-1">Hold a sale to create a draft</p>
+                </div>
               ) : (
-                <ul className="max-h-72 overflow-y-auto space-y-1">
-                  {heldSales.map((h: any) => (
-                    <li key={h.id} className="flex items-center gap-2 p-2 rounded-md hover:bg-secondary">
-                      <button
-                        type="button"
-                        className="flex-1 min-w-0 text-left"
-                        onClick={() => resumeHeldSale(h.id)}
-                      >
-                        <p className="text-sm font-medium truncate">{h.customerName || "Walk-in"}</p>
-                        <p className="text-[11px] text-muted-foreground">
-                          {h.cart.reduce((s: any, i: any) => s + i.qty, 0)} items
-                        </p>
-                      </button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-8 w-8 text-destructive shrink-0"
-                        onClick={() => deleteHeldSale(h.id)}
-                        title="Discard"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </li>
-                  ))}
+                <ul className="max-h-80 overflow-y-auto divide-y divide-border">
+                  {heldSales.map((h: any) => {
+                    const draftTotal = round2(
+                      h.cart.reduce((s: number, i: any) => s + i.price * i.qty - (i.discount || 0), 0)
+                      + (h.vat || 0) + (h.extraCharges || 0)
+                    );
+                    const itemCount = h.cart.reduce((s: number, i: any) => s + i.qty, 0);
+                    const heldDate = new Date(h.heldAt);
+                    return (
+                      <li key={h.id} className="p-2.5 hover:bg-secondary/50 transition-colors">
+                        <div className="flex items-start gap-2">
+                          <button
+                            type="button"
+                            className="flex-1 min-w-0 text-left"
+                            onClick={() => resumeHeldSale(h.id)}
+                            title="Resume this draft"
+                          >
+                            <p className="text-sm font-semibold truncate text-slate-800">
+                              {h.customerName || h.customer?.name || "No Customer"}
+                            </p>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <span className="text-xs font-bold text-primary tabular-nums">
+                                {formatCurrency(draftTotal)}
+                              </span>
+                              <span className="text-[10px] text-muted-foreground">·</span>
+                              <span className="text-[11px] text-muted-foreground">
+                                {itemCount} item{itemCount !== 1 ? "s" : ""}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1 mt-1">
+                              <Clock className="h-3 w-3 text-muted-foreground/60" />
+                              <span className="text-[10px] text-muted-foreground">
+                                {heldDate.toLocaleDateString("en-GB", { day: "2-digit", month: "short" })}{" "}
+                                {heldDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: true })}
+                              </span>
+                            </div>
+                          </button>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8 text-slate-500 hover:text-primary"
+                              onClick={() => {
+                                setDraftPreview(h);
+                                setHeldOpen(false);
+                              }}
+                              title="Print Quotation"
+                            >
+                              <Printer className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8 text-destructive/70 hover:text-destructive"
+                              onClick={() => deleteHeldSale(h.id)}
+                              title="Discard"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </PopoverContent>
@@ -793,17 +870,56 @@ export default function NewSale() {
                     Additional Details
                   </h3>
                   <div className="space-y-3.5">
-                    <div className="space-y-1.5">
-                      <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">
-                        Sales Person
-                      </label>
-                      <Input
-                        type="text"
-                        value={salesPerson}
-                        onChange={(e) => setSalesPerson(e.target.value)}
-                        placeholder="Write sales person name…"
-                        className="h-9 text-sm border-border bg-card rounded-[4px]"
-                      />
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">
+                          Sales Person
+                        </label>
+                        <Input
+                          type="text"
+                          value={salesPerson}
+                          onChange={(e) => setSalesPerson(e.target.value)}
+                          placeholder="Write sales person name…"
+                          className="h-9 text-sm border-border bg-card rounded-[4px]"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">
+                          Invoice Date
+                        </label>
+                        <Input
+                          type="date"
+                          value={invoiceDate}
+                          onChange={(e) => setInvoiceDate(e.target.value)}
+                          className="h-9 text-sm border-border bg-card rounded-[4px]"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">
+                          Destination
+                        </label>
+                        <Input
+                          type="text"
+                          value={destination}
+                          onChange={(e) => setDestination(e.target.value)}
+                          placeholder="Destination…"
+                          className="h-9 text-sm border-border bg-card rounded-[4px]"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">
+                          Attention
+                        </label>
+                        <Input
+                          type="text"
+                          value={attention}
+                          onChange={(e) => setAttention(e.target.value)}
+                          placeholder="Attention…"
+                          className="h-9 text-sm border-border bg-card rounded-[4px]"
+                        />
+                      </div>
                     </div>
                     <div className="space-y-1.5">
                       <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">
@@ -813,7 +929,7 @@ export default function NewSale() {
                         value={narration}
                         onChange={(e) => setNarration(e.target.value)}
                         placeholder="Write invoice notes or narration here..."
-                        rows={4}
+                        rows={3}
                         className="w-full text-sm border border-border bg-card rounded-[4px] p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                       />
                     </div>
@@ -859,53 +975,9 @@ export default function NewSale() {
                   Cancel
                 </Button>
 
-                <Popover open={heldOpen} onOpenChange={setHeldOpen}>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className="h-10 relative rounded-[4px] font-semibold hover:bg-secondary text-xs">
-                      Held Sales
-                      {heldSales.length > 0 && (
-                        <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-[10px] h-5 w-5 flex items-center justify-center rounded-full font-bold">
-                          {heldSales.length}
-                        </span>
-                      )}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent align="start" className="w-80 p-2 z-50">
-                    {heldSales.length === 0 ? (
-                      <p className="text-sm text-muted-foreground p-4 text-center">No held sales</p>
-                    ) : (
-                      <ul className="max-h-72 overflow-y-auto space-y-1">
-                        {heldSales.map((h: any) => (
-                          <li key={h.id} className="flex items-center gap-2 p-2 rounded-md hover:bg-secondary">
-                            <button
-                              type="button"
-                              className="flex-1 min-w-0 text-left"
-                              onClick={() => resumeHeldSale(h.id)}
-                            >
-                              <p className="text-sm font-medium truncate">{h.customerName || "Walk-in"}</p>
-                              <p className="text-[11px] text-muted-foreground">
-                                {h.cart.reduce((s: any, i: any) => s + i.qty, 0)} items
-                              </p>
-                            </button>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="h-8 w-8 text-destructive shrink-0"
-                              onClick={() => deleteHeldSale(h.id)}
-                              title="Discard"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </PopoverContent>
-                </Popover>
-
                 {voucherRows.length > 0 && !editingSaleId && (
                   <Button variant="outline" className="h-10 rounded-[4px] font-semibold hover:bg-secondary text-xs" onClick={holdCurrentSale}>
-                    <Pause className="h-4 w-4 mr-1.5" /> Hold
+                    <FileText className="h-4 w-4 mr-1.5" /> Save Draft
                   </Button>
                 )}
               </div>
@@ -974,6 +1046,13 @@ export default function NewSale() {
           onPickInvoice={() => setReceiptView("invoice")}
         />
       )}
+      {/* Draft Invoice Quotation Preview/Print */}
+      <DraftInvoicePreview
+        draft={draftPreview}
+        settings={settings}
+        open={!!draftPreview}
+        onClose={() => setDraftPreview(null)}
+      />
       </div>
     </div>
   );

@@ -90,9 +90,7 @@ export const salesSerial = {
       return item?.productId;
     }).filter(Boolean))] as string[];
     if (soldProductIds.length > 0) {
-      for (const productId of soldProductIds) {
-        await inventoryService.syncStockCount(tx, warehouseId, productId);
-      }
+      await inventoryService.syncStockCounts(tx, warehouseId, soldProductIds);
     }
   },
 
@@ -112,9 +110,7 @@ export const salesSerial = {
     });
 
     if (productIds.length > 0) {
-      for (const productId of productIds) {
-        await inventoryService.syncStockCount(tx, warehouseId, productId);
-      }
+      await inventoryService.syncStockCounts(tx, warehouseId, productIds);
     }
   }
 };

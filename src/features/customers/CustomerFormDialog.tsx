@@ -88,15 +88,7 @@ export function CustomerFormDialog({ open, onOpenChange, editing }: Props) {
                 <FormMessage />
               </FormItem>
             )} />
-            <FormField control={form.control} name="referencePerson" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Through</FormLabel>
-                <FormControl>
-                  <Input placeholder="Through whom?" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
+
             <FormField control={form.control} name="address" render={({ field }) => (
               <FormItem>
                 <FormLabel>Address</FormLabel>

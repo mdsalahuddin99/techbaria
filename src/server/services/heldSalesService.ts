@@ -9,20 +9,44 @@ export interface HeldSaleCreateInput {
   customerName?: string;
   cart: any; // The JSON cart payload
   discount: number;
+  salesPerson?: string;
+  notes?: string;
+  vat?: number;
+  extraCharges?: number;
 }
 
 export const heldSalesService = {
   /**
-   * List all held sales for the shop.
+   * List all held sales for the shop (with customer details for printing).
    */
   async list(ctx: Ctx) {
     requireRole(ctx, "CASHIER");
     const sales = await prisma.heldSale.findMany({
       orderBy: { heldAt: "desc" },
+      include: {
+        customer: {
+          select: {
+            id: true,
+            name: true,
+            phone: true,
+            address: true,
+            email: true,
+            referencePerson: true,
+          },
+        },
+        user: {
+          select: {
+            name: true,
+            role: true,
+          },
+        },
+      },
     });
     return sales.map(s => ({
       ...s,
-      discount: Number(s.discount)
+      discount: Number(s.discount),
+      vat: Number(s.vat),
+      cashier: s.user?.role ?? s.user?.name ?? "Unknown",
     }));
   },
 
@@ -39,12 +63,17 @@ export const heldSalesService = {
         customerName: input.customerName,
         cart: input.cart,
         discount: input.discount,
+        salesPerson: input.salesPerson,
+        notes: input.notes,
+        vat: input.vat ?? 0,
+        extraCharges: input.extraCharges ?? 0,
       },
     });
 
     return {
       ...sale,
-      discount: Number(sale.discount)
+      discount: Number(sale.discount),
+      vat: Number(sale.vat),
     };
   },
 
@@ -68,3 +97,4 @@ export const heldSalesService = {
     });
   }
 };
+

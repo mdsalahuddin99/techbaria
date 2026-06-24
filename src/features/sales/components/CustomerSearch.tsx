@@ -112,13 +112,13 @@ export function CustomerSearch({
                 id="pos-customer-search-btn"
                 type="text"
                 className="w-full h-10 px-3 py-2 text-sm bg-background border border-input rounded-[4px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
-                placeholder="Search customer by name/phone..."
+                placeholder="Select customer..."
                 value={
                   open
                     ? searchQuery
                     : selected
                     ? `${selected.name}${selected.phone && selected.phone !== "—" ? ` · ${selected.phone}` : ""}`
-                    : "Walk-in Customer"
+                    : ""
                 }
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
@@ -142,24 +142,6 @@ export function CustomerSearch({
               <CommandList className="max-h-[50vh]">
                 <CommandEmpty>No customer found.</CommandEmpty>
                 <CommandGroup>
-                  <CommandItem
-                    value="Walk-in Customer"
-                    onSelect={() => {
-                      onChange("");
-                      setOpen(false);
-                    }}
-                    className="cursor-pointer"
-                  >
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4 shrink-0",
-                        !selected ? "opacity-100" : "opacity-0",
-                      )}
-                    />
-                    <span className="truncate flex-1 font-semibold text-slate-700">
-                      Walk-in Customer
-                    </span>
-                  </CommandItem>
                   {filteredCustomers.map((c) => (
                     <CommandItem
                       key={c.id}

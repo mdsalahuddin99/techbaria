@@ -61,6 +61,7 @@ export function usePurchaseForm({
   const [supplierId, setSupplierId] = useState<string>("");
   const [lines, setLines] = useState<DraftLine[]>([]);
   const [activeProductId, setActiveProductId] = useState<string>("");
+  const [activeScanId, setActiveScanId] = useState<string>("");
   const [scanInput, setScanInput] = useState("");
   const [cameraOpen, setCameraOpen] = useState(false);
   const [collapsedSet, setCollapsedSet] = useState<Set<string>>(new Set());
@@ -87,7 +88,7 @@ export function usePurchaseForm({
       }
       setSupplierId(po.supplierId);
       setReference(po.note ?? "");
-      setLines(po.items.map((i) => ({
+      const fetchedLines = po.items.map((i) => ({
         productId: i.productId,
         name: i.name,
         baseCost: i.costPrice - (i.extraCost ?? 0),
@@ -100,9 +101,10 @@ export function usePurchaseForm({
         serials: i.serials ?? [],
         trackSerials: (i.serials?.length ?? 0) > 0,
         manualQty: i.qty,
-      })));
+      }));
+      setLines(fetchedLines);
       setActiveProductId("");
-      setCollapsedSet(new Set());
+      setCollapsedSet(new Set(fetchedLines.map((l) => l.productId)));
       if (po.amountPaid > 0) {
         setTenders([{
           id: crypto.randomUUID(),
@@ -131,13 +133,14 @@ export function usePurchaseForm({
     setSupplierId("");
     setLines([]);
     setActiveProductId("");
+    setActiveScanId("");
     setScanInput("");
     setReference("");
     setTenders([]);
     setCollapsedSet(new Set());
   };
 
-  const activeLine = lines.find((l) => l.productId === activeProductId);
+  const activeLine = lines.find((l) => l.productId === activeScanId);
 
   const updateLine = (productId: string, patch: Partial<DraftLine>) => {
     setLines((prev) => prev.map((l) => (l.productId === productId ? { ...l, ...patch } : l)));
@@ -167,6 +170,7 @@ export function usePurchaseForm({
       ...prev,
     ]);
     setCollapsedSet(new Set(lines.map((l) => l.productId)));
+    setActiveScanId(product.id);
     setActiveProductId("");
     setTimeout(() => scanRef.current?.focus(), 50);
   };
@@ -181,13 +185,9 @@ export function usePurchaseForm({
 
   const lastDupeAtRef = useRef<{ code: string; t: number }>({ code: "", t: 0 });
   
-  const addSerial = (raw: string) => {
+  const addSerial = (productId: string, raw: string) => {
     const code = raw.trim();
     if (!code) return;
-    if (!activeLine) {
-      toast.error("আগে product select করে 'Add line' চাপুন");
-      return;
-    }
     if (code.length < 3) {
       toast.error("Serial too short");
       return;
@@ -202,7 +202,6 @@ export function usePurchaseForm({
     if (onDraftLine || inInventory) {
       const now = Date.now();
       if (lastDupeAtRef.current.code === key && now - lastDupeAtRef.current.t < 2000) {
-        setScanInput("");
         return;
       }
       lastDupeAtRef.current = { code: key, t: now };
@@ -211,19 +210,15 @@ export function usePurchaseForm({
         ? `এই PO-র "${onDraftLine.name}" লাইনে আগেই scan করা আছে`
         : "এই serial আগে থেকেই inventory-তে আছে";
       toast.error(`ডুপ্লিকেট: ${code}`, { description: where });
-      setScanInput("");
-      setTimeout(() => scanRef.current?.focus(), 30);
       return;
     }
     setLines((prev) =>
       prev.map((l) =>
-        l.productId === activeProductId
+        l.productId === productId
           ? { ...l, serials: [...l.serials, code] }
           : l
       )
     );
-    setScanInput("");
-    setTimeout(() => scanRef.current?.focus(), 30);
   };
 
   const removeSerial = (productId: string, serial: string) => {
@@ -239,6 +234,7 @@ export function usePurchaseForm({
   const removeLine = (productId: string) => {
     setLines((prev) => prev.filter((l) => l.productId !== productId));
     if (activeProductId === productId) setActiveProductId("");
+    if (activeScanId === productId) setActiveScanId("");
   };
 
   const validTenders = tenders.filter((t) => (Number(t.amount) || 0) > 0 && t.accountId);
@@ -371,17 +367,18 @@ export function usePurchaseForm({
         paidFromAccountId: validTenders[0]?.accountId,
       });
       
-      for (const t of validTenders.slice(1)) {
-        const acc = accounts.find((a) => a.id === t.accountId);
-        try {
-          await addPayment(po.id, {
+      // Fire all additional tender payments in parallel (not sequentially)
+      await Promise.all(
+        validTenders.slice(1).map((t) => {
+          const acc = accounts.find((a) => a.id === t.accountId);
+          return addPayment(po.id, {
             amount: Number(t.amount) || 0,
             method: methodFromAccountType(acc?.type),
             accountId: t.accountId,
             note: t.note,
-          });
-        } catch { /* ignore tender fail */ }
-      }
+          }).catch(() => { /* ignore individual tender failure */ });
+        })
+      );
       
       const totalUnits = lines.reduce((s, l) => s + lineUnits(l), 0);
       toast.success(`${po.poNumber} — ${totalUnits} unit inventory-তে যোগ হয়েছে`);
@@ -433,6 +430,7 @@ export function usePurchaseForm({
     reference, setReference,
     tenders, setTenders, addTender, updateTender, removeTender, validTenders, totalPaid,
     saving, editLoading,
-    submit, lineUnits, subtotal, saleTotal, reset
+    submit, lineUnits, subtotal, saleTotal, reset,
+    activeScanId, setActiveScanId
   };
 }

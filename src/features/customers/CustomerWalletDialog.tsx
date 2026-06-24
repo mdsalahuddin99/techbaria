@@ -110,24 +110,21 @@ export function CustomerWalletDialog({
               <span className="font-medium">{customerName}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Balance</span>
-              <span className={`font-semibold ${currentBalance > 0 ? "text-destructive" : "text-emerald-600"}`}>
+              <span className="text-muted-foreground">Wallet Balance</span>
+              <span className={`font-semibold ${
+                currentBalance > 0 ? "text-emerald-600" : "text-muted-foreground"
+              }`}>
                 {formatCurrency(currentBalance)}
               </span>
             </div>
             {currentBalance === 0 && (
               <p className="text-[11px] text-muted-foreground mt-1">
-                Deposit creates advance; withdraw requires positive balance
-              </p>
-            )}
-            {currentBalance < 0 && (
-              <p className="text-[11px] text-muted-foreground mt-1">
-                Customer has {formatCurrency(Math.abs(currentBalance))} advance credit
+                No advance balance. Deposit to add funds to wallet.
               </p>
             )}
             {currentBalance > 0 && (
-              <p className="text-[11px] text-muted-foreground mt-1">
-                Customer owes {formatCurrency(currentBalance)}
+              <p className="text-[11px] text-emerald-700 font-medium mt-1">
+                ✓ Customer has {formatCurrency(currentBalance)} advance credit available
               </p>
             )}
           </div>
