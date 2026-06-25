@@ -8,25 +8,43 @@ export function FeaturedProducts() {
   const { all, isLoading } = useStorefrontProducts();
 
   return (
-    <section className="py-10 sm:py-14 border-t border-slate-200/50">
+    <section className="sf-section-white py-12 sm:py-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         {/* Section header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-10">
           <div className="flex items-center gap-3">
-            <span className="w-2 h-8 bg-gradient-to-b from-indigo-500 to-indigo-600 rounded-full shadow-sm" />
+            <span className="sf-section-accent" />
             <div>
-              <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">Featured Products</h2>
-              <p className="text-xs sm:text-sm text-slate-500 mt-1">Hand-picked premium tech for you</p>
+              <h2 className="sf-section-title">Featured Products</h2>
+              <p className="text-sm mt-1" style={{ color: "#64748B" }}>
+                Hand-picked premium tech for you
+              </p>
             </div>
           </div>
           <Link
             href="/shop"
-            className="text-sm font-semibold text-indigo-600 hover:text-indigo-700 inline-flex items-center gap-1 transition-colors"
+            className="hidden sm:inline-flex items-center gap-1.5 text-sm font-bold transition-all duration-200 hover:-translate-x-0.5"
+            style={{ color: "#2563EB" }}
           >
             View All <ChevronRight className="h-4 w-4" />
           </Link>
         </div>
+
         <ProductGrid products={featured} allProducts={all} loading={isLoading} />
+
+        {/* Mobile View All */}
+        <div className="mt-8 text-center sm:hidden">
+          <Link
+            href="/shop"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-[12px] text-sm font-bold text-white transition-all duration-200"
+            style={{
+              background: "linear-gradient(135deg, #2563EB 0%, #3B82F6 100%)",
+              boxShadow: "0 4px 14px rgba(37,99,235,0.35)",
+            }}
+          >
+            View All Products <ChevronRight className="h-4 w-4" />
+          </Link>
+        </div>
       </div>
     </section>
   );

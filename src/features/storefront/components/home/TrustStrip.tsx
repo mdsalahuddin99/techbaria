@@ -1,28 +1,74 @@
 import { Truck, ShieldCheck, RotateCcw, CreditCard } from "lucide-react";
 
 const items = [
-  { icon: Truck, title: "Free Delivery", sub: "ঢাকায় ১৫০০৳+ অর্ডারে" },
-  { icon: ShieldCheck, title: "100% Original", sub: "Official Warranty সহ" },
-  { icon: RotateCcw, title: "Easy Return", sub: "৭ দিনের রিটার্ন গ্যারান্টি" },
-  { icon: CreditCard, title: "EMI 0%", sub: "সব ব্যাংক কার্ডে" },
+  {
+    icon: Truck,
+    title: "Fast Delivery",
+    sub: "ঢাকায় ১৫০০৳+ অর্ডারে Free",
+    color: "#2563EB",
+    bg: "#DBEAFE",
+  },
+  {
+    icon: ShieldCheck,
+    title: "100% Original",
+    sub: "Official Warranty সহ",
+    color: "#06B6D4",
+    bg: "#CFFAFE",
+  },
+  {
+    icon: RotateCcw,
+    title: "Easy Return",
+    sub: "৭ দিনের রিটার্ন গ্যারান্টি",
+    color: "#2563EB",
+    bg: "#DBEAFE",
+  },
+  {
+    icon: CreditCard,
+    title: "EMI 0%",
+    sub: "সব ব্যাংক কার্ডে সুবিধা",
+    color: "#06B6D4",
+    bg: "#CFFAFE",
+  },
 ];
 
 export function TrustStrip() {
   return (
-    <section className="border-b border-slate-200 bg-white">
-      <div className="max-w-7xl mx-auto px-3 sm:px-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-slate-200">
-          {items.map((item) => (
+    <section style={{ background: "#EFF6FF" }} className="py-10 sm:py-14">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-5">
+          {items.map((item, i) => (
             <div
               key={item.title}
-              className="flex items-center gap-3 py-4 px-3 sm:px-5 hover:bg-slate-50 transition"
+              className="group flex flex-col sm:flex-row items-center sm:items-start gap-3 sm:gap-4 p-4 sm:p-5 rounded-[20px] bg-white cursor-default transition-all duration-300 hover:-translate-y-1 sf-animate-slide-up"
+              style={{
+                boxShadow: "0 4px 20px rgba(37,99,235,0.06)",
+                animationDelay: `${i * 0.1}s`,
+              }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.boxShadow =
+                  "0 12px 36px rgba(37,99,235,0.14)")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.boxShadow =
+                  "0 4px 20px rgba(37,99,235,0.06)")
+              }
             >
-              <div className="h-10 w-10 rounded-lg bg-indigo-50 border border-indigo-100 grid place-items-center shrink-0">
-                <item.icon className="h-5 w-5 text-indigo-600" />
+              <div
+                className="h-12 w-12 sm:h-14 sm:w-14 rounded-2xl flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-110"
+                style={{ background: item.bg }}
+              >
+                <item.icon
+                  className="h-6 w-6 sm:h-7 sm:w-7 transition-colors"
+                  style={{ color: item.color }}
+                />
               </div>
-              <div className="min-w-0">
-                <div className="text-xs sm:text-sm font-bold text-slate-900 truncate">{item.title}</div>
-                <div className="text-[10px] sm:text-xs text-slate-500 truncate">{item.sub}</div>
+              <div className="min-w-0 text-center sm:text-left">
+                <div className="text-sm font-bold" style={{ color: "#1E3A5F" }}>
+                  {item.title}
+                </div>
+                <div className="text-xs mt-0.5" style={{ color: "#64748B" }}>
+                  {item.sub}
+                </div>
               </div>
             </div>
           ))}

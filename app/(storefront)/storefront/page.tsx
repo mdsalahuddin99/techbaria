@@ -6,6 +6,7 @@ import { TrustStrip } from "@/features/storefront/components/home/TrustStrip";
 import { CategoryRail } from "@/features/storefront/components/home/CategoryRail";
 import { FlashDealsSection } from "@/features/storefront/components/home/FlashDealsSection";
 import { FeaturedProducts } from "@/features/storefront/components/home/FeaturedProducts";
+import { ExpertCTA } from "@/features/storefront/components/home/ExpertCTA";
 import { BrandsRow } from "@/features/storefront/components/home/BrandsRow";
 import { useFeaturedProducts } from "@/features/storefront";
 
@@ -14,30 +15,30 @@ export default function StorefrontHome() {
   const heroProduct = featured[0] ?? null;
 
   return (
-    <div className="pb-16 md:pb-0">
+    <div className="pb-16 md:pb-0" style={{ background: "#ffffff" }}>
       {/* Deal ticker — homepage only */}
       <LiveDealTicker />
 
       {/* Hero banner */}
       <HeroBanner featured={heroProduct} />
 
-      {/* Trust signals */}
+      {/* Trust signals — Soft Sky Blue bg */}
       <TrustStrip />
 
-      {/* Category navigation */}
+      {/* Category navigation — White bg */}
       <CategoryRail />
 
-      {/* Flash Deals */}
+      {/* Flash Deals — Blue Gradient bg */}
       <FlashDealsSection />
 
-      {/* Featured Products */}
+      {/* Featured Products — White bg */}
       <FeaturedProducts />
 
-      {/* Brands */}
-      <BrandsRow />
+      {/* Expert CTA — Blue→Cyan Gradient */}
+      <ExpertCTA />
 
-      {/* bottom spacing */}
-      <div className="h-12" />
+      {/* Brands — Light Sky Blue bg */}
+      <BrandsRow />
     </div>
   );
 }

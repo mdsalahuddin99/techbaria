@@ -91,11 +91,11 @@ export default function StorefrontProduct() {
   if (isLoading && !product) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-10 grid md:grid-cols-2 gap-8">
-        <div className="aspect-square rounded-3xl bg-card/[0.04] animate-pulse" />
+        <div className="aspect-square rounded-3xl bg-[#EFF6FF] animate-pulse" />
         <div className="space-y-3">
-          <div className="h-8 w-3/4 rounded-lg bg-card/[0.04] animate-pulse" />
-          <div className="h-6 w-1/3 rounded-lg bg-card/[0.04] animate-pulse" />
-          <div className="h-24 rounded-lg bg-card/[0.04] animate-pulse" />
+          <div className="h-8 w-3/4 rounded-lg bg-[#EFF6FF] animate-pulse" />
+          <div className="h-6 w-1/3 rounded-lg bg-[#EFF6FF] animate-pulse" />
+          <div className="h-24 rounded-lg bg-[#EFF6FF] animate-pulse" />
         </div>
       </div>
     );
@@ -104,12 +104,12 @@ export default function StorefrontProduct() {
   if (!product) {
     return (
       <div className="max-w-5xl mx-auto px-4 py-20 text-center">
-        <div className="text-5xl mb-3">🔍</div>
-        <h1 className="text-xl font-bold">Product not found</h1>
-        <Link href="/shop" className="inline-block mt-4 text-indigo-300 hover:text-indigo-200">
-          ← Back to shop
-        </Link>
-      </div>
+      <div className="text-5xl mb-3">🔍</div>
+      <h1 className="text-xl font-bold text-[#1E3A5F]">Product not found</h1>
+      <Link href="/shop" className="inline-block mt-4 font-bold text-[#2563EB] hover:text-[#1D4ED8]">
+        ← Back to shop
+      </Link>
+    </div>
     );
   }
 
@@ -434,18 +434,18 @@ export default function StorefrontProduct() {
                   <Plus className="h-4 w-4" />
                 </button>
               </div>
-              <Button
-                onClick={() => handleAdd()}
-                disabled={outOfStock}
-                className="flex-1 h-11 bg-slate-100 hover:bg-slate-200 text-slate-900 rounded-full border border-slate-200 shadow-sm"
-              >
-                <ShoppingBag className="h-4 w-4 mr-2" /> Add to cart
-              </Button>
+            <Button
+              onClick={() => handleAdd()}
+              disabled={outOfStock}
+              className="flex-1 h-11 bg-[#EFF6FF] hover:bg-[#DBEAFE] text-[#1E3A5F] rounded-full border border-[#BFDBFE] shadow-sm font-semibold"
+            >
+              <ShoppingBag className="h-4 w-4 mr-2" /> Add to cart
+            </Button>
             </div>
             <Button
               onClick={handleBuyNow}
               disabled={outOfStock}
-              className="w-full h-12 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white rounded-full shadow-lg shadow-indigo-600/30 font-semibold"
+              className="w-full h-12 bg-gradient-to-r from-[#2563EB] to-[#06B6D4] hover:from-[#1D4ED8] hover:to-[#0891B2] text-white rounded-full shadow-lg shadow-blue-500/30 font-semibold"
             >
               <Zap className="h-4 w-4 mr-2" /> Buy now
             </Button>
@@ -517,17 +517,17 @@ export default function StorefrontProduct() {
       {/* === Tabs === */}
       <section className="mt-12 sm:mt-16">
         <Tabs defaultValue="description" className="w-full">
-          <TabsList className="bg-slate-100 border border-slate-200 rounded-full p-1 h-auto flex flex-wrap gap-1">
-            <TabsTrigger value="description" className="rounded-full data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-600 px-4 py-2 text-xs sm:text-sm">
+          <TabsList className="bg-[#EFF6FF] border border-[#BFDBFE] rounded-full p-1 h-auto flex flex-wrap gap-1">
+            <TabsTrigger value="description" className="rounded-full data-[state=active]:bg-[#2563EB] data-[state=active]:text-white text-slate-600 px-4 py-2 text-xs sm:text-sm">
               Description
             </TabsTrigger>
-            <TabsTrigger value="specs" className="rounded-full data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-600 px-4 py-2 text-xs sm:text-sm">
+            <TabsTrigger value="specs" className="rounded-full data-[state=active]:bg-[#2563EB] data-[state=active]:text-white text-slate-600 px-4 py-2 text-xs sm:text-sm">
               Specifications
             </TabsTrigger>
-            <TabsTrigger value="shipping" className="rounded-full data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-600 px-4 py-2 text-xs sm:text-sm">
+            <TabsTrigger value="shipping" className="rounded-full data-[state=active]:bg-[#2563EB] data-[state=active]:text-white text-slate-600 px-4 py-2 text-xs sm:text-sm">
               Shipping
             </TabsTrigger>
-            <TabsTrigger value="returns" className="rounded-full data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-600 px-4 py-2 text-xs sm:text-sm">
+            <TabsTrigger value="returns" className="rounded-full data-[state=active]:bg-[#2563EB] data-[state=active]:text-white text-slate-600 px-4 py-2 text-xs sm:text-sm">
               Return Policy
             </TabsTrigger>
           </TabsList>

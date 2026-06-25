@@ -96,14 +96,14 @@ export default function StorefrontCatalog() {
   return (
     <div className="max-w-7xl mx-auto px-3 sm:px-6 pt-3 sm:pt-4">
       {/* Breadcrumb — Electro style */}
-      <nav className="text-xs text-slate-500 flex items-center gap-1.5 mb-4 bg-slate-50 border border-slate-200 px-3 py-2 rounded-md" aria-label="Breadcrumb">
-        <Link href="/" className="hover:text-yellow-600 font-medium">Home</Link>
+      <nav className="text-xs text-slate-500 flex items-center gap-1.5 mb-4 bg-[#EFF6FF] border border-[#BFDBFE] px-3 py-2 rounded-md" aria-label="Breadcrumb">
+        <Link href="/" className="hover:text-[#2563EB] font-medium">Home</Link>
         <ChevronRight className="h-3 w-3 text-slate-300" />
-        <Link href="/shop" className="hover:text-yellow-600 font-medium">Shop</Link>
+        <Link href="/shop" className="hover:text-[#2563EB] font-medium">Shop</Link>
         {decoded && (
           <>
             <ChevronRight className="h-3 w-3 text-slate-300" />
-            <span className="text-slate-800 font-semibold">{decoded}</span>
+            <span className="text-[#1E3A5F] font-semibold">{decoded}</span>
           </>
         )}
       </nav>
@@ -111,9 +111,9 @@ export default function StorefrontCatalog() {
       {/* Category header — Electro style: compact with left yellow border accent */}
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-3">
-          <span className="w-1 h-7 bg-yellow-400 rounded-full shrink-0" />
+          <span className="w-1 h-7 bg-[#2563EB] rounded-full shrink-0" />
           <div>
-            <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900">
+            <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-[#1E3A5F]">
               {decoded ?? "All Products"}
             </h1>
             <p className="text-xs text-slate-500 mt-0.5">
@@ -147,7 +147,7 @@ export default function StorefrontCatalog() {
             <div className="flex items-center gap-2">
               <Sheet>
                 <SheetTrigger asChild>
-                  <button className="lg:hidden inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-yellow-400 text-slate-900 text-sm font-bold hover:bg-yellow-500 transition">
+                  <button className="lg:hidden inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-[#2563EB] text-white text-sm font-bold hover:bg-[#1D4ED8] transition">
                     <Filter className="h-4 w-4" /> Filters
                   </button>
                 </SheetTrigger>
@@ -185,7 +185,7 @@ export default function StorefrontCatalog() {
                 <button
                   onClick={() => setView("grid")}
                   className={`h-8 w-8 grid place-items-center transition ${
-                    view === "grid" ? "bg-yellow-400 text-slate-900" : "text-slate-500 hover:bg-slate-50"
+                    view === "grid" ? "bg-[#2563EB] text-white" : "text-slate-500 hover:bg-slate-50"
                   }`}
                   aria-label="Grid view"
                 >
@@ -194,7 +194,7 @@ export default function StorefrontCatalog() {
                 <button
                   onClick={() => setView("list")}
                   className={`h-8 w-8 grid place-items-center border-l border-slate-200 transition ${
-                    view === "list" ? "bg-yellow-400 text-slate-900" : "text-slate-500 hover:bg-slate-50"
+                    view === "list" ? "bg-[#2563EB] text-white" : "text-slate-500 hover:bg-slate-50"
                   }`}
                   aria-label="List view"
                 >
@@ -215,7 +215,7 @@ export default function StorefrontCatalog() {
               emptyHint="এই filter-এ কোনো পণ্য নেই — পরিবর্তন করে দেখুন।"
             />
           ) : visible.length === 0 && !isLoading ? (
-            <div className="text-center py-16 text-slate-400 text-sm">এই filter-এ কোনো পণ্য নেই।</div>
+            <div className="text-center py-16 text-slate-500 text-sm">এই filter-এ কোনো পণ্য নেই।</div>
           ) : (
             <div className="space-y-3">
               {visible.map((p) => (
@@ -228,7 +228,7 @@ export default function StorefrontCatalog() {
             <div className="mt-8 flex justify-center">
               <button
                 onClick={() => setPage((p) => p + 1)}
-                className="h-11 px-8 rounded-md bg-yellow-400 text-slate-900 text-sm font-extrabold hover:bg-yellow-500 transition shadow-sm"
+                className="h-11 px-8 rounded-full bg-[#2563EB] text-white text-sm font-extrabold hover:bg-[#1D4ED8] transition shadow-md shadow-blue-500/20"
               >
                 Load more ({products.length - visible.length} বাকি)
               </button>

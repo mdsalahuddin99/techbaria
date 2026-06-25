@@ -22,6 +22,7 @@ const minStockPreprocessor = z.preprocess((v) => {
 export const productBaseSchema = z
   .object({
     name: z.string().trim().min(1, "Name is required").max(200),
+    slug: z.string().trim().optional(),
     sku: z.string().trim().min(1, "SKU is required").max(60),
     barcode: z.string().trim().max(60).default(""),
     description: z.string().trim().optional().default(""),

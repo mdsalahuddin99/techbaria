@@ -17,10 +17,10 @@ function StorefrontSearchInner() {
 
   return (
     <div className="max-w-7xl mx-auto px-3 sm:px-6 pt-6 sm:pt-10">
-      <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+      <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#1E3A5F]">
         Search results
       </h1>
-      <p className="text-xs sm:text-sm text-slate-400 mt-1 mb-6">
+      <p className="text-xs sm:text-sm text-slate-500 mt-1 mb-6">
         “{q}” — {products.length} products
       </p>
       <ProductGrid
@@ -36,7 +36,7 @@ function StorefrontSearchInner() {
 
 export default function StorefrontSearch() {
   return (
-    <Suspense fallback={<div className="p-8 text-center text-slate-400">Searching...</div>}>
+    <Suspense fallback={<div className="p-8 text-center text-slate-500">Searching...</div>}>
       <StorefrontSearchInner />
     </Suspense>
   );

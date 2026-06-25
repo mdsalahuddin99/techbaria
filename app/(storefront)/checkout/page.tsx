@@ -42,8 +42,8 @@ export default function StorefrontCheckout() {
   if (lines.length === 0) {
     return (
       <div className="max-w-md mx-auto px-4 py-20 text-center">
-        <h1 className="text-xl font-bold mb-2">Cart is empty</h1>
-        <Link href="/shop" className="text-indigo-300 hover:text-indigo-200">← Back to shop</Link>
+        <h1 className="text-xl font-bold mb-2 text-[#1E3A5F]">Cart is empty</h1>
+        <Link href="/shop" className="font-bold text-[#2563EB] hover:text-[#1D4ED8]">← Back to shop</Link>
       </div>
     );
   }
@@ -68,7 +68,7 @@ export default function StorefrontCheckout() {
 
   return (
     <form onSubmit={handleSubmit} className="max-w-6xl mx-auto px-3 sm:px-6 pt-6 sm:pt-10">
-      <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight mb-6">Checkout</h1>
+      <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight mb-6 text-[#1E3A5F]">Checkout</h1>
 
       <div className="grid md:grid-cols-[1fr_360px] gap-6">
         <div className="space-y-6">
@@ -83,12 +83,12 @@ export default function StorefrontCheckout() {
               <Field label="Area / Thana" value={address.area ?? ""} onChange={set("area")} />
               <Field label="Postcode" value={address.postcode ?? ""} onChange={set("postcode")} />
               <div className="sm:col-span-2">
-                <label className="block text-xs text-slate-400 mb-1">Order notes</label>
+                <label className="block text-xs text-slate-500 mb-1">Order notes</label>
                 <textarea
                   value={address.notes}
                   onChange={set("notes")}
                   rows={2}
-                  className="w-full px-3 py-2 rounded-lg bg-card/5 border border-white/10 text-sm focus:outline-none focus:border-indigo-400/60 text-white"
+                  className="w-full px-3 py-2 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0] text-sm focus:outline-none focus:border-[#2563EB]/60 text-[#1E3A5F]"
                 />
               </div>
             </div>
@@ -157,13 +157,13 @@ export default function StorefrontCheckout() {
         </div>
 
         <aside className="space-y-3 md:sticky md:top-20 md:self-start">
-          <div className="rounded-2xl bg-card/[0.04] border border-white/10 p-4">
-            <div className="text-sm font-semibold mb-3">Order summary</div>
-            <div className="space-y-2 max-h-60 overflow-y-auto text-xs text-slate-300">
+          <div className="rounded-2xl bg-white border border-[#E2E8F0] shadow-sm p-4">
+            <div className="text-sm font-semibold mb-3 text-[#1E3A5F]">Order summary</div>
+            <div className="space-y-2 max-h-60 overflow-y-auto text-xs text-slate-600">
               {lines.map((l) => (
                 <div key={l.productId} className="flex items-center justify-between gap-2">
                   <span className="truncate">{l.name} × {l.qty}</span>
-                  <span className="text-white shrink-0">৳{(l.price * l.qty).toLocaleString("en-BD")}</span>
+                  <span className="text-[#1E3A5F] font-semibold shrink-0">৳{(l.price * l.qty).toLocaleString("en-BD")}</span>
                 </div>
               ))}
             </div>
@@ -172,7 +172,7 @@ export default function StorefrontCheckout() {
           <Button
             type="submit"
             disabled={submitting}
-            className="w-full h-11 bg-indigo-600 hover:bg-indigo-500 rounded-full shadow-lg shadow-indigo-600/30 disabled:opacity-60"
+            className="w-full h-11 bg-[#2563EB] hover:bg-[#1D4ED8] rounded-full text-white shadow-md shadow-blue-500/20 disabled:opacity-60"
           >
             {submitting ? "Placing order..." : <>Place order <ArrowRight className="h-4 w-4 ml-1" /></>}
           </Button>
@@ -188,8 +188,8 @@ export default function StorefrontCheckout() {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-2xl bg-card/[0.04] border border-white/10 p-4 sm:p-5">
-      <h2 className="text-base font-semibold mb-3">{title}</h2>
+    <section className="rounded-2xl bg-white border border-[#E2E8F0] shadow-sm p-4 sm:p-5">
+      <h2 className="text-base font-semibold mb-3 text-[#1E3A5F]">{title}</h2>
       {children}
     </section>
   );
@@ -203,13 +203,13 @@ function Field({
 }) {
   return (
     <div className={className}>
-      <label className="block text-xs text-slate-400 mb-1">{label}</label>
+      <label className="block text-xs text-slate-500 mb-1">{label}</label>
       <input
         value={value}
         onChange={onChange}
         type={type}
         placeholder={placeholder}
-        className="w-full h-10 px-3 rounded-lg bg-card/5 border border-white/10 text-sm focus:outline-none focus:border-indigo-400/60 text-white"
+        className="w-full h-10 px-3 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0] text-sm focus:outline-none focus:border-[#2563EB]/60 text-[#1E3A5F]"
       />
     </div>
   );
@@ -226,18 +226,18 @@ function Radio({
       type="button"
       onClick={onChange}
       className={`w-full flex items-center gap-3 p-3 rounded-xl border transition text-left ${
-        checked ? "border-indigo-400/60 bg-indigo-500/10" : "border-white/10 hover:border-white/20 bg-card/[0.02]"
+        checked ? "border-[#2563EB]/40 bg-[#EFF6FF]" : "border-[#E2E8F0] hover:border-slate-300 bg-white"
       }`}
     >
-      <div className={`h-4 w-4 rounded-full border-2 grid place-items-center shrink-0 ${checked ? "border-indigo-400" : "border-slate-500"}`}>
-        {checked && <span className="h-2 w-2 rounded-full bg-indigo-400" />}
+      <div className={`h-4 w-4 rounded-full border-2 grid place-items-center shrink-0 ${checked ? "border-[#2563EB]" : "border-slate-300"}`}>
+        {checked && <span className="h-2 w-2 rounded-full bg-[#2563EB]" />}
       </div>
-      {Icon && <Icon className="h-5 w-5 text-indigo-300 shrink-0" />}
+      {Icon && <Icon className="h-5 w-5 text-[#2563EB] shrink-0" />}
       <div className="flex-1 min-w-0">
-        <div className="text-sm font-medium text-white">{title}</div>
-        <div className="text-xs text-slate-400">{sub}</div>
+        <div className="text-sm font-medium text-[#1E3A5F]">{title}</div>
+        <div className="text-xs text-slate-500">{sub}</div>
       </div>
-      {price && <div className="text-sm font-semibold text-white shrink-0">{price}</div>}
+      {price && <div className="text-sm font-semibold text-[#1E3A5F] shrink-0">{price}</div>}
     </button>
   );
 }
