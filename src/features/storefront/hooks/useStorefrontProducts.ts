@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { bundleAvailableStock } from "@/features/products/bundle";
-import type { Product } from "@/features/products/types";
+import type { StorefrontProduct } from "@/features/storefront/types";
 import type { SortKey } from "../types";
 
 export interface StorefrontFilters {
@@ -16,24 +16,27 @@ export interface StorefrontFilters {
   inStockOnly?: boolean;
   /** Only products with a defaultDiscount > 0. */
   onSaleOnly?: boolean;
+  initialData?: StorefrontProduct[];
 }
 
 /** Effective public stock — bundles use derived, simple uses .stock. */
-export const publicStock = (p: Product, all: Product[]): number =>
-  p.type === "bundle" ? bundleAvailableStock(p, all) : p.stock;
+export const publicStock = (p: StorefrontProduct, all: StorefrontProduct[]): number =>
+  p.type === "bundle" ? bundleAvailableStock(p as any, all as any) : p.stock;
 
 /**
  * Single source of truth for storefront product reads.
  * Filters out inactive products and applies search/category/sort.
  */
 export function useStorefrontProducts(filters: StorefrontFilters = {}) {
-  const { data: all = [], isLoading, error } = useQuery<Product[]>({
+  const { data: all = filters.initialData ?? [], isLoading, error } = useQuery<StorefrontProduct[]>({
     queryKey: ["storefront", "products"],
     queryFn: async () => {
       const res = await fetch("/api/storefront/products");
       if (!res.ok) throw new Error("Failed to fetch storefront products");
       return res.json();
     },
+    initialData: filters.initialData,
+    staleTime: 5 * 60 * 1000, // 5 mins cache
   });
 
   const visible = useMemo(() => all.filter((p) => p.active !== false), [all]);
@@ -97,18 +100,28 @@ export function useStorefrontProducts(filters: StorefrontFilters = {}) {
   return { products: filtered, all, isLoading, error };
 }
 
+/** Pure function to derive featured products. */
+export function deriveFeaturedProducts(products: StorefrontProduct[], limit = 8): StorefrontProduct[] {
+  // Sort by popular (stock descending as a placeholder)
+  const sorted = [...products].sort((a, b) => publicStock(b, products) - publicStock(a, products));
+  return sorted.slice(0, limit);
+}
+
 /** Products with an obvious discount badge or premium tag — used on home. */
 export function useFeaturedProducts(limit = 8) {
   const { products } = useStorefrontProducts({ sort: "popular" });
   return useMemo(() => products.slice(0, limit), [products, limit]);
 }
 
+/** Pure function to derive flash deals. */
+export function deriveFlashDeals(products: StorefrontProduct[], limit = 6): StorefrontProduct[] {
+  const withDiscount = products.filter((p) => p.defaultDiscount && p.defaultDiscount.value > 0);
+  const fallback = products.slice(0, limit);
+  return (withDiscount.length ? withDiscount : fallback).slice(0, limit);
+}
+
 /** "Flash deals" — for v1 we surface products with a defaultDiscount or low stock. */
 export function useFlashDeals(limit = 6) {
   const { products } = useStorefrontProducts({});
-  return useMemo(() => {
-    const withDiscount = products.filter((p) => p.defaultDiscount && p.defaultDiscount.value > 0);
-    const fallback = products.slice(0, limit);
-    return (withDiscount.length ? withDiscount : fallback).slice(0, limit);
-  }, [products, limit]);
+  return useMemo(() => deriveFlashDeals(products, limit), [products, limit]);
 }

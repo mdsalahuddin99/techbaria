@@ -12,6 +12,7 @@ import { Input } from "@/shared/ui/input";
 import { Button } from "@/shared/ui/button";
 import { Badge } from "@/shared/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
+import { toast } from "sonner";
 import { LoadingButton } from "@/shared/ui/loading-button";
 import { AutoSuggest } from "@/shared/ui/auto-suggest";
 import { formatCurrency, formatDate, productDisplayName } from "@/shared/lib/format";
@@ -249,8 +250,14 @@ export function PurchaseFormDialog({
       onOpenChange(false);
       onSuccess();
     },
-    products, accounts, defaultAccountId, selectedWarehouseId
+    products,
+    accounts,
+    defaultAccountId,
+    selectedWarehouseId,
   });
+
+  const currentSupplier = suppliers.find(s => s.id === form.supplierId);
+  const supplierAdvance = currentSupplier?.advanceBalance || 0;
 
   // Auto-initialize from props (URL params)
   useEffect(() => {
@@ -567,16 +574,31 @@ export function PurchaseFormDialog({
                               {n.depth > 0 ? "\u00A0\u00A0↳ " : ""}{n.account.name} · {ACCOUNT_TYPE_LABEL[n.account.type]} · {formatCurrency(balances[n.account.id] ?? 0)}
                             </SelectItem>
                           ))}
+                          {supplierAdvance > 0 && (
+                            <SelectItem value="WALLET" className="font-semibold text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-900/20">
+                              Supplier Wallet Advance · {formatCurrency(supplierAdvance)}
+                            </SelectItem>
+                          )}
                         </SelectContent>
                       </Select>
                       <Input
                         type="number" min={0} placeholder="৳" value={t.amount}
-                        onChange={(e) => form.updateTender(t.id, { amount: e.target.value, manuallyEdited: true })}
+                        onChange={(e) => {
+                          let val = e.target.value;
+                          if (t.accountId === "WALLET" && Number(val) > supplierAdvance) {
+                            val = String(supplierAdvance);
+                            toast.error(`Advance balance cannot exceed ${formatCurrency(supplierAdvance)}`);
+                          }
+                          form.updateTender(t.id, { amount: val, manuallyEdited: true });
+                        }}
                         onFocus={(e) => {
                           const current = Number(t.amount) || 0;
                           if (current > 0) return;
                           const sumOthers = form.tenders.reduce((s, x) => s + (x.id === t.id ? 0 : Number(x.amount) || 0), 0);
-                          const remaining = Math.max(0, form.subtotal - sumOthers);
+                          let remaining = Math.max(0, form.subtotal - sumOthers);
+                          if (t.accountId === "WALLET" && remaining > supplierAdvance) {
+                            remaining = supplierAdvance;
+                          }
                           if (remaining > 0) {
                             form.updateTender(t.id, { amount: String(remaining), manuallyEdited: true });
                             requestAnimationFrame(() => (e.target as HTMLInputElement).select());

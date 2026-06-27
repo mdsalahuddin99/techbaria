@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { purchasesService } from "@/services";
 import type { PurchaseItem, PurchaseOrder, PurchaseStatus, RestockOrder } from "@/shared/lib/types";
 import type { PaymentMethod } from "@/features/sales/types";
@@ -13,13 +13,25 @@ import { QueryTier } from "@/lib/queryConfig";
 
 // ---------- Primary queries (fed by useProcurementCacheBridge) ----------
 
-export function usePurchasesQuery() {
+export function usePurchasesQuery(initialData?: any) {
   const { session, status } = useAuth();
   return useQuery({
     queryKey: purchaseKeys.list(),
     queryFn: () => purchasesService.list(),
     enabled: status !== "loading" && !!session,
+    initialData: initialData ? { items: initialData, nextCursor: null, hasMore: false } : undefined,
     ...QueryTier.MASTER_DATA,
+  });
+}
+
+export function useInfinitePurchasesQuery(filter?: { search?: string; status?: string; sortKey?: string; sortDir?: "asc" | "desc" }) {
+  const { session, status } = useAuth();
+  return useInfiniteQuery({
+    queryKey: [...purchaseKeys.list(), filter],
+    queryFn: ({ pageParam }) => purchasesService.list(filter, pageParam ? { cursor: pageParam } : undefined),
+    getNextPageParam: (lastPage) => (lastPage as any).nextCursor || undefined,
+    initialPageParam: undefined as string | undefined,
+    enabled: status !== "loading" && !!session,
   });
 }
 
@@ -35,8 +47,10 @@ export function useRestocksQuery() {
 
 // ---------- Backward-compat reader hooks ----------
 
-export function usePurchases(): PurchaseOrder[] {
-  const { data } = usePurchasesQuery();
+export function usePurchases(initialData?: PurchaseOrder[]): PurchaseOrder[] {
+  const { data } = usePurchasesQuery(
+    initialData ? { items: initialData, total: initialData.length } : undefined
+  );
   return ((data as any)?.items ?? []) as PurchaseOrder[];
 }
 
@@ -72,7 +86,7 @@ export function useCreatePurchase() {
       status: PurchaseStatus;
       expectedDate?: string;
       note?: string;
-      paidFromAccountId?: string;
+      tenders?: Array<{ type: string; amount: number; accountId?: string; ref?: string }>;
     }) => purchasesService.create(input),
     onSuccess: () => invalidateProcurement(qc),
     onError: (e: Error) => toast.error(e.message),

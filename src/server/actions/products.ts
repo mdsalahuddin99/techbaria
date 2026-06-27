@@ -20,9 +20,12 @@ async function getActionCtx() {
 
 // ─── Products API Actions ───────────────────────────────────────────────────
 
-export async function listProductsAction(filter?: { search?: string; categoryId?: string; isPublished?: boolean; lowStock?: boolean }) {
+export async function listProductsAction(
+  filter?: { search?: string; categoryId?: string; isPublished?: boolean; lowStock?: boolean },
+  params?: { cursor?: string; limit?: number }
+) {
   const ctx = await getActionCtx();
-  return productsService.list(ctx, undefined, filter);
+  return productsService.list(ctx, params, filter);
 }
 
 export async function getProductByIdAction(id: string) {

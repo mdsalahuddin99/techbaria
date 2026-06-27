@@ -18,6 +18,7 @@ export interface CategoryOutput {
   name: string;
   slug: string;
   parentId: string | null;
+  imageUrl: string | null;
   productCount: number;
   children: CategoryOutput[];
   createdAt: string;
@@ -26,12 +27,14 @@ export interface CategoryOutput {
 export interface CategoryCreateInput {
   name: string;
   slug?: string;
+  imageUrl?: string | null;
   parentId?: string | null;
 }
 
 export interface CategoryUpdateInput {
   name?: string;
   slug?: string;
+  imageUrl?: string | null;
   parentId?: string | null;
 }
 
@@ -74,6 +77,7 @@ async function buildTree(): Promise<CategoryOutput[]> {
       name: c.name,
       slug: c.slug,
       parentId: c.parentId,
+      imageUrl: c.imageUrl,
       productCount: (c as any)._count.products,
       children: [],
       createdAt: c.createdAt.toISOString(),
@@ -112,6 +116,7 @@ export const categoriesService = {
         name: c.name,
         slug: c.slug,
         parentId: c.parentId,
+        imageUrl: c.imageUrl,
         productCount: c._count.products,
         createdAt: c.createdAt.toISOString(),
       }));
@@ -133,6 +138,7 @@ export const categoriesService = {
       name: cat.name,
       slug: cat.slug,
       parentId: cat.parentId,
+      imageUrl: cat.imageUrl,
       productCount: cat._count.products,
       createdAt: cat.createdAt.toISOString(),
     };
@@ -140,7 +146,7 @@ export const categoriesService = {
 
   /** Create a new category. Requires MANAGER+. */
   async create(ctx: Ctx, input: CategoryCreateInput) {
-    requireRole(ctx, "MANAGER");
+    requireRole(ctx, "ADMIN");
 
     const slug = input.slug ?? slugify(input.name);
 
@@ -166,6 +172,7 @@ export const categoriesService = {
       data: {
         name: input.name,
         slug,
+        imageUrl: input.imageUrl ?? null,
         parentId: input.parentId ?? null,
       },
     });
@@ -177,6 +184,7 @@ export const categoriesService = {
       name: c.name,
       slug: c.slug,
       parentId: c.parentId,
+      imageUrl: c.imageUrl,
       productCount: 0,
       createdAt: c.createdAt.toISOString(),
     };
@@ -184,7 +192,7 @@ export const categoriesService = {
 
   /** Update a category. Requires MANAGER+. */
   async update(ctx: Ctx, id: string, input: CategoryUpdateInput) {
-    requireRole(ctx, "MANAGER");
+    requireRole(ctx, "ADMIN");
 
     const existing = await prisma.category.findUnique({
       where: { id },
@@ -221,6 +229,7 @@ export const categoriesService = {
       data: {
         ...(input.name !== undefined && { name: input.name }),
         ...(slug !== undefined && { slug }),
+        ...(input.imageUrl !== undefined && { imageUrl: input.imageUrl }),
         ...(input.parentId !== undefined && { parentId: input.parentId }),
       },
       include: { _count: { select: { products: true } } },
@@ -234,6 +243,7 @@ export const categoriesService = {
       name: cat.name,
       slug: cat.slug,
       parentId: cat.parentId,
+      imageUrl: cat.imageUrl,
       productCount: cat._count.products,
       createdAt: cat.createdAt.toISOString(),
     };
@@ -241,7 +251,7 @@ export const categoriesService = {
 
   /** Delete a category and all its children recursively. Requires MANAGER+. */
   async remove(ctx: Ctx, id: string) {
-    requireRole(ctx, "MANAGER");
+    requireRole(ctx, "ADMIN");
 
     const existing = await prisma.category.findUnique({
       where: { id },

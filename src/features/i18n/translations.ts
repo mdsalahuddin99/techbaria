@@ -25,6 +25,8 @@ export const translations = {
   "nav.group.system": { en: "System", bn: "সিস্টেম" },
   "nav.onlineOrders": { en: "Online Orders", bn: "অনলাইন অর্ডার" },
   "nav.storefrontCustomers": { en: "Users", bn: "ইউজার" },
+  "nav.storefrontSettings": { en: "Storefront Settings", bn: "স্টোরফ্রন্ট সেটিংস" },
+
 
   // Sidebar items
   "nav.dashboard": { en: "Dashboard", bn: "ড্যাশবোর্ড" },

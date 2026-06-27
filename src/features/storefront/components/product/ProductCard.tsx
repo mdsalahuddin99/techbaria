@@ -1,6 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import { Heart, Star, ShoppingBag, Eye, GitCompareArrows } from "lucide-react";
-import type { Product } from "@/features/products/types";
+import type { StorefrontProduct } from "@/features/storefront/types";
 import { formatPrice, calcDiscountPct } from "../../lib/formatPrice";
 import { productDisplayName } from "@/shared/lib/format";
 import { useCartStore } from "../../store/useCartStore";
@@ -11,8 +13,8 @@ import { publicStock } from "../../hooks/useStorefrontProducts";
 import { toast } from "@/shared/hooks/use-toast";
 
 interface Props {
-  product: Product;
-  allProducts: Product[];
+  product: StorefrontProduct;
+  allProducts: StorefrontProduct[];
 }
 
 /**
@@ -81,8 +83,7 @@ export function ProductCard({ product, allProducts }: Props) {
     >
       {/* ── Image area ── */}
       <div
-        className="relative w-full aspect-[4/3] overflow-hidden"
-        style={{ background: "#EFF6FF" }}
+        className="relative w-full aspect-[4/3] overflow-hidden bg-white"
       >
         {/* Product image */}
         {product.imageUrl ? (

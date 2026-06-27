@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import { useQuery, useInfiniteQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { salesService } from "@/services";
 import { saleKeys, returnKeys } from "./queryKeys";
 import type { Sale, SaleReturn } from "@/shared/lib/types";
@@ -13,19 +13,31 @@ import { QueryTier } from "@/lib/queryConfig";
  * local-driver phase, so checkout / void / refund propagate instantly
  * to Dashboard, Reports, Returns, Customer history, etc.
  */
-export function useSalesQuery() {
+export function useSalesQuery(initialData?: Sale[]) {
   const { session, status } = useAuth();
   return useQuery({
     queryKey: saleKeys.list(),
     queryFn: () => salesService.list(),
+    initialData: initialData ? { items: initialData, nextCursor: null, hasMore: false } : undefined,
     enabled: status !== "loading" && !!session,
     ...QueryTier.TRANSACTION,
   });
 }
 
+export function useInfiniteSalesQuery(filter?: { search?: string; paymentMethod?: string; sortKey?: string; sortDir?: "asc" | "desc" }) {
+  const { session, status } = useAuth();
+  return useInfiniteQuery({
+    queryKey: [...saleKeys.list(), filter],
+    queryFn: ({ pageParam }) => salesService.list(filter, pageParam ? { cursor: pageParam } : undefined),
+    getNextPageParam: (lastPage) => (lastPage as any).nextCursor || undefined,
+    initialPageParam: undefined as string | undefined,
+    enabled: status !== "loading" && !!session,
+  });
+}
+
 /** Backward-compat shape. Prefer `useSalesQuery`. */
-export function useSales() {
-  const { data, isLoading, error } = useSalesQuery();
+export function useSales(initialData?: Sale[]) {
+  const { data, isLoading, error } = useSalesQuery(initialData);
   return {
     data: ((data as any)?.items ?? []) as Sale[],
     isLoading,
@@ -50,8 +62,8 @@ export interface SalesFilters {
 }
 
 /** Filtered sales view — derived selector to keep pages thin. */
-export function useFilteredSales({ search = "", paymentMethod = "All" }: SalesFilters) {
-  const { data } = useSales();
+export function useFilteredSales({ search = "", paymentMethod = "All" }: SalesFilters, initialData?: Sale[]) {
+  const { data } = useSales(initialData);
   return useMemo(() => {
     const q = search.toLowerCase();
     return data.filter(
@@ -79,18 +91,19 @@ export function useCustomerSales(customerId: string | null | undefined) {
 
 // ---------- Returns ----------
 
-export function useReturnsQuery() {
+export function useReturnsQuery(initialData?: SaleReturn[]) {
   const { session, status } = useAuth();
   return useQuery({
     queryKey: returnKeys.list(),
     queryFn: async () => [] as SaleReturn[],
+    initialData,
     enabled: status !== "loading" && !!session,
     ...QueryTier.TRANSACTION,
   });
 }
 
-export function useReturns() {
-  const { data, isLoading, error } = useReturnsQuery();
+export function useReturns(initialData?: SaleReturn[]) {
+  const { data, isLoading, error } = useReturnsQuery(initialData);
   return {
     data: (data ?? []) as SaleReturn[],
     isLoading,

@@ -62,4 +62,4 @@ export const GET = apiHandler(async (ctx: Ctx) => {
   };
 
   return backup;
-}, "backup:export", ["OWNER"]);
+}, "backup:export", ["ADMIN"]);

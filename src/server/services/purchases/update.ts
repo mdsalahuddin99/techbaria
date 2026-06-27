@@ -10,7 +10,7 @@ import { PurchaseUpdateInput } from "./types";
 
 /** Edit a purchase — updates stock, serials, and all line items. */
 export async function update(ctx: Ctx, id: string, input: PurchaseUpdateInput) {
-  requireRole(ctx, "MANAGER");
+  requireRole(ctx, "ADMIN");
 
   if (!input.items?.length) {
     throw new ServiceError("VALIDATION", "At least one item is required");

@@ -17,7 +17,7 @@ function slugify(name: string): string {
 
 /** Create a new product. Requires MANAGER+. */
 export async function create(ctx: Ctx, input: ProductCreateInput) {
-  requireRole(ctx, "MANAGER");
+  requireRole(ctx, "ADMIN");
   let slug = input.slug ?? slugify(input.name);
   // Ensure unique slug by appending counter if needed
   const existing = await prisma.product.findFirst({

@@ -24,6 +24,7 @@ export interface VoucherRow {
   discount?: number;
   serials: string[];
   warrantyMonths?: number;
+  originalProduct?: any;
 }
 
 interface Product {
@@ -124,26 +125,21 @@ function getRemainingWarranty(product: Product | undefined, rowSerials: string[]
 
 interface InvoiceLineItemsProps {
   rows: VoucherRow[];
-  products: Product[];
   onChangeQty: (rowId: string, qty: number) => void;
   onChangeSerials: (rowId: string, serials: string[]) => void;
   onChangeWarranty: (rowId: string, months: number) => void;
   onChangeDiscount?: (rowId: string, discount: number) => void;
   onRemoveRow: (rowId: string) => void;
-  /** Used to calculate effective available stock (total - qty in other rows for same product) */
-  effectiveStockOf: (productId: string) => number;
   searchInputRef: React.RefObject<HTMLInputElement | null>;
 }
 
 export function InvoiceLineItems({
   rows,
-  products,
   onChangeQty,
   onChangeSerials,
   onChangeWarranty,
   onChangeDiscount,
   onRemoveRow,
-  effectiveStockOf,
   searchInputRef,
 }: InvoiceLineItemsProps) {
   if (rows.length === 0) {
@@ -189,9 +185,15 @@ export function InvoiceLineItems({
         </thead>
         <tbody className="divide-y divide-border bg-card">
           {rows.map((row, idx) => {
-            const product = products.find((p) => p.id === row.productId);
+            const product = row.originalProduct;
             const isTracked = product?.trackSerials ?? true;
-            const stock = effectiveStockOf(row.productId);
+            
+            // Calculate effective stock by taking original stock and subtracting other rows with same product
+            const qtyInOtherRows = rows
+              .filter(r => r.productId === row.productId && r.id !== row.id)
+              .reduce((sum, r) => sum + r.qty, 0);
+            const stock = product ? (product.stock ?? 0) - qtyInOtherRows : 9999;
+            
             const allSerials = product ? getAllProductSerials(product) : [];
             const defaultWarranty = product?.warrantyMonths ?? (product as any)?.serials?.find((s: any) => s.warrantyMonths && s.warrantyMonths > 0)?.warrantyMonths ?? 0;
 

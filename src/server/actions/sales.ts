@@ -23,9 +23,9 @@ async function getActionCtx() {
 
 // ─── Sales API Actions ───────────────────────────────────────────────────────
 
-export async function listSalesAction(channel?: "POS" | "STOREFRONT", customerId?: string, params?: PaginationParams) {
+export async function listSalesAction(filter?: any, params?: PaginationParams) {
   const ctx = await getActionCtx();
-  return salesService.list(ctx, params, { channel, customerId });
+  return salesService.list(ctx, params, filter);
 }
 
 export async function getSaleByIdAction(id: string) {
@@ -69,7 +69,7 @@ export async function refundSaleAction(saleId: string, input: any) {
 
 export async function deleteReturnAction(id: string) {
   const ctx = await getActionCtx();
-  requireRole(ctx, "MANAGER");
+  requireRole(ctx, "ADMIN");
 
   const sale = await prisma.sale.findFirst({
     where: { id, status: "REFUNDED" },

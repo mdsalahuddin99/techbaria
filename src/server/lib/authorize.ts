@@ -7,22 +7,21 @@
  * import { authorize, type Role } from "@/server/lib/authorize";
  *
  * // Inside a handler:
- * authorize(ctx, ["OWNER", "MANAGER"]);
+ * authorize(ctx, ["ADMIN"]);
  * ```
  */
 import "server-only";
 import { ServiceError } from "./errors";
 import type { Ctx } from "./ctx";
 
-export type Role = "OWNER" | "MANAGER" | "CASHIER" | "VIEWER";
+export type Role = "ADMIN" | "CASHIER" | "VIEWER";
 
 /**
  * Role hierarchy: higher roles inherit permissions of lower ones.
- * OWNER → all access, VIEWER → read-only.
+ * ADMIN → all access, VIEWER → read-only.
  */
 const hierarchy: Record<Role, number> = {
-  OWNER: 100,
-  MANAGER: 50,
+  ADMIN: 100,
   CASHIER: 20,
   VIEWER: 10,
 };
@@ -32,7 +31,7 @@ const hierarchy: Record<Role, number> = {
  * Throws `ServiceError("FORBIDDEN")` if not authorised.
  *
  * ```ts
- * authorize(ctx, ["MANAGER", "OWNER"]);
+ * authorize(ctx, ["ADMIN"]);
  * ```
  */
 export function authorize(ctx: Ctx, allowedRoles: Role[]): void {
@@ -53,5 +52,5 @@ export function authorize(ctx: Ctx, allowedRoles: Role[]): void {
  * Safer default — use `authorize()` when you need write access.
  */
 export function requireViewer(ctx: Ctx): void {
-  authorize(ctx, ["VIEWER", "CASHIER", "MANAGER", "OWNER"]);
+  authorize(ctx, ["VIEWER", "CASHIER", "ADMIN", "ADMIN"]);
 }

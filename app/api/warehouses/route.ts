@@ -1,13 +1,15 @@
 export const runtime = "nodejs";
 
-import { apiHandler } from "@/server/lib/apiHandler";
-import { prisma } from "@/server/db/client";
+import { apiHandler, parseBody } from "@/server/lib/apiHandler";
+import { warehousesService } from "@/server/services/warehousesService";
+import { warehouseSchema } from "@/shared/validators/warehouse";
 import type { Ctx } from "@/server/lib/ctx";
 
 export const GET = apiHandler(async (ctx: Ctx) => {
-  const warehouses = await prisma.warehouse.findMany({
-    where: { isActive: true },
-    orderBy: { name: "asc" },
-  });
-  return warehouses;
+  return warehousesService.list(ctx);
+});
+
+export const POST = apiHandler(async (ctx: Ctx, req: Request) => {
+  const body = await parseBody(req, warehouseSchema);
+  return warehousesService.create(ctx, body);
 });

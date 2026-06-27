@@ -71,7 +71,7 @@ export default function RootLayout({
   return (
     // inter.variable injects --font-inter CSS variable into <html>
     // Use it in CSS/Tailwind: font-family: var(--font-inter)
-    <html lang="en" className={inter.variable}>
+    <html lang="en" className={inter.variable} data-scroll-behavior="smooth">
       <body className={inter.className}>
         <Providers>{children}</Providers>
       </body>

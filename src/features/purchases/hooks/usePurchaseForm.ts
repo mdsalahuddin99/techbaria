@@ -360,25 +360,20 @@ export function usePurchaseForm({
           warrantyStartDate: i.warrantyStartDate,
           warrantyMonths: i.warrantyMonths,
         })),
-        amountPaid: validTenders[0] ? Number(validTenders[0].amount) || 0 : 0,
+        amountPaid: validTenders.reduce((s, t) => s + (Number(t.amount) || 0), 0),
+        tenders: validTenders.map((t) => {
+          const acc = accounts.find((a) => a.id === t.accountId);
+          return {
+            type: t.accountId === "WALLET" ? "WALLET" : (methodFromAccountType(acc?.type) === "Cash" ? "CASH" : "BANK"),
+            amount: Number(t.amount) || 0,
+            accountId: t.accountId === "WALLET" ? undefined : t.accountId,
+            ref: t.note,
+          };
+        }),
         status: "Ordered",
         note: reference || undefined,
         expectedDate: lines[0]?.expectedDate,
-        paidFromAccountId: validTenders[0]?.accountId,
       });
-      
-      // Fire all additional tender payments in parallel (not sequentially)
-      await Promise.all(
-        validTenders.slice(1).map((t) => {
-          const acc = accounts.find((a) => a.id === t.accountId);
-          return addPayment(po.id, {
-            amount: Number(t.amount) || 0,
-            method: methodFromAccountType(acc?.type),
-            accountId: t.accountId,
-            note: t.note,
-          }).catch(() => { /* ignore individual tender failure */ });
-        })
-      );
       
       const totalUnits = lines.reduce((s, l) => s + lineUnits(l), 0);
       toast.success(`${po.poNumber} — ${totalUnits} unit inventory-তে যোগ হয়েছে`);

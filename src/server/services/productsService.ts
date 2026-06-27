@@ -11,6 +11,7 @@ import {
   getById,
   getBySlug,
   publicList,
+  publicStorefrontList,
   lowStock,
   outOfStock,
   distinctFieldValues,
@@ -39,8 +40,14 @@ export const productsService = {
   /** Get a product by slug (for storefront). */
   getBySlug,
 
-  /** List published products for public storefront. */
+  /** List published products for public storefront (backward-compat). */
   publicList,
+
+  /**
+   * Lean storefront list — public-safe fields only, supports category/search/excludeId/limit.
+   * Use this for all new storefront API routes.
+   */
+  publicStorefrontList,
 
   /** Create a new product. Requires MANAGER+. */
   create,

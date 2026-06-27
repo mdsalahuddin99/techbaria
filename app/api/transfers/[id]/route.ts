@@ -18,9 +18,9 @@ export const PATCH = apiHandler(async (ctx: Ctx, req: Request, { params }: { par
   const parsed = updateTransferSchema.parse(body);
   await transfersService.update(ctx, params.id, parsed);
   return { success: true };
-}, "transfers:update", ["MANAGER", "OWNER"]);
+}, "transfers:update", ["ADMIN"]);
 
 export const DELETE = apiHandler(async (ctx: Ctx, _req: Request, { params }: { params: { id: string } }) => {
   await transfersService.remove(ctx, params.id);
   return { success: true };
-}, "transfers:delete", ["OWNER"]);
+}, "transfers:delete", ["ADMIN"]);

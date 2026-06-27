@@ -30,6 +30,7 @@ import {
   LogOut,
   ChevronDown,
   ChevronRight,
+  LayoutTemplate,
 } from "lucide-react";
 import type { UserRole } from "@/features/auth/types";
 import { cn } from "@/shared/lib/utils";
@@ -90,6 +91,7 @@ const navGroups: NavGroup[] = [
     items: [
       { to: "/dashboard/online-orders", labelKey: "nav.onlineOrders", icon: ShoppingBag },
       { to: "/dashboard/online-orders/customers", labelKey: "nav.storefrontCustomers", icon: Users },
+      { to: "/dashboard/storefront-settings", labelKey: "nav.storefrontSettings" as TranslationKey, icon: LayoutTemplate },
     ],
   },
   {
@@ -219,20 +221,20 @@ export function AdminShell({
   };
 
   return (
-    <div className="flex h-dvh overflow-hidden bg-background text-foreground antialiased">
+    <div className="flex h-screen h-[100dvh] overflow-hidden bg-background text-foreground antialiased print:block print:h-auto print:overflow-visible">
       {/* ─── Sidebar (desktop only) ────────────────────────────────────── */}
       <aside
         ref={sidebarRef}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         className={cn(
-          "hidden md:flex flex-col bg-sidebar border-r border-sidebar-border transition-all duration-300 z-50",
+          "hidden md:flex flex-col bg-sidebar border-r border-sidebar-border transition-all duration-300 z-50 print:hidden",
           hovered ? "w-56" : "w-[58px]",
         )}
       >
         {/* Brand */}
         <div className="flex items-center gap-2.5 h-16 px-3 border-b border-sidebar-border shrink-0 min-w-0">
-          <BrandLogo logoUrl={settings.logoUrl} shopName={settings.shopName} />
+          <BrandLogo logoUrl={settings.logoUrl} shopName={settings.shopName} className="h-8 w-8 shrink-0" />
           {hovered && (
             <div className="min-w-0">
               <p className="text-sm font-semibold truncate text-sidebar-foreground">
@@ -360,8 +362,8 @@ export function AdminShell({
       </aside>
 
       {/* Main column */}
-      <div className="flex-1 flex flex-col min-w-0 relative z-10">
-        <header className="h-14 border-b border-border/60 bg-card md:bg-card/80 md:backdrop-blur-xl md:sticky md:top-0 z-30 flex items-center justify-between gap-3 px-3 md:px-4">
+      <div className="flex-1 flex flex-col min-w-0 relative z-10 print:block">
+        <header className="h-14 border-b border-border/60 bg-card md:bg-card/80 md:backdrop-blur-xl md:sticky md:top-0 z-30 flex items-center justify-between gap-3 px-3 md:px-4 print:hidden">
           {/* Global command bar — desktop */}
           <div className="hidden lg:flex flex-1 max-w-md">
             <button
@@ -402,15 +404,19 @@ export function AdminShell({
         </header>
 
         <main className={cn(
-          "flex-1 px-2.5 md:px-4 py-3 md:py-4 overflow-y-auto overflow-x-hidden scroll-smooth pb-nav w-full",
+          "flex-1 px-2.5 md:px-4 py-3 md:py-4 overflow-y-auto overflow-x-hidden scroll-smooth pb-nav w-full print:p-0 print:overflow-visible print:block",
           getThemeClass(pathname)
         )}>
-          <Breadcrumb />
+          <div className="print:hidden">
+            <Breadcrumb />
+          </div>
           {children}
         </main>
       </div>
 
-      <MobileBottomNav />
+      <div className="print:hidden">
+        <MobileBottomNav />
+      </div>
       <OfflineIndicator />
       <AdminWatchers />
       <CommandPalette />

@@ -1,9 +1,9 @@
-import type { Product } from "@/features/products/types";
+import type { StorefrontProduct } from "@/features/storefront/types";
 import { ProductCard } from "./ProductCard";
 
 interface Props {
-  products: Product[];
-  allProducts: Product[];
+  products: StorefrontProduct[];
+  allProducts: StorefrontProduct[];
   emptyHint?: string;
   loading?: boolean;
 }

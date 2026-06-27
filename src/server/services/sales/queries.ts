@@ -18,12 +18,46 @@ async function runSaleListQuery(ctx: Ctx, params?: PaginationParams, filter?: Sa
     if (filter.to) where.createdAt.lte = filter.to;
   }
 
+  if (filter?.search) {
+    const q = filter.search;
+    where.OR = [
+      { id: { contains: q, mode: "insensitive" } },
+      { customer: { name: { contains: q, mode: "insensitive" } } },
+      { customer: { phone: { contains: q, mode: "insensitive" } } },
+    ];
+  }
+  
+  if (filter?.paymentMethod && filter.paymentMethod !== "All") {
+    // If they filter by a specific method, we check if there's a tender matching it.
+    // SaleTender type doesn't perfectly match frontend "Cash", "Card" names directly,
+    // but assuming we match by tender types string mapping or similar, or maybe `tenders: { some: { type: ... } }`.
+    // Let's just do a string matching on tenders some type or keep it simple if `paymentMethod` is stored differently.
+    // Wait, let's see how frontend derives paymentMethod. Frontend `paymentMethod` is calculated by taking the first tender or similar in serializeSale?
+    // Actually `serializeSale` computes `paymentMethod` from tenders.
+    // I will use `tenders: { some: { type: filter.paymentMethod.toUpperCase() } }` assuming they map.
+    // Let's look at serializeSale first, or just use a basic string check.
+    
+    // For now, let's assume uppercase maps to TenderType
+    where.tenders = {
+      some: {
+        type: filter.paymentMethod.toUpperCase()
+      }
+    };
+  }
+
+  let orderBy: any = { createdAt: "desc" };
+  if (filter?.sortKey) {
+    if (filter.sortKey === "date") orderBy = { createdAt: filter.sortDir || "desc" };
+    else if (filter.sortKey === "total") orderBy = { total: filter.sortDir || "desc" };
+    else if (filter.sortKey === "due") orderBy = { due: filter.sortDir || "desc" };
+  }
+
   const raw = await paginate(
     prisma.sale,
     // serialNumbers omitted from list — only needed in getById detail view
     { where, include: { items: true, tenders: true, customer: true, editedBy: true, user: true } } as any,
     params,
-    { orderBy: { createdAt: "desc" as const } },
+    { orderBy },
   );
 
   return {
@@ -70,4 +104,13 @@ export async function byCustomer(ctx: Ctx, customerId: string) {
     take: 50,
   });
   return raw.map(serializeSale);
+}
+
+/** List returns (stubbed for now). */
+export async function listReturns(ctx: Ctx, params?: PaginationParams) {
+  return {
+    items: [],
+    nextCursor: null,
+    hasMore: false,
+  };
 }

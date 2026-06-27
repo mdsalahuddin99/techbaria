@@ -13,7 +13,7 @@ export async function addPayment(ctx: Ctx, id: string, payment: {
   accountId?: string;
   note?: string;
 }) {
-  requireRole(ctx, "MANAGER");
+  requireRole(ctx, "ADMIN");
 
   const purchase = await prisma.purchase.findFirst({
     where: { id },

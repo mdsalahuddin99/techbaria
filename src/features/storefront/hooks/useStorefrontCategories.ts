@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { Smartphone, Laptop, Cctv, Headphones, Watch, Cable, Camera, Monitor, Tv, Gamepad2, HardDrive, Cpu, Package } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import type { Product } from "@/features/products/types";
+import type { StorefrontProduct } from "@/features/storefront/types";
 import type { Category } from "@/features/products/types";
 
 export interface StorefrontCategory {
@@ -43,12 +43,29 @@ const COLORS = [
   "from-cyan-500/30 to-cyan-700/10",
 ];
 
+/** Pure function to derive categories from products (used by RSC and client hook). */
+export function deriveCategories(products: StorefrontProduct[]): StorefrontCategory[] {
+  const counts = new Map<string, number>();
+  for (const p of products) {
+    if (p.active === false) continue;
+    counts.set(p.category, (counts.get(p.category) ?? 0) + 1);
+  }
+  const entries = [...counts.entries()].sort((a, b) => b[1] - a[1]);
+  return entries.map(([name, count], i) => ({
+    value: name,
+    label: name,
+    icon: ICON_MAP[name] ?? Package,
+    count,
+    color: COLORS[i % COLORS.length],
+  }));
+}
+
 /**
  * Derives the visible category list from products in stock.
  * No separate categories fetch — keeps the public catalog tight.
  */
 export function useStorefrontCategories(): StorefrontCategory[] {
-  const { data: products = [] } = useQuery<Product[]>({
+  const { data: products = [] } = useQuery<StorefrontProduct[]>({
     queryKey: ["storefront", "products"],
     queryFn: async () => {
       const res = await fetch("/api/storefront/products");
@@ -57,26 +74,22 @@ export function useStorefrontCategories(): StorefrontCategory[] {
     },
   });
 
-  return useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const p of products) {
-      if (p.active === false) continue;
-      counts.set(p.category, (counts.get(p.category) ?? 0) + 1);
-    }
-    const entries = [...counts.entries()].sort((a, b) => b[1] - a[1]);
-    return entries.map(([name, count], i) => ({
-      value: name,
-      label: name,
-      icon: ICON_MAP[name] ?? Package,
-      count,
-      color: COLORS[i % COLORS.length],
-    }));
-  }, [products]);
+  return useMemo(() => deriveCategories(products), [products]);
 }
 
-/** All brands present in the catalog. */
-export function useStorefrontBrands(): string[] {
-  const { data: products = [] } = useQuery<Product[]>({
+/** Pure function to derive brands. */
+export function deriveBrands(products: StorefrontProduct[]): string[] {
+  const set = new Set<string>();
+  for (const p of products) {
+    if (p.active === false) continue;
+    if (p.brand) set.add(p.brand);
+  }
+  return [...set].sort();
+}
+
+/** All brands present in the catalog. Filtered by category if provided. */
+export function useStorefrontBrands(category?: string | null): string[] {
+  const { data: products = [] } = useQuery<StorefrontProduct[]>({
     queryKey: ["storefront", "products"],
     queryFn: async () => {
       const res = await fetch("/api/storefront/products");
@@ -85,13 +98,15 @@ export function useStorefrontBrands(): string[] {
     },
   });
   return useMemo(() => {
-    const set = new Set<string>();
-    for (const p of products) {
-      if (p.active === false) continue;
-      if (p.brand) set.add(p.brand);
+    let filtered = products;
+    if (category) {
+      const c = category.toLowerCase();
+      filtered = products.filter(
+        (p) => p.category.toLowerCase() === c || (p.subcategory ?? "").toLowerCase() === c
+      );
     }
-    return [...set].sort();
-  }, [products]);
+    return deriveBrands(filtered);
+  }, [products, category]);
 }
 
 export interface MegaMenuTree {
@@ -103,7 +118,7 @@ export interface MegaMenuTree {
 }
 
 export function useMegaMenuTree(): MegaMenuTree[] {
-  const { data: products = [] } = useQuery<Product[]>({
+  const { data: products = [] } = useQuery<StorefrontProduct[]>({
     queryKey: ["storefront", "products"],
     queryFn: async () => {
       const res = await fetch("/api/storefront/products");

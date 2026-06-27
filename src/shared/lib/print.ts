@@ -34,13 +34,23 @@ export function canOpenPrintWindow(): boolean {
  */
 export function printHtml(html: string, title = "Receipt"): boolean {
   if (!canOpenPrintWindow()) return false;
-  const win = window.open("", "_blank", "width=420,height=640");
+
+  // Open a maximized window — important for A4 invoice preview before printing
+  const w = screen.availWidth ?? 1280;
+  const h = screen.availHeight ?? 900;
+  const win = window.open("", "_blank", `width=${w},height=${h},left=0,top=0`);
   if (!win) return false;
+
   win.document.open();
   win.document.write(html);
   win.document.close();
   win.focus();
-  // Allow layout/fonts to settle before printing.
+
+  // Try to maximize the window (works in most desktop browsers)
+  try { win.moveTo(0, 0); win.resizeTo(w, h); } catch { /* noop */ }
+
+  // Wait for fonts & layout to settle before triggering print dialog.
+  // 800ms gives Google Fonts (Inter) time to load over the network.
   setTimeout(() => {
     try {
       win.print();
@@ -49,10 +59,11 @@ export function printHtml(html: string, title = "Receipt"): boolean {
     }
     setTimeout(() => {
       try { win.close(); } catch { /* noop */ }
-    }, 300);
-  }, 200);
+    }, 500);
+  }, 800);
   return true;
 }
+
 
 export function downloadHtml(html: string, filename: string) {
   const blob = new Blob([html], { type: "text/html;charset=utf-8" });

@@ -12,6 +12,9 @@ import {
 } from "@/shared/ui/select";
 import { ScanLine, Camera, Trash2 } from "lucide-react";
 import { formatCurrency, productDisplayName } from "@/shared/lib/format";
+import { useQuery } from "@tanstack/react-query";
+import { useDebounce } from "@/shared/hooks/useDebounce";
+import { apiFetch } from "@/shared/api-client/fetch";
 
 interface Category {
   id: string;
@@ -35,8 +38,7 @@ interface Product {
 
 interface ProductFilterBarProps {
   categories: Category[];
-  /** Products already pre-filtered to the selected warehouse's WarehouseStock (qty > 0) */
-  availableProducts: Product[];
+  warehouseId: string | null;
   /** Current rows in the invoice (to subtract already-added qty from available stock) */
   invoiceRows: Array<{ productId: string; qty: number }>;
 
@@ -50,7 +52,7 @@ interface ProductFilterBarProps {
   onSubcategoryChange: (v: string) => void;
   onSearchChange: (v: string, show: boolean) => void;
   onShowSuggestions: (v: boolean) => void;
-  onAddProduct: (productId: string) => void;
+  onAddProduct: (product: any, scannedSerial?: string) => void;
   onBarcodeEnter: (code: string) => Promise<void>;
   onClear: () => void;
   onOpenCamera: () => void;
@@ -60,7 +62,7 @@ interface ProductFilterBarProps {
 
 export function ProductFilterBar({
   categories,
-  availableProducts,
+  warehouseId,
   invoiceRows,
   category,
   subcategory,
@@ -86,37 +88,28 @@ export function ProductFilterBar({
     (c) => selectedCat && c.parentId === selectedCat.id,
   );
 
-  const filteredProducts = availableProducts.filter((p) => {
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
+
+  const { data: searchResults, isLoading } = useQuery({
+    queryKey: ["productsSearch", debouncedSearchQuery, category, warehouseId],
+    queryFn: async () => {
+      const qs = new URLSearchParams();
+      if (debouncedSearchQuery) qs.set("q", debouncedSearchQuery);
+      if (category && category !== "all") qs.set("category", category);
+      if (warehouseId) qs.set("warehouseId", warehouseId);
+      qs.set("limit", "50");
+      const res = await apiFetch<{ items: Product[] }>(`/api/products/search?${qs.toString()}`);
+      return res.items;
+    },
+    enabled: showSuggestions,
+    staleTime: 1000 * 60,
+  });
+
+  const filteredProducts = (searchResults || []).filter((p) => {
     // Exclude products where available qty would be 0 after accounting for invoice rows
     const inInvoice = invoiceRows.find((r) => r.productId === p.id)?.qty ?? 0;
     const stock = Number(p.stock ?? 0);
     if (stock - inInvoice <= 0) return false;
-
-    if (category !== "all") {
-      const matches =
-        p.category === category ||
-        (selectedCat && (p as any).categoryId === selectedCat.id);
-      if (!matches) return false;
-    }
-    if (subcategory !== "all") {
-      if (p.subcategory !== subcategory) return false;
-    }
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase().trim();
-      const name = String(p.name ?? "").toLowerCase();
-      const sku = String(p.sku ?? "").toLowerCase();
-      const barcode = String(p.barcode ?? "").toLowerCase();
-      const brand = String(p.brand ?? "").toLowerCase();
-      const model = String(p.model ?? "").toLowerCase();
-
-      const hit =
-        name.includes(q) ||
-        sku.includes(q) ||
-        barcode.includes(q) ||
-        brand.includes(q) ||
-        model.includes(q);
-      if (!hit) return false;
-    }
     return true;
   });
 
@@ -140,7 +133,7 @@ export function ProductFilterBar({
       }
       if (e.key === "Enter") {
         if (showSuggestions && filteredProducts.length > 0) {
-          onAddProduct(filteredProducts[0].id);
+          onAddProduct(filteredProducts[0]);
           onSearchChange("", false);
         } else {
           const code = (e.target as HTMLInputElement).value.trim();
@@ -191,7 +184,7 @@ export function ProductFilterBar({
                       className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-secondary/20 transition-colors text-left group"
                       onMouseDown={(e) => {
                         e.preventDefault(); // keep focus in input
-                        onAddProduct(p.id);
+                        onAddProduct(p);
                         onSearchChange("", false);
                         setTimeout(() => searchInputRef.current?.focus(), 50);
                       }}

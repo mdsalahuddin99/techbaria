@@ -21,8 +21,8 @@ export interface PaginatedResponse<T> {
 }
 
 export const salesApi = {
-  list(channel?: string, customerId?: string): Promise<PaginatedResponse<Sale>> {
-    return listSalesAction(channel as any, customerId) as unknown as Promise<PaginatedResponse<Sale>>;
+  list(filter?: any, params?: { cursor?: string; limit?: number }): Promise<PaginatedResponse<Sale>> {
+    return listSalesAction(filter, params) as unknown as Promise<PaginatedResponse<Sale>>;
   },
 
   getById(id: string): Promise<Sale | null> {

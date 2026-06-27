@@ -63,7 +63,7 @@ test('salesService.create throws VALIDATION when financial account is invalid', 
 test('purchasesService.create throws NOT_FOUND when supplier does not exist', async () => {
   const supplierSpy = vi.spyOn(prisma.supplier, 'findFirst').mockResolvedValue(null);
   
-  const ctx = { shopId: 'shop-1', branchId: 'branch-A', userId: 'user-1', role: 'MANAGER' } as any;
+  const ctx = { shopId: 'shop-1', branchId: 'branch-A', userId: 'user-1', role: 'ADMIN' } as any;
   const input = {
     branchId: 'branch-A',
     supplierId: 'supplier-other-shop',
@@ -83,7 +83,7 @@ test('purchasesService.create throws NOT_FOUND when supplier does not exist', as
 test('purchasesService.create throws VALIDATION when financial account is invalid', async () => {
   const accountSpy = vi.spyOn(prisma.financialAccount, 'findMany').mockResolvedValue([]);
   
-  const ctx = { shopId: 'shop-1', branchId: 'branch-A', userId: 'user-1', role: 'MANAGER' } as any;
+  const ctx = { shopId: 'shop-1', branchId: 'branch-A', userId: 'user-1', role: 'ADMIN' } as any;
   const input = {
     branchId: 'branch-A',
     items: [{ productId: 'prod-1', qty: 5, cost: 10 }],
@@ -104,7 +104,7 @@ test('purchasesService.addPayment throws NOT_FOUND when financial account is inv
   const purchaseSpy = vi.spyOn(prisma.purchase, 'findFirst').mockResolvedValue({ id: 'purchase-1', paid: 0, total: 100 } as any);
   const accountSpy = vi.spyOn(prisma.financialAccount, 'findFirst').mockResolvedValue(null);
   
-  const ctx = { shopId: 'shop-1', branchId: 'branch-A', userId: 'user-1', role: 'MANAGER' } as any;
+  const ctx = { shopId: 'shop-1', branchId: 'branch-A', userId: 'user-1', role: 'ADMIN' } as any;
   const payment = { amount: 50, method: 'Cash', accountId: 'acc-other-shop' };
 
   await expect(purchasesService.addPayment(ctx, 'purchase-1', payment)).rejects.toThrow('Financial account not found');
@@ -219,7 +219,7 @@ test('salesService.create calculates and persists warrantyExpiryDate correctly',
 });
 
 test('salesService.void resets warrantyExpiryDate to null and sets status to IN_STOCK', async () => {
-  const ctx = { shopId: 'shop-1', branchId: 'branch-A', userId: 'user-1', role: 'MANAGER' } as any;
+  const ctx = { shopId: 'shop-1', branchId: 'branch-A', userId: 'user-1', role: 'ADMIN' } as any;
   
   const updateManySpy = vi.fn().mockResolvedValue({ count: 1 });
   
@@ -249,12 +249,14 @@ test('salesService.void resets warrantyExpiryDate to null and sets status to IN_
       })
     },
     product: {
+      findMany: vi.fn().mockResolvedValue([{ id: 'prod-1', trackSerials: true }]),
       findFirst: vi.fn().mockResolvedValue({ id: 'prod-1', trackSerials: true }),
       findUnique: vi.fn().mockResolvedValue({ id: 'prod-1', trackSerials: true }),
       update: vi.fn().mockResolvedValue({} as any),
     },
     serialNumber: {
       updateMany: updateManySpy,
+      groupBy: vi.fn().mockResolvedValue([]),
       count: vi.fn().mockResolvedValue(10),
     },
     warehouseStock: {

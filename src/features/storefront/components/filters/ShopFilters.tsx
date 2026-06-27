@@ -31,7 +31,7 @@ const Section = ({ title, children, action }: { title: string; children: React.R
 
 export function ShopFilters({ value, bounds, onChange, onReset, onCategoryNav }: Props) {
   const categories = useStorefrontCategories();
-  const brands = useStorefrontBrands();
+  const brands = useStorefrontBrands(value.category);
 
   const toggleBrand = (b: string) => {
     const next = value.brands.includes(b) ? value.brands.filter((x) => x !== b) : [...value.brands, b];

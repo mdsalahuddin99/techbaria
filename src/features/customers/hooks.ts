@@ -12,19 +12,33 @@ import { QueryTier } from "@/lib/queryConfig";
  * in AppProviders) seeds and updates this cache from Zustand during the
  * local-driver phase, so reads are reactive without manual invalidation.
  */
-export function useCustomersQuery() {
+import { useInfiniteQuery } from "@tanstack/react-query";
+
+export function useCustomersQuery(initialData?: Customer[]) {
   const { session, status } = useAuth();
   return useQuery({
     queryKey: customerKeys.list(),
     queryFn: () => customersService.list(),
+    initialData: initialData ? { items: initialData, nextCursor: null, hasMore: false } : undefined,
     enabled: status !== "loading" && !!session,
     ...QueryTier.MASTER_DATA,
   });
 }
 
+export function useInfiniteCustomersQuery(filter?: { search?: string; dueFilter?: "all" | "with-due" | "no-due"; sortKey?: string; sortDir?: "asc" | "desc" }) {
+  const { session, status } = useAuth();
+  return useInfiniteQuery({
+    queryKey: [...customerKeys.list(), filter],
+    queryFn: ({ pageParam }) => customersService.list(filter, pageParam ? { cursor: pageParam } : undefined),
+    getNextPageParam: (lastPage) => (lastPage as any).nextCursor || undefined,
+    initialPageParam: undefined as string | undefined,
+    enabled: status !== "loading" && !!session,
+  });
+}
+
 /** Backward-compat shape used by older callers. Prefer `useCustomersQuery`. */
-export function useCustomers() {
-  const { data, isLoading, error } = useCustomersQuery();
+export function useCustomers(initialData?: Customer[]) {
+  const { data, isLoading, error } = useCustomersQuery(initialData);
   return {
     data: ((data as any)?.items ?? []) as Customer[],
     isLoading,

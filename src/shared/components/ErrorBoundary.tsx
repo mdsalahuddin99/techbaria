@@ -1,3 +1,5 @@
+"use client";
+
 import { Component, ErrorInfo, ReactNode } from "react";
 import * as Sentry from "@sentry/nextjs";
 import { Button } from "@/shared/ui/button";

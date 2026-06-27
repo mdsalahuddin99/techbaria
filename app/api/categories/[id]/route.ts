@@ -18,7 +18,7 @@ export const GET = apiHandler(async (ctx: Ctx, _req: Request, { params }: { para
 export const PATCH = apiHandler(async (ctx: Ctx, req: Request, { params }: { params: { id: string } }) => {
   const body = await parseBody(req, categoryUpdateSchema);
   return categoriesService.update(ctx, params.id, body);
-}, "categories:update", ["MANAGER", "OWNER"]);
+}, "categories:update", ["ADMIN"]);
 
 /**
  * DELETE /api/categories/:id — delete a category. Requires MANAGER+.
@@ -26,4 +26,4 @@ export const PATCH = apiHandler(async (ctx: Ctx, req: Request, { params }: { par
 export const DELETE = apiHandler(async (ctx: Ctx, _req: Request, { params }: { params: { id: string } }) => {
   await categoriesService.remove(ctx, params.id);
   return { success: true };
-}, "categories:delete", ["MANAGER", "OWNER"]);
+}, "categories:delete", ["ADMIN"]);

@@ -8,8 +8,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/shared/ui/popover";
 import { useQuery } from "@tanstack/react-query";
 import { salesService } from "@/services";
 import { Button } from "@/shared/ui/button";
-import { Customer } from "@/features/customers/types";
-
+import { customersApi } from "@/shared/api-client/customers";
+import type { Customer } from "@/features/customers/types";
 interface CustomerSidebarProps {
   customers: Customer[];
   customerId: string | null;
@@ -21,7 +21,13 @@ export function CustomerSidebar({
   customerId,
   onCustomerChange,
 }: CustomerSidebarProps) {
-  const customer = customers.find((c) => c.id === customerId) ?? null;
+  const { data: fetchedCustomer } = useQuery({
+    queryKey: ["customerDetail", customerId],
+    queryFn: () => customerId ? customersApi.getById(customerId) : null,
+    enabled: !!customerId,
+  });
+
+  const customer = (fetchedCustomer || customers.find((c) => c.id === customerId)) ?? null;
   const walletBalance = Math.max(0, Number(customer?.balance ?? 0));
   const dueBalance = Math.max(0, Number(customer?.due ?? 0));
 
@@ -39,7 +45,7 @@ export function CustomerSidebar({
           Customer Info
         </h3>
         <CustomerSearch
-          customers={customers}
+          initialCustomers={customers}
           selectedCustomerId={customerId}
           onChange={(id) => onCustomerChange(id === "" ? null : id)}
         />

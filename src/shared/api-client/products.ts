@@ -20,9 +20,12 @@ export interface PaginatedResponse<T> {
 }
 
 export const productsApi = {
-  /** List products with optional filters */
-  list(filter?: { search?: string; categoryId?: string; isPublished?: boolean; lowStock?: boolean }): Promise<PaginatedResponse<Product>> {
-    return listProductsAction(filter) as unknown as Promise<PaginatedResponse<Product>>;
+  /** List products with optional filters and pagination */
+  list(
+    filter?: { search?: string; categoryId?: string; isPublished?: boolean; lowStock?: boolean },
+    params?: { cursor?: string; limit?: number }
+  ): Promise<PaginatedResponse<Product>> {
+    return listProductsAction(filter, params) as unknown as Promise<PaginatedResponse<Product>>;
   },
 
   getById(id: string): Promise<Product | null> {

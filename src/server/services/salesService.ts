@@ -7,7 +7,7 @@
  */
 import "server-only";
 
-import { list, getById, byCustomer } from "./sales/queries";
+import { list, getById, byCustomer, listReturns } from "./sales/queries";
 import { create } from "./sales/create";
 import { voidSale } from "./sales/void";
 import { refund } from "./sales/refund";
@@ -34,6 +34,9 @@ export type {
 export const salesService = {
   /** List sales with optional filters (paginated). */
   list,
+
+  /** List returns */
+  listReturns,
 
   /** Get a single sale by ID. */
   getById,

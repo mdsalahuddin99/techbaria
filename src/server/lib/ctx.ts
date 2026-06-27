@@ -11,7 +11,7 @@ export interface Ctx {
   /** Current authenticated user's ID */
   userId: string;
   /** User's role — determines permission level */
-  role: "OWNER" | "MANAGER" | "CASHIER" | "VIEWER";
+  role: "ADMIN" | "ADMIN" | "CASHIER" | "VIEWER";
 }
 
 /**

@@ -11,6 +11,14 @@ import { create } from "./purchases/create";
 import { update } from "./purchases/update";
 import { remove } from "./purchases/remove";
 import { addPayment } from "./purchases/payment";
+import {
+  listRestocks,
+  createRestockDraft,
+  updateRestockItem,
+  removeRestockItem,
+  confirmRestock,
+  removeRestock,
+} from "./purchases/restocks";
 
 export type { PurchaseCreateInput, PurchaseUpdateInput } from "./purchases/types";
 
@@ -38,4 +46,12 @@ export const purchasesService = {
 
   /** Edit a purchase — updates stock, serials, and all line items. */
   update,
+
+  // Restock operations
+  listRestocks,
+  createRestockDraft,
+  updateRestockItem,
+  removeRestockItem,
+  confirmRestock,
+  removeRestock,
 };

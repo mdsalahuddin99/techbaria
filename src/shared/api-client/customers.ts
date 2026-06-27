@@ -23,8 +23,11 @@ export interface PaginatedResponse<T> {
 }
 
 export const customersApi = {
-  list(search?: string): Promise<PaginatedResponse<Customer>> {
-    return listCustomersAction(search) as unknown as Promise<PaginatedResponse<Customer>>;
+  list(
+    filter?: { search?: string; dueFilter?: "all" | "with-due" | "no-due"; sortKey?: string; sortDir?: "asc" | "desc" },
+    params?: { cursor?: string; limit?: number }
+  ): Promise<PaginatedResponse<Customer>> {
+    return listCustomersAction(filter as any, params) as unknown as Promise<PaginatedResponse<Customer>>;
   },
 
   getById(id: string): Promise<Customer | null> {

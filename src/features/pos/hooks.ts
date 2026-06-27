@@ -26,6 +26,30 @@ const fetchPosInit = (warehouseId?: string | null) => {
   });
 };
 
+export const posCoreKeys = {
+  all: ["pos", "core"] as const,
+};
+
+const fetchPosCore = () => {
+  // We can still use the same endpoint, but we don't care about products/customers.
+  // Ideally this would be a lighter endpoint, but for now we reuse and ignore heavy arrays.
+  // Actually, to make it lean, let's hit `/api/pos/init?coreOnly=true` if supported, or just use the same.
+  // Since we don't have coreOnly yet, we'll just fetch init without a warehouseId and ignore products/customers,
+  // or better, if the backend supports `coreOnly=true` we should use it. For now, it will fetch what it fetches.
+  return fetch(`/api/pos/init?coreOnly=true`).then((r) => {
+    if (!r.ok) throw new Error("Failed to load POS Core data");
+    return r.json() as Promise<{
+      accounts: any[];
+      warehouses: any[];
+      categories: any[];
+      users: any[];
+      settings: { shopName: string; currencySymbol: string };
+      products?: any;
+      customers?: any;
+    }>;
+  });
+};
+
 /** Reactive cart selectors — keep checkout latency at zero. */
 export function useCart() {
   const cart = usePosStore((s) => s.cart);
@@ -139,3 +163,34 @@ export function usePosScreenData(warehouseId?: string | null) {
   };
   return { products, customers, warehouses, categories, users, settings, isLoading };
 }
+
+/**
+ * A leaner version of usePosScreenData that doesn't rely on products/customers being fetched upfront.
+ */
+export function usePosCoreData() {
+  const { data, isLoading } = useQuery({
+    queryKey: posCoreKeys.all,
+    queryFn: () => fetchPosCore(),
+    staleTime: 60_000,
+    gcTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
+  });
+
+  const warehouses = (data?.warehouses ?? []) as any[];
+  const categories = (data?.categories ?? []) as any[];
+  const users = (data?.users ?? []) as any[];
+  const settings: ShopSettings = {
+    shopName: data?.settings?.shopName ?? "AmarShop",
+    address: "",
+    phone: "",
+    email: "",
+    currencySymbol: data?.settings?.currencySymbol ?? "৳",
+    receiptFooter: "",
+    loyaltyEnabled: false,
+    loyaltyPointsPerCurrency: 1,
+    loyaltyRedeemRate: 1,
+    paymentMethodsEnabled: { Cash: true, Card: true, "Mobile Banking": true, Due: true, Wallet: true },
+  };
+  return { warehouses, categories, users, settings, isLoading };
+}
+

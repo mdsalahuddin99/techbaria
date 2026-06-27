@@ -35,22 +35,48 @@ export interface CustomerUpdatePayload {
 
 // ─── Service ────────────────────────────────────────────────────────────────
 
+export interface CustomerListFilter {
+  search?: string;
+  dueFilter?: "all" | "with-due" | "no-due";
+  sortKey?: "name" | "due" | "totalSpent" | "loyalty" | "joined";
+  sortDir?: "asc" | "desc";
+}
+
 export const customersService = {
   /** List all customers (paginated). */
-  async list(ctx: Ctx, params?: PaginationParams, search?: string) {
+  async list(ctx: Ctx, params?: PaginationParams, filter?: CustomerListFilter) {
     const where: any = {};
-    if (search) {
+    if (filter?.search) {
+      const q = filter.search;
       where.OR = [
-        { name: { contains: search, mode: "insensitive" as const } },
-        { phone: { contains: search } },
-        { email: { contains: search, mode: "insensitive" as const } },
+        { name: { contains: q, mode: "insensitive" as const } },
+        { phone: { contains: q } },
+        { email: { contains: q, mode: "insensitive" as const } },
       ];
     }
+    if (filter?.dueFilter === "with-due") {
+      where.due = { gt: 0 };
+    } else if (filter?.dueFilter === "no-due") {
+      where.due = { lte: 0 };
+    }
+    
+    let orderBy: any = { createdAt: "desc" as const };
+    if (filter?.sortKey) {
+      const dir = filter.sortDir || "asc";
+      switch (filter.sortKey) {
+        case "name": orderBy = { name: dir }; break;
+        case "totalSpent": orderBy = { totalSpent: dir }; break;
+        case "loyalty": orderBy = { loyaltyPoints: dir }; break;
+        case "joined": orderBy = { createdAt: dir }; break;
+        case "due": orderBy = { due: dir }; break;
+      }
+    }
+
     const res = await paginate(
       prisma.customer,
       { where },
       params,
-      { orderBy: { createdAt: "desc" as const } },
+      { orderBy },
     );
     return {
       ...res,

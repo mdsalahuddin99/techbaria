@@ -15,25 +15,28 @@ import { buildCtx } from "@/server/lib/ctx";
 import * as salesQueries from "@/server/services/sales/queries";
 import * as productQueries from "@/server/services/products/queries";
 import { customersService } from "@/server/services/customersService";
+import { dashboardService } from "@/server/services/dashboardService";
 import { saleKeys } from "@/features/sales/queryKeys";
 import { productKeys } from "@/features/products/queryKeys";
 import { customerKeys } from "@/features/customers/queryKeys";
+import { dashboardKeys } from "@/features/dashboard/queryKeys";
 import DashboardClient from "./_components/DashboardClient";
 
 export default async function DashboardPage() {
-  // Build server context from the current session (already validated by middleware)
   const session = await auth();
   const ctx = buildCtx({
     id: (session?.user as any)?.id,
     role: (session?.user as any)?.role,
   });
 
-  // Create a fresh QueryClient for this request
   const queryClient = new QueryClient();
 
-  // Prefetch all three datasets in parallel — one DB round-trip each,
-  // all happening on the server before any HTML is sent to the client.
+  // Prefetch dashboard metrics plus recent sales/products for the tables below
   await Promise.all([
+    queryClient.prefetchQuery({
+      queryKey: dashboardKeys.metrics(),
+      queryFn: () => dashboardService.getMetrics(ctx),
+    }),
     queryClient.prefetchQuery({
       queryKey: saleKeys.list(),
       queryFn: () => salesQueries.list(ctx),
@@ -48,13 +51,9 @@ export default async function DashboardPage() {
     }),
   ]);
 
-  // Serialize the prefetched cache to send to the client
   const dehydratedState = dehydrate(queryClient);
 
   return (
-    // HydrationBoundary injects the server-fetched data into the
-    // client-side QueryClient before DashboardClient mounts,
-    // so hooks see populated data on the very first render.
     <HydrationBoundary state={dehydratedState}>
       <DashboardClient />
     </HydrationBoundary>

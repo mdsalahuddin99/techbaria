@@ -10,7 +10,7 @@ import { salesSerial } from "./salesSerial";
 
 /** Permanently delete a completed sale — restores stock, serials, and customer due. Requires MANAGER+. */
 export async function remove(ctx: Ctx, id: string) {
-  requireRole(ctx, "MANAGER");
+  requireRole(ctx, "ADMIN");
 
   const productIds = await prisma.$transaction(async (tx) => {
     const sale = await tx.sale.findFirst({

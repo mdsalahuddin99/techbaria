@@ -52,7 +52,7 @@ export const inventoryService = {
 
   /** Adjust stock for a product. Requires MANAGER+. Append-only. */
   async adjust(ctx: Ctx, input: AdjustmentInput) {
-    requireRole(ctx, "MANAGER");
+    requireRole(ctx, "ADMIN");
 
     if (!input.qtyDelta || input.qtyDelta === 0) {
       throw new ServiceError("VALIDATION", "Quantity delta must be non-zero");

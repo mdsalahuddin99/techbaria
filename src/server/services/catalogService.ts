@@ -31,7 +31,7 @@ export async function listBrands(ctx: Ctx, categoryId: string): Promise<BrandOut
 }
 
 export async function createBrand(ctx: Ctx, name: string, categoryId: string): Promise<BrandOutput> {
-  requireRole(ctx, "MANAGER");
+  requireRole(ctx, "ADMIN");
   const existing = await prisma.categoryBrand.findUnique({
     where: { categoryId_name: { categoryId, name } },
   });
@@ -41,7 +41,7 @@ export async function createBrand(ctx: Ctx, name: string, categoryId: string): P
 }
 
 export async function updateBrand(ctx: Ctx, id: string, name: string): Promise<BrandOutput> {
-  requireRole(ctx, "MANAGER");
+  requireRole(ctx, "ADMIN");
   const b = await prisma.categoryBrand.findFirst({
     where: { id },
   });
@@ -58,7 +58,7 @@ export async function updateBrand(ctx: Ctx, id: string, name: string): Promise<B
 }
 
 export async function deleteBrand(ctx: Ctx, id: string): Promise<void> {
-  requireRole(ctx, "MANAGER");
+  requireRole(ctx, "ADMIN");
   await prisma.categoryBrand.deleteMany({
     where: { id },
   });
@@ -87,7 +87,7 @@ export async function listProductNames(ctx: Ctx, brandId: string): Promise<Produ
 }
 
 export async function createProductName(ctx: Ctx, name: string, brandId: string): Promise<ProductNameOutput> {
-  requireRole(ctx, "MANAGER");
+  requireRole(ctx, "ADMIN");
   const existing = await prisma.subcategoryProduct.findUnique({
     where: { brandId_name: { brandId, name } },
   });
@@ -97,7 +97,7 @@ export async function createProductName(ctx: Ctx, name: string, brandId: string)
 }
 
 export async function updateProductName(ctx: Ctx, id: string, name: string): Promise<ProductNameOutput> {
-  requireRole(ctx, "MANAGER");
+  requireRole(ctx, "ADMIN");
   const p = await prisma.subcategoryProduct.findFirst({
     where: { id },
   });
@@ -114,7 +114,7 @@ export async function updateProductName(ctx: Ctx, id: string, name: string): Pro
 }
 
 export async function deleteProductName(ctx: Ctx, id: string): Promise<void> {
-  requireRole(ctx, "MANAGER");
+  requireRole(ctx, "ADMIN");
   await prisma.subcategoryProduct.deleteMany({
     where: { id },
   });
@@ -143,7 +143,7 @@ export async function listModels(ctx: Ctx, productId: string): Promise<ModelOutp
 }
 
 export async function createModel(ctx: Ctx, name: string, productId: string): Promise<ModelOutput> {
-  requireRole(ctx, "MANAGER");
+  requireRole(ctx, "ADMIN");
   const existing = await prisma.subcategoryModel.findUnique({
     where: { productId_name: { productId, name } },
   });
@@ -153,7 +153,7 @@ export async function createModel(ctx: Ctx, name: string, productId: string): Pr
 }
 
 export async function updateModel(ctx: Ctx, id: string, name: string): Promise<ModelOutput> {
-  requireRole(ctx, "MANAGER");
+  requireRole(ctx, "ADMIN");
   const m = await prisma.subcategoryModel.findFirst({
     where: { id },
   });
@@ -170,7 +170,7 @@ export async function updateModel(ctx: Ctx, id: string, name: string): Promise<M
 }
 
 export async function deleteModel(ctx: Ctx, id: string): Promise<void> {
-  requireRole(ctx, "MANAGER");
+  requireRole(ctx, "ADMIN");
   await prisma.subcategoryModel.deleteMany({
     where: { id },
   });
@@ -199,7 +199,7 @@ export async function listSeries(ctx: Ctx, modelId: string): Promise<SeriesOutpu
 }
 
 export async function createSeries(ctx: Ctx, name: string, modelId: string): Promise<SeriesOutput> {
-  requireRole(ctx, "MANAGER");
+  requireRole(ctx, "ADMIN");
   const existing = await prisma.subcategorySeries.findUnique({
     where: { modelId_name: { modelId, name } },
   });
@@ -209,7 +209,7 @@ export async function createSeries(ctx: Ctx, name: string, modelId: string): Pro
 }
 
 export async function updateSeries(ctx: Ctx, id: string, name: string): Promise<SeriesOutput> {
-  requireRole(ctx, "MANAGER");
+  requireRole(ctx, "ADMIN");
   const s = await prisma.subcategorySeries.findFirst({
     where: { id },
   });
@@ -226,7 +226,7 @@ export async function updateSeries(ctx: Ctx, id: string, name: string): Promise<
 }
 
 export async function deleteSeries(ctx: Ctx, id: string): Promise<void> {
-  requireRole(ctx, "MANAGER");
+  requireRole(ctx, "ADMIN");
   await prisma.subcategorySeries.deleteMany({
     where: { id },
   });

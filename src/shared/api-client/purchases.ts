@@ -14,8 +14,16 @@ export interface PaginatedResponse<T> {
 
 export const purchasesApi = {
   // ---- purchases
-  list(): Promise<PaginatedResponse<PurchaseOrder>> {
-    return apiFetch<PaginatedResponse<PurchaseOrder>>(BASE);
+  list(filter?: any, params?: { cursor?: string; limit?: number }): Promise<PaginatedResponse<PurchaseOrder>> {
+    const q = new URLSearchParams();
+    if (params?.cursor) q.set("cursor", params.cursor);
+    if (params?.limit) q.set("limit", params.limit.toString());
+    if (filter?.search) q.set("search", filter.search);
+    if (filter?.status) q.set("status", filter.status);
+    if (filter?.sortKey) q.set("sortKey", filter.sortKey);
+    if (filter?.sortDir) q.set("sortDir", filter.sortDir);
+    const qs = q.toString() ? `?${q.toString()}` : "";
+    return apiFetch<PaginatedResponse<PurchaseOrder>>(`${BASE}${qs}`);
   },
 
   getById(id: string): Promise<PurchaseOrder | null> {

@@ -38,7 +38,7 @@ const respond = apiHandler(async (ctx: Ctx) => {
   ]);
 
   return { ok: true, message: "All shop data cleared" };
-}, "backup:wipe", ["OWNER"]);
+}, "backup:wipe", ["ADMIN"]);
 
 export const DELETE = respond;
 export const GET = respond;

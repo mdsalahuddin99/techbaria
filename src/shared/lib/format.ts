@@ -16,8 +16,9 @@ export function round2(amount: number): number {
  * in that locale's numeral system — e.g. Bangla `১,২৩৪.৫৬`.
  * Defaults to Indian English grouping (`1,23,456.78`).
  */
-export function formatCurrency(amount: number, locale: string = "en-IN"): string {
-  const n = Number.isFinite(amount) ? amount : 0;
+export function formatCurrency(amount: number | string, locale: string = "en-IN"): string {
+  const parsed = typeof amount === "string" ? Number(amount) : amount;
+  const n = Number.isFinite(parsed) ? parsed : 0;
   return `${CURRENCY}${n.toLocaleString(locale, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
@@ -43,11 +44,14 @@ export function genInvoiceNo(seq: number): string {
 }
 
 /** Brand + Name + Model + Series — combined display name. */
-export function productDisplayName(p: { brand?: string | null; name: string; model?: string | null; series?: string | null }): string {
+export function productDisplayName(p: any): string {
   const parts: string[] = [];
-  if (p.brand) parts.push(p.brand);
+  const brandName = typeof p.brand === 'object' && p.brand !== null ? p.brand.name : p.brand;
+  if (brandName) parts.push(brandName);
   parts.push(p.name);
-  if (p.model) parts.push(`Model ${p.model}`);
-  if (p.series) parts.push(p.series);
+  const modelName = typeof p.model === 'object' && p.model !== null ? p.model.name : p.model;
+  if (modelName) parts.push(`Model ${modelName}`);
+  const seriesName = typeof p.series === 'object' && p.series !== null ? p.series.name : p.series;
+  if (seriesName) parts.push(seriesName);
   return parts.join(" ");
 }

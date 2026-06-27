@@ -27,3 +27,10 @@ export interface PurchaseCreateInput {
 
 /** Same shape as Create, used by update(). */
 export type PurchaseUpdateInput = PurchaseCreateInput;
+
+export interface PurchaseListFilter {
+  search?: string;
+  status?: string;
+  sortKey?: string;
+  sortDir?: "asc" | "desc";
+}

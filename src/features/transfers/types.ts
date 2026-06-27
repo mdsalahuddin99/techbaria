@@ -6,7 +6,7 @@
  * and which serials/units were involved. Global `Product.stock`
  * is not mutated by transfers (net total unchanged).
  */
-export type TransferStatus = "Pending" | "InTransit" | "Received" | "Cancelled";
+export type TransferStatus = "PENDING" | "IN_TRANSIT" | "COMPLETED" | "CANCELLED";
 
 export interface TransferItem {
   productId: string;

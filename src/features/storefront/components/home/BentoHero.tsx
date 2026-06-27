@@ -2,12 +2,12 @@ import Link from "next/link";
 import { ArrowRight, Star, ShieldCheck, Sparkles, Zap } from "lucide-react";
 import { formatPrice } from "../../lib/formatPrice";
 import { productDisplayName } from "@/shared/lib/format";
-import type { Product } from "@/features/products/types";
+import type { StorefrontProduct } from "@/features/storefront/types";
 import { SmartSearch } from "../search/SmartSearch";
 
 interface Props {
-  featured?: Product | null;
-  secondary?: Product[];
+  featured?: StorefrontProduct | null;
+  secondary?: StorefrontProduct[];
 }
 
 /**

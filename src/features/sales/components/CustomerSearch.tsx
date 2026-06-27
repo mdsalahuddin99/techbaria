@@ -14,64 +14,51 @@ import { Check, ChevronsUpDown, UserPlus } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
 import { formatCurrency } from "@/shared/lib/format";
 import { CustomerFormDialog } from "@/features/customers/CustomerFormDialog";
-import type { Customer } from "@/shared/lib/types";
+import { useDebounce } from "@/shared/hooks/useDebounce";
+import { useQuery } from "@tanstack/react-query";
+import { apiFetch } from "@/shared/api-client/fetch";
+import type { Customer } from "@/features/customers/types";
 
 interface CustomerSearchProps {
-  customers: Customer[];
+  initialCustomers?: Customer[];
   selectedCustomerId: string | null;
   onChange: (id: string) => void;
 }
 
 /** Searchable customer picker for the POS cart with inline "Add new" action. */
 export function CustomerSearch({
-  customers,
+  initialCustomers = [],
   selectedCustomerId,
   onChange,
 }: CustomerSearchProps) {
   const [open, setOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
   const beforeIdsRef = useRef<Set<string>>(new Set());
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const { data: searchResults, isLoading } = useQuery({
+    queryKey: ["customersSearch", debouncedSearchQuery],
+    queryFn: async () => {
+      const qs = new URLSearchParams();
+      if (debouncedSearchQuery) qs.set("q", debouncedSearchQuery);
+      qs.set("limit", "50");
+      const res = await apiFetch<{ items: Customer[] }>(`/api/customers/search?${qs.toString()}`);
+      return res.items;
+    },
+    enabled: open,
+    staleTime: 1000 * 60,
+  });
+
+  const filteredCustomers = searchResults || initialCustomers.slice(0, 50);
+
   const selected = useMemo(
-    () => customers.find((c) => c.id === selectedCustomerId) ?? null,
-    [customers, selectedCustomerId],
+    () => filteredCustomers.find((c) => c.id === selectedCustomerId) ?? null,
+    [filteredCustomers, selectedCustomerId],
   );
 
-  const filteredCustomers = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    if (!q) return customers.slice(0, 50);
 
-    const qDigits = q.replace(/\D/g, "");
-
-    return customers
-      .filter((c) => {
-        // 1. Name Match
-        if (c.name.toLowerCase().includes(q)) return true;
-
-        // 2. Phone Match (Robust digit-only comparison + partial lookup)
-        if (c.phone) {
-          const cDigits = c.phone.replace(/\D/g, "");
-          if (qDigits && (cDigits.includes(qDigits) || qDigits.includes(cDigits))) {
-            return true;
-          }
-          if (c.phone.toLowerCase().includes(q)) return true;
-        }
-
-        // 3. Address Match
-        if (c.address && c.address.toLowerCase().includes(q)) return true;
-
-        // 4. Email Match
-        if (c.email && c.email.toLowerCase().includes(q)) return true;
-
-        // 5. Invoice Number Match
-        if (c.sales && c.sales.some((s) => s.invoiceNo.toLowerCase().includes(q))) return true;
-
-        return false;
-      })
-      .slice(0, 50);
-  }, [customers, searchQuery]);
 
   const handleOpenChange = (isOpen: boolean) => {
     setOpen(isOpen);
@@ -82,9 +69,9 @@ export function CustomerSearch({
 
   const handleAddOpenChange = (isOpen: boolean) => {
     if (isOpen) {
-      beforeIdsRef.current = new Set(customers.map((c) => c.id));
+      beforeIdsRef.current = new Set(filteredCustomers.map((c) => c.id));
     } else {
-      const added = customers.find((c) => !beforeIdsRef.current.has(c.id));
+      const added = filteredCustomers.find((c) => !beforeIdsRef.current.has(c.id));
       if (added) onChange(added.id);
     }
     setAddOpen(isOpen);

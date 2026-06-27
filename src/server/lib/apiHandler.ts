@@ -59,7 +59,7 @@ type Handler<T> = (
  * export const GET = apiHandler(async (ctx) => { ... });
  *
  * // Restrict to specific roles
- * export const POST = apiHandler(async (ctx) => { ... }, "products:create", ["MANAGER", "OWNER"]);
+ * export const POST = apiHandler(async (ctx) => { ... }, "products:create", ["ADMIN"]);
  * ```
  *
  * Next.js 16 passes `params` as a Promise — this wrapper resolves it
@@ -112,6 +112,7 @@ export function apiHandler<T>(
           "API success",
         );
 
+        if (data instanceof Response) return data;
         return json(data, 200);
       } catch (err) {
         const duration = Math.round(performance.now() - start);
@@ -156,12 +157,11 @@ export function apiHandler<T>(
 
 /**
  * For storefront endpoints that don't require authentication.
- * Still builds a partial Ctx scoped to the shop (from env or subdomain).
  *
  * Supports Next.js Route Handler pattern with `{ params }` as third argument.
  */
 export function publicApiHandler<T>(
-  handler: (shopId: string, req: Request, opts?: { params: Record<string, string | string[]> }) => Promise<T>,
+  handler: (req: Request, opts?: { params: Record<string, string | string[]> }) => Promise<T>,
 ) {
   return async (req: Request, context?: { params: Promise<Record<string, string | string[]>> }): Promise<Response> => {
     const requestId = randomUUID();
@@ -169,19 +169,15 @@ export function publicApiHandler<T>(
 
     return requestContext.run({ requestId }, async () => {
       try {
-        // In multi-tenant setups, extract shopId from subdomain or env
-        const shopId = process.env.DEFAULT_SHOP_ID ?? "";
-        if (!shopId) {
-          logger.error("DEFAULT_SHOP_ID not configured");
-          return json({ error: "SHOP_NOT_CONFIGURED" }, 500);
-        }
-
         const routeOpts = context?.params ? { params: await context.params } : undefined;
-        const data = await handler(shopId, req, routeOpts);
+        const data = await handler(req, routeOpts);
+        
         const duration = Math.round(performance.now() - start);
         logger.info({ duration, path: new URL(req.url).pathname }, "Public API success");
+        
+        if (data instanceof Response) return data;
         return json(data, 200);
-      } catch (err) {
+      } catch (err: unknown) {
         const duration = Math.round(performance.now() - start);
         const path = new URL(req.url).pathname;
 

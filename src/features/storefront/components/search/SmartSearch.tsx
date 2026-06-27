@@ -178,7 +178,7 @@ export function SmartSearch({ className = "", variant = "header" }: Props) {
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="text-sm font-medium text-slate-800 truncate">{productDisplayName(p)}</div>
-                      <div className="text-[11px] text-slate-500">{categoryName(p)}</div>
+                      <div className="text-[11px] text-slate-500">{categoryName(p.category as any)}</div>
                     </div>
                     <div className="text-sm font-semibold text-indigo-600">{formatPrice(p.price)}</div>
                   </Link>

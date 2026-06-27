@@ -50,6 +50,7 @@ export interface ProductUpdateInput {
   reorderLevel?: number;
   unit?: string;
   isPublished?: boolean;
+  isTrending?: boolean;
   barcode?: string;
   // Extended fields
   brand?: string;

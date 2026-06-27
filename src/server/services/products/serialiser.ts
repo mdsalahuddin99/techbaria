@@ -66,3 +66,83 @@ export function serialiseOne(p: any) {
     })),
   };
 }
+
+/**
+ * ─── STOREFRONT-SAFE SERIALISER ─────────────────────────────────────────────
+ * Only exposes fields that are safe for anonymous public access.
+ * Never exposes: cost, wholesalePrice, supplierId, reorderLevel, brandId, modelId.
+ * Used by /api/storefront/products — keep it lean for faster payloads.
+ */
+export function serialiseStorefront(product: any[]): StorefrontProduct[];
+export function serialiseStorefront(product: any): StorefrontProduct;
+export function serialiseStorefront(product: any): any {
+  if (Array.isArray(product)) return product.map((p) => serialiseStorefrontOne(p));
+  return serialiseStorefrontOne(product);
+}
+
+export interface StorefrontProduct {
+  id: string;
+  slug: string | null;
+  name: string;
+  price: number;
+  stock: number;
+  imageUrl: string;        // primary image (backward-compat)
+  images: string[];        // all image URLs in order
+  emoji: string;
+  category: string;
+  subcategory: string;
+  brand: string;
+  model: string;
+  color: string;
+  storage: string;
+  ram: string;
+  active: boolean;
+  sku: string | null;
+  description: string;
+  condition: string | undefined;
+  warrantyMonths: number | undefined;
+  defaultDiscount: { mode: "percent" | "amount"; value: number } | undefined;
+  isTrending: boolean;
+  type: "simple" | "bundle";
+  components: any[];
+}
+
+function serialiseStorefrontOne(p: any): StorefrontProduct {
+  // Extract defaultDiscount safely (stored as JSON or object)
+  let defaultDiscount: StorefrontProduct["defaultDiscount"] = undefined;
+  if (p.defaultDiscount && typeof p.defaultDiscount === "object") {
+    const d = p.defaultDiscount as any;
+    if (d.value && d.value > 0) {
+      defaultDiscount = { mode: d.mode ?? "percent", value: Number(d.value) };
+    }
+  }
+
+  const allImages = ((p.images as Array<{ url: string }> | undefined) ?? []).map((img) => img.url);
+
+  return {
+    id: p.id,
+    slug: p.slug ?? null,
+    name: p.name,
+    price: Number(p.price),
+    stock: p.stock ?? 0,
+    imageUrl: allImages[0] ?? "",
+    images: allImages,
+    emoji: p.emoji ?? "📦",
+    category: p.category?.name ?? p.category ?? "",
+    subcategory: p.subcategory ?? "",
+    brand: p.brand?.name ?? p.brand ?? "",
+    model: p.model?.name ?? p.model ?? "",
+    color: p.color ?? "",
+    storage: p.storage ?? "",
+    ram: p.ram ?? "",
+    active: p.isPublished ?? true,
+    sku: p.sku ?? null,
+    description: p.description ?? "",
+    condition: p.condition ?? undefined,
+    warrantyMonths: p.warrantyMonths ?? undefined,
+    defaultDiscount,
+    isTrending: p.isTrending ?? false,
+    type: p.type ?? "simple",
+    components: p.components ?? [],
+  };
+}

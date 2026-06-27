@@ -45,6 +45,7 @@ const DialogContent = React.forwardRef<
     <DialogOverlay />
     <DialogPrimitive.Content
       ref={ref}
+      aria-describedby={props["aria-describedby"] || undefined}
       className={cn(
         "fixed z-50 grid gap-4 border bg-background p-4 sm:p-6 shadow-lg duration-200 overflow-y-auto overscroll-contain",
         "max-h-[calc(100dvh-1rem)] sm:max-h-[calc(100dvh-2rem)]",

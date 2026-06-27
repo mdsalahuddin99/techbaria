@@ -38,11 +38,15 @@ interface PurchaseListProps {
   onEdit: (id: string) => void;
   onPrint: (id: string) => void;
   onDelete: (id: string) => void;
+  fetchNextPage?: () => void;
+  hasNextPage?: boolean;
+  isFetchingNextPage?: boolean;
 }
 
 export function PurchaseList({
   statusFilter, setStatusFilter, searchTerm, setSearchTerm, filtered, isSearching,
-  onNew, onView, onEdit, onPrint, onDelete
+  onNew, onView, onEdit, onPrint, onDelete,
+  fetchNextPage, hasNextPage, isFetchingNextPage
 }: PurchaseListProps) {
   return (
     <>
@@ -120,7 +124,7 @@ export function PurchaseList({
 
         {/* Desktop / tablet: table */}
         <div className="hidden sm:block overflow-x-auto">
-          <Table>
+          <Table className="whitespace-nowrap">
             <TableHeader>
               <TableRow>
                 <TableHead>PO #</TableHead>
@@ -178,6 +182,18 @@ export function PurchaseList({
             </TableBody>
           </Table>
         </div>
+
+        {hasNextPage && fetchNextPage && (
+          <div className="p-4 flex justify-center border-t">
+            <Button
+              variant="outline"
+              onClick={() => fetchNextPage()}
+              disabled={isFetchingNextPage}
+            >
+              {isFetchingNextPage ? "Loading more..." : "Load More Purchases"}
+            </Button>
+          </div>
+        )}
       </Card>
     </>
   );

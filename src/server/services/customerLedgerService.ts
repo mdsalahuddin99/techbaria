@@ -108,7 +108,7 @@ export const customerLedgerService = {
    * balance = advance deposit (always ≥ 0). Positive means the customer has advance funds.
    */
   async recordTransaction(ctx: Ctx, input: RecordTransactionInput) {
-    authorize(ctx, ["MANAGER", "OWNER"]);
+    authorize(ctx, ["ADMIN"]);
 
     return prisma.$transaction(async (tx) => {
       // 1. Lock & validate customer
@@ -293,7 +293,7 @@ export const customerLedgerService = {
     reference?: string,
     notes?: string,
   ) {
-    authorize(ctx, ["MANAGER", "OWNER"]);
+    authorize(ctx, ["ADMIN"]);
     const amt = Math.abs(amount);
 
     return prisma.$transaction(async (tx) => {
@@ -352,7 +352,7 @@ export const customerLedgerService = {
     reference?: string,
     notes?: string,
   ) {
-    authorize(ctx, ["MANAGER", "OWNER"]);
+    authorize(ctx, ["ADMIN"]);
     const amt = Math.abs(amount);
 
     return prisma.$transaction(async (tx) => {
@@ -410,7 +410,7 @@ export const customerLedgerService = {
     reference?: string,
     notes?: string,
   ) {
-    authorize(ctx, ["MANAGER", "OWNER"]);
+    authorize(ctx, ["ADMIN"]);
     const amt = Math.abs(amount);
 
     return prisma.$transaction(async (tx) => {
@@ -459,5 +459,5 @@ export const customerLedgerService = {
 // ─── Internal helpers ───────────────────────────────────────────────────────
 
 function requireAtLeastViewer(ctx: Ctx) {
-  authorize(ctx, ["OWNER", "MANAGER", "CASHIER", "VIEWER"]);
+  authorize(ctx, ["ADMIN", "CASHIER", "VIEWER"]);
 }

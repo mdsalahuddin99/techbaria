@@ -151,7 +151,7 @@ export function CartSummary({
           </div>
         </div>
         <CustomerSearch
-          customers={customers}
+          initialCustomers={customers}
           selectedCustomerId={selectedCustomerId}
           onChange={onSelectCustomer}
         />

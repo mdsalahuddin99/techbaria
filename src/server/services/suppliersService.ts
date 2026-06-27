@@ -30,15 +30,44 @@ export interface SupplierUpdateInput {
   payable?: number;
 }
 
+export interface SupplierListFilter {
+  search?: string;
+  sortKey?: "name" | "payable" | "totalPurchased" | "joined";
+  sortDir?: "asc" | "desc";
+}
+
 export const suppliersService = {
   /** List all suppliers for the shop (paginated). */
-  async list(ctx: Ctx, params?: PaginationParams) {
-    // Fetch paginated suppliers (no join — avoids N+1)
+  async list(ctx: Ctx, params?: PaginationParams, filter?: SupplierListFilter) {
+    const where: any = {};
+    if (filter?.search) {
+      const q = filter.search;
+      where.OR = [
+        { name: { contains: q, mode: "insensitive" as const } },
+        { phone: { contains: q } },
+        { email: { contains: q, mode: "insensitive" as const } },
+      ];
+    }
+
+    let orderBy: any = { createdAt: "desc" as const };
+    if (filter?.sortKey) {
+      const dir = filter.sortDir || "asc";
+      switch (filter.sortKey) {
+        case "name": orderBy = { name: dir }; break;
+        case "payable": orderBy = { payable: dir }; break;
+        case "joined": orderBy = { createdAt: dir }; break;
+        // totalPurchased is an aggregate, cannot be sorted easily at DB level without a view or subquery
+        // We will default to name asc if not matched
+      }
+    } else {
+      orderBy = { name: "asc" as const };
+    }
+
     const raw = await paginate<any>(
       prisma.supplier,
-      {},
+      { where },
       params,
-      { orderBy: { name: "asc" as const } },
+      { orderBy },
     );
 
     // Aggregate total purchased per supplier in one query
@@ -63,6 +92,7 @@ export const suppliersService = {
         address: s.address || "",
         notes: s.notes || "",
         payableBalance: Number(s.payable),
+        advanceBalance: Number(s.advanceBalance),
         totalPurchased: totalMap.get(s.id) ?? 0,
         createdAt: s.createdAt.toISOString(),
       })),
@@ -93,6 +123,7 @@ export const suppliersService = {
       address: s.address || "",
       notes: s.notes || "",
       payableBalance: Number(s.payable),
+      advanceBalance: Number(s.advanceBalance),
       totalPurchased,
       createdAt: s.createdAt.toISOString(),
     };
@@ -100,7 +131,7 @@ export const suppliersService = {
 
   /** Create a new supplier. Requires MANAGER+. */
   async create(ctx: Ctx, input: SupplierCreateInput) {
-    requireRole(ctx, "MANAGER");
+    requireRole(ctx, "ADMIN");
 
     if (!input.name?.trim()) {
       throw new ServiceError("VALIDATION", "Supplier name is required", 400);
@@ -115,6 +146,7 @@ export const suppliersService = {
         address: input.address || null,
         notes: input.notes || null,
         payable: 0,
+        advanceBalance: 0,
       },
     });
 
@@ -127,6 +159,7 @@ export const suppliersService = {
       address: s.address || "",
       notes: s.notes || "",
       payableBalance: Number(s.payable),
+      advanceBalance: Number(s.advanceBalance),
       totalPurchased: 0,
       createdAt: s.createdAt.toISOString(),
     };
@@ -134,7 +167,7 @@ export const suppliersService = {
 
   /** Update an existing supplier. Requires MANAGER+. */
   async update(ctx: Ctx, id: string, input: SupplierUpdateInput) {
-    requireRole(ctx, "MANAGER");
+    requireRole(ctx, "ADMIN");
 
     const existing = await prisma.supplier.findUnique({
       where: { id },
@@ -169,7 +202,7 @@ export const suppliersService = {
 
   /** Get supplier profile (aggregated summary). Requires MANAGER+. */
   async getProfile(ctx: Ctx, id: string) {
-    requireRole(ctx, "MANAGER");
+    requireRole(ctx, "ADMIN");
     const s = await prisma.supplier.findUnique({
       where: { id },
     });
@@ -200,6 +233,7 @@ export const suppliersService = {
         address: s.address || "",
         notes: s.notes || "",
         payableBalance: Number(s.payable),
+        advanceBalance: Number(s.advanceBalance),
       },
       recentPurchases: recentPurchases.map((p) => ({
         id: p.id,
@@ -221,7 +255,7 @@ export const suppliersService = {
 
   /** Remove a supplier. Requires OWNER. */
   async remove(ctx: Ctx, id: string) {
-    requireRole(ctx, "OWNER");
+    requireRole(ctx, "ADMIN");
 
     const supplier = await prisma.supplier.findUnique({
       where: { id },

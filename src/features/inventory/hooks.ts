@@ -9,40 +9,25 @@ import { toast } from "sonner";
 import { useAuth } from "@/features/auth";
 import { QueryTier } from "@/lib/queryConfig";
 
-export function useInventoryStats() {
-  const { data } = useProductsQuery();
-  const products = ((data as any)?.items ?? []) as any[];
-  return useMemo(() => {
-    const active = products.filter((p) => p.active);
-    const out = active.filter((p) => p.stock <= 0);
-    const low = active.filter((p) => p.stock > 0 && p.stock <= p.minStock);
-    const totalValue = active.reduce((sum, p) => sum + p.stock * p.costPrice, 0);
-    return {
-      activeCount: active.length,
-      outOfStockCount: out.length,
-      lowStockCount: low.length,
-      totalValue,
-      stockValue: totalValue,
-      lowCount: low.length,
-      outCount: out.length,
-    };
-  }, [products]);
-}
+// useInventoryStats removed in favor of backend useInventoryMetricsQuery
 
 /** Primary adjustments query — fed by `useAdjustmentsCacheBridge`. */
-export function useAdjustmentsQuery() {
+export function useAdjustmentsQuery(initialData?: any) {
   const { session, status } = useAuth();
   return useQuery({
     queryKey: inventoryKeys.scope("adjustments"),
     queryFn: () => inventoryService.listAdjustments(),
     enabled: status !== "loading" && !!session,
+    initialData,
     ...QueryTier.MASTER_DATA,  // no polling — mutation onSuccess invalidates
   });
 }
 
 /** Backward-compat hook (returns adjustments list directly). */
-export function useAdjustments(): StockAdjustment[] {
-  const { data } = useAdjustmentsQuery();
+export function useAdjustments(initialData?: StockAdjustment[]): StockAdjustment[] {
+  const { data } = useAdjustmentsQuery(
+    initialData ? { items: initialData, total: initialData.length } : undefined
+  );
   return ((data as any)?.items ?? []) as StockAdjustment[];
 }
 

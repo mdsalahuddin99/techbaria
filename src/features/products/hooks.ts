@@ -14,14 +14,28 @@ import { effectiveReorderPoint, bundleAvailableStock } from "./bundle";
  * cache hot from Zustand so consumers get instant reactivity. In the
  * HTTP driver phase, mutations invalidate the cache normally.
  */
-export function useProductsQuery() {
+export function useProductsQuery(initialData?: any) {
   const { session, status } = useAuth();
   return useQuery({
     queryKey: productKeys.list(),
     queryFn: () => productsService.list(),
     // Don't fire until we know the user is authenticated
     enabled: status !== "loading" && !!session,
+    initialData,
     ...QueryTier.MASTER_DATA,
+  });
+}
+
+import { useInfiniteQuery } from "@tanstack/react-query";
+
+export function useInfiniteProductsQuery(filter?: { search?: string; categoryId?: string; isPublished?: boolean; lowStock?: boolean }) {
+  const { session, status } = useAuth();
+  return useInfiniteQuery({
+    queryKey: [...productKeys.list(), filter],
+    queryFn: ({ pageParam }) => productsService.list(filter, pageParam ? { cursor: pageParam } : undefined),
+    getNextPageParam: (lastPage) => lastPage.nextCursor || undefined,
+    initialPageParam: undefined as string | undefined,
+    enabled: status !== "loading" && !!session,
   });
 }
 
@@ -30,8 +44,10 @@ export function useProductsQuery() {
  * (`{ data, isLoading, error }`) so we don't have to touch every page
  * in one shot. New code should prefer `useProductsQuery()`.
  */
-export function useProducts() {
-  const { data, isLoading, error } = useProductsQuery();
+export function useProducts(initialData?: Product[]) {
+  const { data, isLoading, error } = useProductsQuery(
+    initialData ? { items: initialData, total: initialData.length } : undefined
+  );
   return {
     data: ((data as any)?.items ?? []) as Product[],
     isLoading,

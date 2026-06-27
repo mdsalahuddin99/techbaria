@@ -53,7 +53,7 @@ export default function StaffTab() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<"CASHIER" | "MANAGER">("CASHIER");
+  const [role, setRole] = useState<"CASHIER" | "ADMIN">("CASHIER");
   const [saving, setSaving] = useState(false);
 
   // Delete confirmation
@@ -62,7 +62,7 @@ export default function StaffTab() {
 
   // Edit role dialog
   const [editTarget, setEditTarget] = useState<StaffUser | null>(null);
-  const [editingRole, setEditingRole] = useState<"CASHIER" | "MANAGER">("CASHIER");
+  const [editingRole, setEditingRole] = useState<"CASHIER" | "ADMIN">("CASHIER");
   const [editSaving, setEditSaving] = useState(false);
 
   const fetchUsers = async () => {
@@ -204,7 +204,7 @@ export default function StaffTab() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
-                        {u.role !== "OWNER" && (
+                        {u.role !== "ADMIN" && (
                           <Button
                             variant="ghost"
                             size="sm"
@@ -254,7 +254,7 @@ export default function StaffTab() {
                 className="h-10 px-3 rounded-md border bg-background text-sm w-full"
               >
                 <option value="CASHIER">Cashier — POS &amp; Sales</option>
-                <option value="MANAGER">Manager — Full access except billing</option>
+                <option value="ADMIN">Manager — Full access except billing</option>
               </select>
               <p className="text-xs text-muted-foreground mt-1.5">
                 <strong>Cashier:</strong> Can create POS sales, view inventory.
@@ -287,7 +287,7 @@ export default function StaffTab() {
                 className="h-10 px-3 rounded-md border bg-background text-sm w-full"
               >
                 <option value="CASHIER">Cashier</option>
-                <option value="MANAGER">Manager</option>
+                <option value="ADMIN">Manager</option>
               </select>
             </div>
             <LoadingButton onClick={handleEditRole} loading={editSaving} className="w-full">

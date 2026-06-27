@@ -8,20 +8,23 @@ import { useAuth } from "@/features/auth";
 import { QueryTier } from "@/lib/queryConfig";
 
 /** Primary expenses-list query — fed by `useExpensesCacheBridge`. */
-export function useExpensesQuery() {
+export function useExpensesQuery(initialData?: any) {
   const { session, status } = useAuth();
   return useQuery({
     queryKey: expenseKeys.list(),
     queryFn: () => expensesService.list(),
     enabled: status !== "loading" && !!session,
+    initialData,
     ...QueryTier.MASTER_DATA,
   });
 }
 
 /** Backward-compat hook returning the same shape as before. */
-export function useExpenses() {
-  const q = useExpensesQuery();
-  return { data: ((q.data as any)?.items ?? []) as any[], isLoading: q.isLoading, error: q.error };
+export function useExpenses(initialData?: Expense[]) {
+  const q = useExpensesQuery(
+    initialData ? { items: initialData, total: initialData.length } : undefined
+  );
+  return { data: ((q.data as any)?.items ?? []) as Expense[], isLoading: q.isLoading, error: q.error };
 }
 
 function invalidateAll(qc: ReturnType<typeof useQueryClient>) {

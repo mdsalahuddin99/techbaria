@@ -8,7 +8,7 @@
  * import { requireRole } from "@/server/auth/rbac";
  *
  * delete: (ctx: Ctx, id: string) => {
- *   requireRole(ctx, "MANAGER");
+ *   requireRole(ctx, "ADMIN");
  *   return prisma.product.delete({ where: { id, shopId: ctx.shopId } });
  * }
  * ```
@@ -17,13 +17,11 @@ import "server-only";
 import { ServiceError } from "@/server/lib/errors";
 import type { Ctx } from "@/server/lib/ctx";
 
-type Role = "SUPER_ADMIN" | "OWNER" | "MANAGER" | "CASHIER" | "VIEWER";
+type Role = "ADMIN" | "CASHIER" | "VIEWER";
 
 /** Higher number = more privileges */
 const HIERARCHY: Record<Role, number> = {
-  SUPER_ADMIN: 5,
-  OWNER: 4,
-  MANAGER: 3,
+  ADMIN: 3,
   CASHIER: 2,
   VIEWER: 1,
 };

@@ -6,10 +6,17 @@ import { Checkbox } from "@/shared/ui/checkbox";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/shared/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/shared/ui/dropdown-menu";
 import { formatCurrency, productDisplayName } from "@/shared/lib/format";
 import { categoryName } from "@/shared/lib/categoryName";
 import { useLocale } from "@/features/i18n";
-import { Plus, Pencil, Trash2, ShieldCheck, ShieldAlert, ShieldX, Printer, ShoppingCart } from "lucide-react";
+import { Plus, Pencil, Trash2, ShieldCheck, ShieldAlert, ShieldX, Printer, ShoppingCart, MoreHorizontal } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
 import { getWarrantyStatus, formatWarrantyEnd } from "@/features/products/warranty";
 import type { Product } from "@/shared/lib/types";
@@ -147,31 +154,38 @@ export function InventoryProductTable({
                     )}
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-1">
-                      {needsReorder && p.type !== "bundle" && (
-                        <Button asChild size="icon" variant="ghost" title="Create PO" className="text-primary">
-                          <Link
-                            href={`/purchases?createPO=${p.id}&qty=${suggestedPoQty(p)}${p.supplierId ? `&supplier=${p.supplierId}` : ""}`}
-                          >
-                            <ShoppingCart className="h-4 w-4" />
-                          </Link>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                          <span className="sr-only">Open menu</span>
+                          <MoreHorizontal className="h-4 w-4" />
                         </Button>
-                      )}
-                      {onPrintLabel && (
-                        <Button size="icon" variant="ghost" onClick={() => onPrintLabel(p)} title="Print label">
-                          <Printer className="h-4 w-4" />
-                        </Button>
-                      )}
-                      <Button size="icon" variant="ghost" onClick={() => onQuickAdjust(p.id)} title="Quick adjust stock">
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                      <Button size="icon" variant="ghost" onClick={() => onEdit(p)} title="Edit product">
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button size="icon" variant="ghost" onClick={() => onDelete(p.id)} title="Delete product" className="text-destructive hover:text-destructive">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {needsReorder && p.type !== "bundle" && (
+                          <DropdownMenuItem asChild>
+                            <Link href={`/purchases?createPO=${p.id}&qty=${suggestedPoQty(p)}${p.supplierId ? `&supplier=${p.supplierId}` : ""}`} className="w-full flex items-center text-primary focus:text-primary">
+                              <ShoppingCart className="mr-2 h-4 w-4" /> Create PO
+                            </Link>
+                          </DropdownMenuItem>
+                        )}
+                        {onPrintLabel && (
+                          <DropdownMenuItem onClick={() => onPrintLabel(p)}>
+                            <Printer className="mr-2 h-4 w-4" /> Print Label
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuItem onClick={() => onQuickAdjust(p.id)}>
+                          <Plus className="mr-2 h-4 w-4" /> Quick Adjust
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onEdit(p)}>
+                          <Pencil className="mr-2 h-4 w-4" /> Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onDelete(p.id)}>
+                          <Trash2 className="mr-2 h-4 w-4" /> Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
               );

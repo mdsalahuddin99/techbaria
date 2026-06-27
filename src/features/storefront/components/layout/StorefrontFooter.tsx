@@ -7,81 +7,12 @@ import {
 
 export function StorefrontFooter() {
   return (
-    <footer style={{ background: "#1D4ED8" }}>
+    <footer className="w-full text-white">
 
-      {/* ── Newsletter ── */}
-      <div
-        className="border-b"
-        style={{ borderColor: "rgba(255,255,255,0.12)" }}
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 sm:py-12">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div>
-              <h3 className="text-xl sm:text-2xl font-extrabold text-white mb-1">
-                Subscribe to our Newsletter
-              </h3>
-              <p className="text-sm text-white/70">
-                সেরা ডিল, নতুন পণ্য এবং এক্সক্লুসিভ অফার সবার আগে পান।
-              </p>
-            </div>
-            <form
-              onSubmit={(e) => e.preventDefault()}
-              className="flex w-full md:w-auto gap-2"
-            >
-              <input
-                type="email"
-                placeholder="আপনার ইমেইল লিখুন..."
-                className="flex-1 md:w-72 px-4 py-3 rounded-[12px] text-sm font-medium focus:outline-none focus:ring-2"
-                style={{
-                  background: "rgba(255,255,255,0.12)",
-                  border: "1.5px solid rgba(255,255,255,0.2)",
-                  color: "#ffffff",
-                }}
-              />
-              <button
-                type="submit"
-                className="px-5 py-3 rounded-[12px] text-sm font-bold text-[#1D4ED8] bg-white hover:bg-[#EFF6FF] transition-colors"
-              >
-                Subscribe
-              </button>
-            </form>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Trust strip ── */}
-      <div
-        className="border-b"
-        style={{ borderColor: "rgba(255,255,255,0.10)" }}
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
-          {[
-            { icon: Truck, t: "Fast Delivery", s: "Dhaka 24h, Outside 2-3 days" },
-            { icon: ShieldCheck, t: "Genuine Products", s: "100% authorized brands" },
-            { icon: PackageCheck, t: "Easy Return", s: "7-day return policy" },
-            { icon: CreditCard, t: "Secure Payment", s: "COD, bKash, Card, EMI" },
-          ].map((x) => (
-            <div key={x.t} className="flex items-start gap-3">
-              <div
-                className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0"
-                style={{
-                  background: "rgba(255,255,255,0.12)",
-                  border: "1px solid rgba(255,255,255,0.2)",
-                }}
-              >
-                <x.icon className="h-5 w-5 text-white" />
-              </div>
-              <div className="min-w-0">
-                <div className="text-sm font-bold text-white">{x.t}</div>
-                <div className="text-[11px] sm:text-xs text-white/60">{x.s}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
 
       {/* ── Main footer grid ── */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 sm:py-14 grid grid-cols-2 md:grid-cols-4 gap-8 sm:gap-10">
+      <div style={{ background: "#1E40AF" }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 sm:py-14 grid grid-cols-2 md:grid-cols-4 gap-8 sm:gap-10">
         {/* Brand column */}
         <div className="col-span-2 md:col-span-1">
           <div className="flex items-center gap-2.5 mb-4">
@@ -211,12 +142,13 @@ export function StorefrontFooter() {
             </div>
           </div>
         </div>
+        </div>
       </div>
 
       {/* ── Copyright bar ── */}
       <div
         className="border-t"
-        style={{ background: "#1E40AF", borderColor: "rgba(255,255,255,0.10)" }}
+        style={{ background: "#1E3A8A", borderColor: "rgba(255,255,255,0.10)" }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-white/50">
           <span>© {new Date().getFullYear()} AmarShop. All rights reserved.</span>

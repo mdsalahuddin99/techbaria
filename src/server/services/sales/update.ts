@@ -12,7 +12,7 @@ import type { SaleUpdateInput } from "./types";
 
 /** Update a completed sale — replaces items, tenders, and syncs stock/serials. Requires MANAGER+. */
 export async function update(ctx: Ctx, id: string, input: SaleUpdateInput) {
-  requireRole(ctx, "MANAGER");
+  requireRole(ctx, "ADMIN");
 
   if (!input.items?.length) {
     throw new ServiceError("EMPTY_CART", "At least one item is required");

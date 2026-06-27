@@ -1,3 +1,5 @@
+"use client";
+
 import { useStorefrontBrands } from "../../hooks/useStorefrontCategories";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
@@ -35,7 +37,7 @@ export function BrandsRow() {
           {brands.map((b, i) => (
             <div
               key={b}
-              className="group shrink-0 px-6 h-14 rounded-[16px] bg-white flex items-center justify-center cursor-pointer transition-all duration-300 hover:-translate-y-1"
+              className="group shrink-0 px-6 h-14 rounded-[16px] bg-card text-card-foreground flex items-center justify-center cursor-pointer transition-all duration-300 hover:-translate-y-1"
               style={{
                 border: "1.5px solid #BFDBFE",
                 boxShadow: "0 2px 12px rgba(37,99,235,0.06)",
@@ -50,10 +52,7 @@ export function BrandsRow() {
                 e.currentTarget.style.boxShadow = "0 2px 12px rgba(37,99,235,0.06)";
               }}
             >
-              <span
-                className="text-sm font-extrabold tracking-wide transition-colors duration-200 group-hover:text-[#2563EB]"
-                style={{ color: "#1E3A5F" }}
-              >
+              <span className="font-bold text-sm sm:text-base tracking-wide text-foreground opacity-60 group-hover:opacity-100 group-hover:text-primary transition-all duration-300">
                 {b}
               </span>
             </div>

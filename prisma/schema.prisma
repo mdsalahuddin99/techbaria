@@ -65,9 +65,7 @@ model VerificationToken {
 }
 
 enum Role {
-  SUPER_ADMIN
-  OWNER
-  MANAGER
+  ADMIN
   CASHIER
   VIEWER
 }
@@ -107,6 +105,7 @@ model Category {
   id        String          @id @default(cuid())
   name      String
   slug      String          @unique
+  imageUrl  String?
   parentId  String?
   parent    Category?       @relation("CategoryTree", fields: [parentId], references: [id])
   children  Category[]      @relation("CategoryTree")
@@ -208,9 +207,12 @@ model Product {
 
   images        ProductImage[]
   variants      ProductVariant[]
+  reviews       ProductReview[]
   isPublished   Boolean          @default(false)
+  isTrending    Boolean          @default(false)
   saleItems     SaleItem[]
   purchaseItems PurchaseItem[]
+  restockItems  RestockItem[]
   serialNumbers SerialNumber[]
   warehouseStocks WarehouseStock[]
   createdAt     DateTime         @default(now())
@@ -286,6 +288,14 @@ enum TransactionType {
   WRITE_OFF
 }
 
+enum SupplierTxType {
+  PURCHASE
+  PAYMENT
+  REFUND
+  ADJUSTMENT
+  WRITE_OFF
+}
+
 model CustomerTransaction {
   id            String            @id @default(cuid())
   customerId    String
@@ -316,11 +326,35 @@ model Supplier {
   email         String?
   address       String?
   notes         String?
-  payable       Decimal           @default(0) @db.Decimal(12, 2)
+  payable       Decimal               @default(0) @db.Decimal(12, 2)
+  advanceBalance Decimal              @default(0) @db.Decimal(14, 2)
   purchases     Purchase[]
   products      Product[]
   payments      SupplierPayment[]
+  transactions  SupplierTransaction[]
+  createdAt     DateTime              @default(now())
+}
+
+model SupplierTransaction {
+  id            String            @id @default(cuid())
+  supplierId    String
+  supplier      Supplier          @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  type          SupplierTxType
+  amount        Decimal           @db.Decimal(14, 2)
+  balanceBefore Decimal           @db.Decimal(14, 2)
+  balanceAfter  Decimal           @db.Decimal(14, 2)
+  purchaseId    String?
+  purchase      Purchase?         @relation(fields: [purchaseId], references: [id])
+  accountId     String?
+  account       FinancialAccount? @relation(fields: [accountId], references: [id])
+  reference     String?
+  notes         String?
+  createdById   String?
   createdAt     DateTime          @default(now())
+
+  @@index([supplierId, createdAt])
+  @@index([createdAt])
+  @@index([type, createdAt])
 }
 
 // ============ SALES ============
@@ -449,6 +483,7 @@ model Purchase {
   due         Decimal          @default(0) @db.Decimal(12, 2)
   items       PurchaseItem[]
   tenders     PurchaseTender[]
+  supplierTransactions SupplierTransaction[]
   notes       String?
   createdAt   DateTime         @default(now())
 
@@ -503,6 +538,40 @@ model SupplierPayment {
   @@index([supplierId])
   @@index([accountId])
   @@index([date])
+}
+
+enum RestockStatus {
+  DRAFT
+  CONFIRMED
+}
+
+model RestockOrder {
+  id          String        @id @default(cuid())
+  roNumber    String        @unique
+  status      RestockStatus @default(DRAFT)
+  note        String?
+  items       RestockItem[]
+  createdAt   DateTime      @default(now())
+  confirmedAt DateTime?
+
+  @@index([createdAt])
+  @@index([status])
+}
+
+model RestockItem {
+  id             String       @id @default(cuid())
+  restockOrderId String
+  restockOrder   RestockOrder @relation(fields: [restockOrderId], references: [id], onDelete: Cascade)
+  productId      String
+  product        Product      @relation(fields: [productId], references: [id])
+  name           String
+  currentStock   Int
+  minStock       Int
+  suggestedQty   Int
+  costPrice      Decimal      @db.Decimal(12, 2)
+
+  @@index([productId])
+  @@index([restockOrderId])
 }
 
 // ============ SERIAL / IMEI TRACKING ============
@@ -563,6 +632,7 @@ model FinancialAccount {
   transfersOut     AccountTransfer[]  @relation("FromAccount")
   expenses         Expense[]
   customerTransactions CustomerTransaction[]
+  supplierTransactions SupplierTransaction[]
   archived         Boolean            @default(false)
   createdAt        DateTime           @default(now())
 
@@ -701,4 +771,37 @@ model CashShift {
 
   @@index([cashierId, status])
   @@index([status])
+}
+
+// ============ STOREFRONT ============
+
+model ProductReview {
+  id          String   @id @default(cuid())
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  reviewerName String
+  rating      Int      // 1–5
+  comment     String   @db.Text
+  approved    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([productId, approved])
+  @@index([createdAt])
+}
+
+model HeroSlide {
+  id        String   @id @default(cuid())
+  headline  String
+  highlight String?
+  sub       String?
+  cta1      String
+  cta1Link  String
+  cta2      String?
+  cta2Link  String?
+  imgUrl    String
+  gradient  String?
+  position  Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

@@ -9,6 +9,7 @@ export const categoryCreateSchema = z.object({
     .max(120)
     .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Slug must be kebab-case (e.g. my-category)")
     .optional(),
+  imageUrl: z.string().url("Must be a valid URL").optional().nullable(),
   parentId: z.string().nullable().optional(),
 });
 
@@ -21,6 +22,7 @@ export const categoryUpdateSchema = z.object({
     .max(120)
     .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Slug must be kebab-case")
     .optional(),
+  imageUrl: z.string().url("Must be a valid URL").optional().nullable(),
   parentId: z.string().nullable().optional(),
 });
 

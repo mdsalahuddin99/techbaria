@@ -47,13 +47,13 @@ export const purchaseCreateSchema = z.object({
   expectedDate: z.string().optional(),
   warehouseId: z.string().optional(),
 }).transform((input) => {
-  // Merge amountPaid into tenders if provided
+  // Merge amountPaid into tenders if provided and no tenders exist
   const tenders = input.tenders ?? [];
-  if ((input.amountPaid ?? 0) > 0) {
+  if (tenders.length === 0 && (input.amountPaid ?? 0) > 0) {
     tenders.push({
-      type: "CASH",
+      type: input.paidFromAccountId === "WALLET" ? "WALLET" : "CASH",
       amount: input.amountPaid!,
-      accountId: input.paidFromAccountId,
+      accountId: input.paidFromAccountId === "WALLET" ? undefined : input.paidFromAccountId,
     });
   }
   return {

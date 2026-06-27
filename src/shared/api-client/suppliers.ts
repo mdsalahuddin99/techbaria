@@ -18,8 +18,16 @@ export interface PaginatedResponse<T> {
 }
 
 export const suppliersApi = {
-  list(): Promise<PaginatedResponse<Supplier>> {
-    return listSuppliersAction() as unknown as Promise<PaginatedResponse<Supplier>>;
+  async list(filter?: any, pagination?: { cursor?: string }): Promise<PaginatedResponse<Supplier>> {
+    const params = new URLSearchParams();
+    if (pagination?.cursor) params.append("cursor", pagination.cursor);
+    if (filter?.search) params.append("search", filter.search);
+    if (filter?.sortKey) params.append("sortKey", filter.sortKey);
+    if (filter?.sortDir) params.append("sortDir", filter.sortDir);
+
+    const res = await fetch(`/api/suppliers?${params.toString()}`);
+    if (!res.ok) throw new Error("Failed to fetch suppliers");
+    return res.json();
   },
 
   getById(id: string): Promise<Supplier | null> {
@@ -40,5 +48,31 @@ export const suppliersApi = {
 
   getProfile(id: string): Promise<any> {
     return getSupplierProfileAction(id);
+  },
+
+  async depositAdvance(data: { supplierId: string; amount: number; accountId: string; reference?: string; notes?: string; date?: string }) {
+    const res = await fetch("/api/suppliers/wallet", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "deposit", ...data }),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  },
+
+  async withdrawAdvance(data: { supplierId: string; amount: number; accountId: string; reference?: string; notes?: string; date?: string }) {
+    const res = await fetch("/api/suppliers/wallet", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "withdraw", ...data }),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  },
+
+  async getLedger(id: string, page = 1) {
+    const res = await fetch(`/api/suppliers/${id}/ledger?page=${page}`);
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
   },
 };

@@ -1,6 +1,6 @@
-import type { Product } from "@/features/products/types";
+import type { StorefrontProduct as SafeStorefrontProduct } from "@/server/services/products/serialiser";
 
-export type StorefrontProduct = Product;
+export type StorefrontProduct = SafeStorefrontProduct;
 
 export interface CartLine {
   productId: string;

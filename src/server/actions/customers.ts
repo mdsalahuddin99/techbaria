@@ -22,9 +22,11 @@ async function getActionCtx() {
 
 // ─── Basic CRUD ─────────────────────────────────────────────────────────────
 
-export async function listCustomersAction(search?: string, params?: PaginationParams) {
+import type { CustomerListFilter } from "@/server/services/customersService";
+
+export async function listCustomersAction(filter?: CustomerListFilter, params?: PaginationParams) {
   const ctx = await getActionCtx();
-  return customersService.list(ctx, params, search);
+  return customersService.list(ctx, params, filter);
 }
 
 export async function getCustomerByIdAction(id: string) {

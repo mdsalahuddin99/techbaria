@@ -10,6 +10,7 @@ export interface Supplier {
   notes?: string;
   totalPurchased: number;
   payableBalance: number;
+  advanceBalance?: number;
   createdAt: string;
 }
 

@@ -76,7 +76,7 @@ export const accountsService = {
 
   /** Create a new financial account. Requires MANAGER+. */
   async create(ctx: Ctx, input: { name: string; type: AccountType; openingBalance?: number; parentId?: string; isDefault?: boolean }) {
-    requireRole(ctx, "MANAGER");
+    requireRole(ctx, "ADMIN");
 
     if (!input.name?.trim()) {
       throw new ServiceError("VALIDATION", "Account name is required", 400);
@@ -115,7 +115,7 @@ export const accountsService = {
 
   /** Update financial account. Requires MANAGER+. */
   async update(ctx: Ctx, id: string, patch: { name?: string; type?: AccountType; parentId?: string | null }) {
-    requireRole(ctx, "MANAGER");
+    requireRole(ctx, "ADMIN");
 
     const updateData: any = {};
     if (patch.name !== undefined) updateData.name = patch.name;
@@ -140,7 +140,7 @@ export const accountsService = {
 
   /** Archive financial account. Requires MANAGER+. */
   async archive(ctx: Ctx, id: string) {
-    requireRole(ctx, "MANAGER");
+    requireRole(ctx, "ADMIN");
     await prisma.financialAccount.update({
       where: { id },
       data: { archived: true },
@@ -155,7 +155,7 @@ export const accountsService = {
 
   /** Set default account. Requires MANAGER+. */
   async setDefault(ctx: Ctx, id: string) {
-    requireRole(ctx, "MANAGER");
+    requireRole(ctx, "ADMIN");
     // Standard schema has no default field directly, but we can return successfully
     // or log/track defaults in shop settings JSON.
   },

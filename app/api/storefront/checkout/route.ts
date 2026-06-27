@@ -15,7 +15,7 @@ const checkoutSchema = z.object({
     phone: z.string().min(1, "Phone is required"),
     email: z.string().email().optional().or(z.literal("")),
     address: z.string().min(1, "Address is required"),
-    city: z.string().min(1, "City is required"),
+    city: z.string().optional().or(z.literal("")),
     area: z.string().optional(),
     postcode: z.string().optional(),
     notes: z.string().optional(),
@@ -24,7 +24,7 @@ const checkoutSchema = z.object({
   paymentMethod: z.enum(["cod", "bkash", "nagad", "card"]),
 });
 
-export const POST = publicApiHandler(async (shopId: string, req: Request) => {
+export const POST = publicApiHandler(async (req: Request) => {
   const body = await parseBody(req, checkoutSchema);
   return salesService.createStorefrontOrder(
     { userId: "", role: "CASHIER" },

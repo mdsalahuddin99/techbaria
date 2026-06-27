@@ -1,11 +1,15 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
-import { useFeaturedProducts, useStorefrontProducts } from "../../hooks/useStorefrontProducts";
+import { deriveFeaturedProducts } from "../../hooks/useStorefrontProducts";
 import { ProductGrid } from "../product/ProductGrid";
+import type { StorefrontProduct } from "@/features/storefront/types";
 
-export function FeaturedProducts() {
-  const featured = useFeaturedProducts(8);
-  const { all, isLoading } = useStorefrontProducts();
+interface Props {
+  products: StorefrontProduct[];
+}
+
+export function FeaturedProducts({ products: allProducts }: Props) {
+  const featured = deriveFeaturedProducts(allProducts, 8);
 
   return (
     <section className="sf-section-white py-12 sm:py-16">
@@ -30,7 +34,7 @@ export function FeaturedProducts() {
           </Link>
         </div>
 
-        <ProductGrid products={featured} allProducts={all} loading={isLoading} />
+        <ProductGrid products={featured} allProducts={allProducts} loading={false} />
 
         {/* Mobile View All */}
         <div className="mt-8 text-center sm:hidden">

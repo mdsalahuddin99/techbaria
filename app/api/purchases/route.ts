@@ -7,8 +7,15 @@ import { parsePaginationParams } from "@/server/lib/paginate";
 import type { Ctx } from "@/server/lib/ctx";
 
 export const GET = apiHandler(async (ctx: Ctx, req: Request) => {
-  const pagination = parsePaginationParams(new URL(req.url));
-  return purchasesService.list(ctx, pagination);
+  const url = new URL(req.url);
+  const pagination = parsePaginationParams(url);
+  const filter = {
+    search: url.searchParams.get("search") || undefined,
+    status: url.searchParams.get("status") || undefined,
+    sortKey: url.searchParams.get("sortKey") || undefined,
+    sortDir: (url.searchParams.get("sortDir") as "asc" | "desc") || undefined,
+  };
+  return purchasesService.list(ctx, pagination, filter);
 });
 
 export const POST = apiHandler(async (ctx: Ctx, req: Request) => {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCompareStore } from "@/features/storefront/store/useCompareStore";
-import { useProducts } from "@/features/products/hooks";
+import { useStorefrontProducts } from "@/features/storefront/hooks/useStorefrontProducts";
 import { formatPrice } from "@/features/storefront";
 import { useSeo } from "@/features/storefront";
 import { GitCompareArrows, X, Check, Minus } from "lucide-react";
@@ -12,7 +12,7 @@ export default function StorefrontCompare() {
   const ids = useCompareStore((s) => s.ids);
   const remove = useCompareStore((s) => s.remove);
   const clear = useCompareStore((s) => s.clear);
-  const { data: all } = useProducts();
+  const { all } = useStorefrontProducts();
   const items = ids.map((id) => all.find((p) => p.id === id)).filter(Boolean) as typeof all;
 
   if (items.length === 0) {

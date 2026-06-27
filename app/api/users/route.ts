@@ -12,11 +12,11 @@ const createUserSchema = z.object({
   name: z.string().trim().min(2).max(100),
   email: z.string().trim().email().max(255),
   password: z.string().min(8).max(128),
-  role: z.enum(["CASHIER", "MANAGER"]),
+  role: z.enum(["CASHIER", "ADMIN"]),
 });
 
 const updateUserSchema = z.object({
-  role: z.enum(["CASHIER", "MANAGER", "VIEWER"]).optional(),
+  role: z.enum(["CASHIER", "ADMIN", "VIEWER"]).optional(),
   name: z.string().trim().min(2).max(100).optional(),
 });
 
@@ -37,7 +37,7 @@ export const GET = apiHandler(async (ctx: Ctx) => {
   });
 
   return { items: users };
-}, "users:list", ["MANAGER", "OWNER"]);
+}, "users:list", ["ADMIN"]);
 
 // ─── POST: Create a new user (staff) ───────────────────────────────────────
 
@@ -75,7 +75,7 @@ export const POST = apiHandler(async (ctx: Ctx, req: Request) => {
   });
 
   return { success: true, user };
-}, "users:create", ["MANAGER", "OWNER"]);
+}, "users:create", ["ADMIN"]);
 
 // ─── PATCH: Update user role ───────────────────────────────────────────────
 
@@ -97,7 +97,7 @@ export const PATCH = apiHandler(async (ctx: Ctx, req: Request) => {
   }
 
   return { success: true };
-}, "users:update", ["MANAGER", "OWNER"]);
+}, "users:update", ["ADMIN"]);
 
 // ─── DELETE: Deactivate a user ─────────────────────────────────────────────
 
@@ -116,4 +116,4 @@ export const DELETE = apiHandler(async (ctx: Ctx, req: Request) => {
   }
 
   return { success: true };
-}, "users:delete", ["MANAGER", "OWNER"]);
+}, "users:delete", ["ADMIN"]);

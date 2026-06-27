@@ -5,11 +5,17 @@ import type { ReactNode } from "react";
 import { saleKeys, returnKeys } from "../queryKeys";
 import { useSalesQuery, useReturnsQuery, useSaleMutations } from "../hooks";
 import { useSalesCacheBridge } from "../useSalesCacheBridge";
-import { useSalesReport } from "@/features/reports/hooks";
+import { useReportsMetricsQuery } from "@/features/reports/hooks";
 import { useProductsCacheBridge } from "@/features/products/useProductsCacheBridge";
 import { seedQueryClient, mockSales } from "@/test/mock-api";
 
 vi.mock("@/services");
+vi.mock("@/features/auth", () => ({
+  useAuth: () => ({
+    session: { user: { id: "user-1", role: "ADMIN", shopId: "shop-1" }, expires: "" },
+    status: "authenticated",
+  }),
+}));
 import { salesService } from "@/services";
 
 function wrap(qc: QueryClient) {
@@ -33,15 +39,31 @@ describe("sales integration — Dashboard/Reports refresh + void/refund cache", 
     );
 
     const today = new Date().toISOString().slice(0, 10);
-    const report = renderHook(
-      () => useSalesReport({ from: today, to: today }),
-      { wrapper: wrap(qc) },
+
+    // Mock global fetch so useReportsMetricsQuery can resolve without a real API
+    const makeMetricsFetch = (txnCount: number, totalRevenue: number) =>
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          txnCount,
+          totalRevenue,
+          aov: 0, cogs: 0, expenseTotal: 0, grossProfit: 0, netProfit: 0,
+          trend: [], byMethod: [], topProducts: [], expensesList: [],
+        }),
+      } as any);
+
+    vi.stubGlobal("fetch", makeMetricsFetch(mockSales.length, 1000));
+
+    const { result: reportRes } = renderHook(
+      () => useReportsMetricsQuery({ from: today, to: today }),
+      { wrapper: wrap(qc) }
     );
 
     await waitFor(() => {
-      expect(report.result.current.txnCount).toBeGreaterThanOrEqual(0);
+      expect(reportRes.current.isSuccess).toBe(true);
+      expect(reportRes.current.data?.txnCount).toBeGreaterThanOrEqual(0);
     });
-    const before = report.result.current.txnCount;
+    const before = reportRes.current.data?.txnCount ?? 0;
 
     const newSale = {
       id: "s-new",
@@ -59,16 +81,22 @@ describe("sales integration — Dashboard/Reports refresh + void/refund cache", 
       tenders: [{ type: "CASH" as const, amount: 999999 }],
       createdAt: new Date().toISOString(),
     };
+
+    // Update fetch mock to return incremented count, then invalidate so hook re-fetches
+    vi.stubGlobal("fetch", makeMetricsFetch(before + 1, 999999));
     act(() => {
       qc.setQueryData(saleKeys.list(), (prev: any) =>
         ({ ...prev, items: [...(prev?.items ?? []), newSale] }),
       );
+      qc.invalidateQueries({ queryKey: ["reports"] });
     });
 
     await waitFor(() => {
-      expect(report.result.current.txnCount).toBe(before + 1);
-      expect(report.result.current.totalRevenue).toBeGreaterThan(0);
+      expect(reportRes.current.data?.txnCount).toBe(before + 1);
+      expect(reportRes.current.data?.totalRevenue).toBeGreaterThan(0);
     });
+
+    vi.unstubAllGlobals();
 
     const dashboardSales = qc.getQueryData(saleKeys.list()) as any;
     expect(dashboardSales?.items?.length).toBeGreaterThanOrEqual(before + 1);

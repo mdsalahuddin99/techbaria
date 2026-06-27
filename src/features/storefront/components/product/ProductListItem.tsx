@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Heart, ShoppingBag, Eye, GitCompareArrows, Star, ShieldCheck, Truck } from "lucide-react";
-import type { Product } from "@/features/products/types";
+import type { StorefrontProduct } from "@/features/storefront/types";
 import { formatPrice, calcDiscountPct } from "../../lib/formatPrice";
 import { productDisplayName } from "@/shared/lib/format";
 import { useCartStore } from "../../store/useCartStore";
@@ -11,8 +11,8 @@ import { publicStock } from "../../hooks/useStorefrontProducts";
 import { toast } from "@/shared/hooks/use-toast";
 
 interface Props {
-  product: Product;
-  allProducts: Product[];
+  product: StorefrontProduct;
+  allProducts: StorefrontProduct[];
 }
 
 /** Horizontal list-view product card for shop page list mode. */

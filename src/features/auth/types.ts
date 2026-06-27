@@ -4,11 +4,11 @@ import type { ID } from "@/shared/types";
  * Application-level roles.
  * Matches Prisma `Role` enum from `prisma/schema.prisma`.
  */
-export type UserRole = "OWNER" | "MANAGER" | "CASHIER" | "VIEWER";
+export type UserRole = "ADMIN" | "ADMIN" | "CASHIER" | "VIEWER";
 
 export const USER_ROLES: readonly UserRole[] = [
-  "OWNER",
-  "MANAGER",
+  "ADMIN",
+  "ADMIN",
   "CASHIER",
   "VIEWER",
 ] as const;

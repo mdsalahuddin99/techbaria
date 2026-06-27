@@ -28,7 +28,7 @@ export async function create(ctx: Ctx, input: PurchaseCreateInput) {
     warehouseId = defaultWarehouse.id;
   }
 
-  requireRole(ctx, "MANAGER");
+  requireRole(ctx, "ADMIN");
 
   if (!input.items?.length) {
     throw new ServiceError("VALIDATION", "At least one item is required");
@@ -162,12 +162,46 @@ export async function create(ctx: Ctx, input: PurchaseCreateInput) {
       });
     }
 
+    const walletTenders = (input.tenders ?? []).filter(t => t.type === "WALLET" || t.type === "Wallet");
+    const accountTenders = (input.tenders ?? []).filter(t => t.type !== "WALLET" && t.type !== "Wallet" && t.accountId && t.amount > 0);
+
+    // Deduct from Supplier advance
+    if (walletTenders.length > 0 && input.supplierId) {
+      const walletAmount = walletTenders.reduce((sum, t) => sum + t.amount, 0);
+      
+      const supp = await tx.supplier.findUnique({
+        where: { id: input.supplierId },
+        select: { advanceBalance: true }
+      });
+      
+      const currentAdvance = Number(supp?.advanceBalance || 0);
+      if (walletAmount > currentAdvance) {
+        throw new ServiceError("CONFLICT", "Insufficient supplier advance balance", 409);
+      }
+      
+      const newAdvance = currentAdvance - walletAmount;
+      await tx.supplier.update({
+        where: { id: input.supplierId },
+        data: { advanceBalance: newAdvance }
+      });
+      
+      await tx.supplierTransaction.create({
+        data: {
+          supplierId: input.supplierId,
+          type: "PURCHASE",
+          amount: walletAmount,
+          balanceBefore: currentAdvance,
+          balanceAfter: newAdvance,
+          purchaseId: created.id,
+          notes: `Advance used for purchase invoice ${input.invoiceNo || created.invoiceNo || created.id.slice(0, 8)}`
+        }
+      });
+    }
+
     // Deduct from each tender's account balance (parallel batch)
-    await Promise.all((input.tenders ?? [])
-      .filter((t) => t.accountId && t.amount > 0)
-      .map((t) =>
+    await Promise.all(accountTenders.map((t) =>
         tx.financialAccount.update({
-          where: { id: t.accountId },
+          where: { id: t.accountId! },
           data: { balance: { decrement: t.amount } },
         }),
       ),

@@ -103,7 +103,7 @@ export const transfersService = {
 
   /** Create a new transfer. Requires MANAGER+. */
   async create(ctx: Ctx, input: TransferInput) {
-    requireRole(ctx, "MANAGER");
+    requireRole(ctx, "ADMIN");
 
     if (!input.fromWarehouseId || !input.toWarehouseId) {
       throw new ServiceError("VALIDATION", "Source and destination warehouses required", 400);
@@ -158,7 +158,7 @@ export const transfersService = {
 
   /** Dispatch a transfer (sets status to IN_TRANSIT, deducts stock from source warehouse). Requires MANAGER+. */
   async dispatch(ctx: Ctx, id: string) {
-    requireRole(ctx, "MANAGER");
+    requireRole(ctx, "ADMIN");
 
     return prisma.$transaction(async (tx) => {
       const transfer = await tx.transfer.findFirst({
@@ -222,7 +222,7 @@ export const transfersService = {
 
   /** Receive a transfer (sets status to COMPLETED, adds stock to destination warehouse). Requires MANAGER+. */
   async receive(ctx: Ctx, id: string) {
-    requireRole(ctx, "MANAGER");
+    requireRole(ctx, "ADMIN");
 
     return prisma.$transaction(async (tx) => {
       const transfer = await tx.transfer.findFirst({
@@ -334,7 +334,7 @@ export const transfersService = {
 
   /** Cancel a transfer (restores stock to source warehouse if it was already in transit). Requires MANAGER+. */
   async cancel(ctx: Ctx, id: string) {
-    requireRole(ctx, "MANAGER");
+    requireRole(ctx, "ADMIN");
 
     return prisma.$transaction(async (tx) => {
       const transfer = await tx.transfer.findFirst({
@@ -383,7 +383,7 @@ export const transfersService = {
 
   /** Delete a transfer record. Requires OWNER. */
   async remove(ctx: Ctx, id: string) {
-    requireRole(ctx, "OWNER");
+    requireRole(ctx, "ADMIN");
 
     const transfer = await prisma.transfer.findFirst({
       where: { id },
@@ -401,7 +401,7 @@ export const transfersService = {
 
   /** Update transfer notes/metadata. Requires MANAGER+. Only PENDING transfers can be updated. */
   async update(ctx: Ctx, id: string, data: { notes?: string }) {
-    requireRole(ctx, "MANAGER");
+    requireRole(ctx, "ADMIN");
 
     const transfer = await prisma.transfer.findFirst({
       where: { id },

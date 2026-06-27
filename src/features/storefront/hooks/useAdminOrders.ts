@@ -36,14 +36,16 @@ function mergeOrders(api: StorefrontOrder[], local: StorefrontOrder[]): Storefro
  * Fetches from the real API and merges with localStorage orders for backward
  * compatibility (orders placed before API connection).
  */
-export function useAdminStorefrontOrders() {
-  const [orders, setOrders] = useState<StorefrontOrder[]>([]);
-  const [loading, setLoading] = useState(true);
+export function useAdminStorefrontOrders(initialOrders?: StorefrontOrder[]) {
+  const [orders, setOrders] = useState<StorefrontOrder[]>(initialOrders ?? []);
+  const [loading, setLoading] = useState(!initialOrders);
 
   // Hydrate from localStorage on mount (client-only to avoid SSR mismatch)
   useEffect(() => {
-    setOrders(readLocal());
-  }, []);
+    if (!initialOrders) {
+      setOrders(readLocal());
+    }
+  }, [initialOrders]);
 
   // Fetch from API on mount
   useEffect(() => {

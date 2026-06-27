@@ -133,7 +133,7 @@ export const storefrontOrder = {
 
   /** List storefront orders (paginated). Requires MANAGER+. */
   async listStorefrontOrders(ctx: Ctx, params?: PaginationParams) {
-    requireRole(ctx, "MANAGER");
+    requireRole(ctx, "ADMIN");
     const result = await paginate(
       prisma.sale,
       {
@@ -151,7 +151,7 @@ export const storefrontOrder = {
 
   /** Update storefront order status. Requires MANAGER+. */
   async updateStorefrontOrderStatus(ctx: Ctx, id: string, status: StorefrontOrderStatus) {
-    requireRole(ctx, "MANAGER");
+    requireRole(ctx, "ADMIN");
     const raw = await prisma.sale.findFirst({
       where: { id, channel: "STOREFRONT" },
       select: { data: true },

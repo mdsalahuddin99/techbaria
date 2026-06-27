@@ -10,7 +10,7 @@ import { cache } from "@/lib/cache";
  *  Blocked if the product has existing purchase history, sales, or serials
  *  to prevent data integrity loss.  */
 export async function remove(ctx: Ctx, id: string) {
-  requireRole(ctx, "OWNER");
+  requireRole(ctx, "ADMIN");
   const product = await prisma.product.findUnique({
     where: { id },
     select: {

@@ -37,6 +37,10 @@ export interface SaleListFilter {
   customerId?: string;
   from?: Date;
   to?: Date;
+  search?: string;
+  paymentMethod?: string;
+  sortKey?: string;
+  sortDir?: "asc" | "desc";
 }
 
 export interface RefundInput {

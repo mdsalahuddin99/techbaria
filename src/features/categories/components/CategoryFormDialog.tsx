@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { createCategory, updateCategory as updateCategoryApi, listCategories } from "@/shared/api-client/categories";
 import type { CategoryItem } from "@/shared/api-client/categories";
 import { useQuery } from "@tanstack/react-query";
+import ImageUpload from "@/components/ImageUpload";
 
 const ROOT_VALUE = "__root__";
 
@@ -48,6 +49,7 @@ export function CategoryFormDialog({
   const [parentId, setParentId] = useState<string | null>(null);
   const [mainName, setMainName] = useState("");
   const [subName, setSubName] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
 
   // Reset on open
   useEffect(() => {
@@ -58,10 +60,12 @@ export function CategoryFormDialog({
         setParentId(editingCategory.parentId);
         setMainName("");
         setSubName(editingCategory.name);
+        setImageUrl((editingCategory as any).imageUrl ?? "");
       } else {
         setParentId(null);
         setMainName(editingCategory.name);
         setSubName("");
+        setImageUrl((editingCategory as any).imageUrl ?? "");
       }
       return;
     }
@@ -77,6 +81,7 @@ export function CategoryFormDialog({
     setParentId(null);
     setMainName("");
     setSubName("");
+    setImageUrl("");
   }, [open, mode, parentName, editingCategory, parents]);
 
   const createMut = useMutation({
@@ -93,7 +98,7 @@ export function CategoryFormDialog({
     if (mode === "edit" && editingCategory) {
       const newName = (editingCategory.parentId ? subName : mainName).trim();
       if (!newName) return toast.error("Name is required");
-      await updateMut.mutateAsync({ id: editingCategory.id, data: { name: newName } });
+      await updateMut.mutateAsync({ id: editingCategory.id, data: { name: newName, imageUrl } });
       queryClient.invalidateQueries({ queryKey: ["categories"] });
       toast.success("Updated");
       onCreated?.(newName);
@@ -106,7 +111,7 @@ export function CategoryFormDialog({
       if (!trimmed) return toast.error("Sub-category name is required");
       const duplicate = categories.some((c: any) => c.parentId === parentId && c.name === trimmed);
       if (duplicate) return toast.error("Sub-category already exists");
-      await createMut.mutateAsync({ name: trimmed, parentId });
+      await createMut.mutateAsync({ name: trimmed, parentId, imageUrl });
       queryClient.invalidateQueries({ queryKey: ["categories"] });
       toast.success(`Sub-category "${trimmed}" created`);
       onCreated?.(trimmed);
@@ -117,7 +122,7 @@ export function CategoryFormDialog({
     // Main mode
     const trimmedMain = mainName.trim();
     if (!trimmedMain) return toast.error("Category name is required");
-    const created = await createMut.mutateAsync({ name: trimmedMain });
+    const created = await createMut.mutateAsync({ name: trimmedMain, imageUrl });
     if (subName.trim()) {
       await createMut.mutateAsync({ name: subName.trim(), parentId: created.id });
     }
@@ -160,6 +165,14 @@ export function CategoryFormDialog({
                 <Input value={editingCategory?.parentId ? subName : mainName}
                   onChange={(e) => editingCategory?.parentId ? setSubName(e.target.value) : setMainName(e.target.value)} />
               </div>
+              <div className="space-y-1.5">
+                <Label>Image (Optional)</Label>
+                <ImageUpload
+                  value={imageUrl || undefined}
+                  onChange={(url) => setImageUrl(url ?? "")}
+                  allowDataUrlFallback
+                />
+              </div>
             </>
           ) : isSubMode ? (
             <>
@@ -171,6 +184,14 @@ export function CategoryFormDialog({
                 <Label>Sub Category Name <span className="text-destructive">*</span></Label>
                 <Input value={subName} onChange={(e) => setSubName(e.target.value)}
                   placeholder="e.g. Smart TV / 4K LED" autoFocus />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Image (Optional)</Label>
+                <ImageUpload
+                  value={imageUrl || undefined}
+                  onChange={(url) => setImageUrl(url ?? "")}
+                  allowDataUrlFallback
+                />
               </div>
             </>
           ) : (
@@ -196,6 +217,14 @@ export function CategoryFormDialog({
                 <Label>Sub Category Name</Label>
                 <Input value={subName} onChange={(e) => setSubName(e.target.value)}
                   placeholder="e.g. Smart TV" />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Image (Optional)</Label>
+                <ImageUpload
+                  value={imageUrl || undefined}
+                  onChange={(url) => setImageUrl(url ?? "")}
+                  allowDataUrlFallback
+                />
               </div>
             </>
           )}

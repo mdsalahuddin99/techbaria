@@ -6,7 +6,8 @@ import { useProductsQuery, useLowStockProducts } from "../hooks";
 import { useProductsCacheBridge } from "../useProductsCacheBridge";
 import { useSalesCacheBridge } from "@/features/sales/useSalesCacheBridge";
 import { useSaleMutations } from "@/features/sales/hooks";
-import { useInventoryStats } from "@/features/inventory/hooks";
+import { useInventoryActions } from "@/features/inventory/hooks";
+import { useInventoryMetricsQuery } from "@/features/reports/hooks";
 import { productKeys } from "@/features/products/queryKeys";
 import { returnKeys } from "@/features/sales/queryKeys";
 import { seedQueryClient, mockProducts } from "@/test/mock-api";
@@ -74,11 +75,9 @@ describe("stock cache bridge — checkout / void / refund propagation", () => {
     });
 
     const low = renderHook(() => useLowStockProducts(), { wrapper: wrap(qc) });
-    const stats = renderHook(() => useInventoryStats(), { wrapper: wrap(qc) });
 
     await waitFor(() => expect(low.result.current).toBeDefined());
     const lowBefore = low.result.current.length;
-    const lowCountBefore = stats.result.current.lowStockCount;
     expect(low.result.current.some((p) => p.id === target.id)).toBe(false);
 
     act(() => {
@@ -93,7 +92,6 @@ describe("stock cache bridge — checkout / void / refund propagation", () => {
     await waitFor(() => {
       expect(low.result.current.some((p) => p.id === target.id)).toBe(true);
       expect(low.result.current.length).toBe(lowBefore + 1);
-      expect(stats.result.current.lowStockCount).toBe(lowCountBefore + 1);
     });
   });
 

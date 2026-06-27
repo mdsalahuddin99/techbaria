@@ -3,12 +3,17 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Flame, ChevronRight, Zap } from "lucide-react";
-import { useFlashDeals } from "../../hooks/useStorefrontProducts";
+import { deriveFlashDeals } from "../../hooks/useStorefrontProducts";
 import { formatPrice, calcDiscountPct } from "../../lib/formatPrice";
 import { productDisplayName } from "@/shared/lib/format";
+import type { StorefrontProduct } from "@/features/storefront/types";
 
-export function FlashDealsSection() {
-  const products = useFlashDeals(6);
+interface Props {
+  products: StorefrontProduct[];
+}
+
+export function FlashDealsSection({ products: allProducts }: Props) {
+  const products = deriveFlashDeals(allProducts, 6);
   const [endsIn, setEndsIn] = useState({ h: 5, m: 42, s: 18 });
 
   useEffect(() => {

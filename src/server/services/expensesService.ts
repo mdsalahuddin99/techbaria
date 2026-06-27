@@ -72,7 +72,7 @@ export const expensesService = {
 
   /** Create a new expense. Requires MANAGER+. */
   async create(ctx: Ctx, input: ExpenseCreateInput) {
-    requireRole(ctx, "MANAGER");
+    requireRole(ctx, "ADMIN");
 
     if (input.amount <= 0) {
       throw new ServiceError("VALIDATION", "Amount must be positive", 400);
@@ -130,7 +130,7 @@ export const expensesService = {
 
   /** Update an expense. Requires MANAGER+. */
   async update(ctx: Ctx, id: string, input: ExpenseUpdateInput) {
-    requireRole(ctx, "MANAGER");
+    requireRole(ctx, "ADMIN");
 
     return prisma.$transaction(async (tx) => {
       const existing = await tx.expense.findFirst({
@@ -196,7 +196,7 @@ export const expensesService = {
 
   /** Delete an expense. Requires MANAGER+. */
   async remove(ctx: Ctx, id: string) {
-    requireRole(ctx, "MANAGER");
+    requireRole(ctx, "ADMIN");
 
     return prisma.$transaction(async (tx) => {
       const existing = await tx.expense.findFirst({

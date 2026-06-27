@@ -10,7 +10,7 @@ import type { RefundInput } from "./types";
 
 /** Refund a sale (partial or full). Requires MANAGER+. */
 export async function refund(ctx: Ctx, id: string, input: RefundInput) {
-  requireRole(ctx, "MANAGER");
+  requireRole(ctx, "ADMIN");
 
   const raw = await prisma.$transaction(async (tx) => {
     const sale = await tx.sale.findFirst({

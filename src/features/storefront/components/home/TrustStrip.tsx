@@ -1,3 +1,5 @@
+"use client";
+
 import { Truck, ShieldCheck, RotateCcw, CreditCard } from "lucide-react";
 
 const items = [
@@ -39,7 +41,7 @@ export function TrustStrip() {
           {items.map((item, i) => (
             <div
               key={item.title}
-              className="group flex flex-col sm:flex-row items-center sm:items-start gap-3 sm:gap-4 p-4 sm:p-5 rounded-[20px] bg-white cursor-default transition-all duration-300 hover:-translate-y-1 sf-animate-slide-up"
+              className="group flex flex-col sm:flex-row items-center sm:items-start gap-3 sm:gap-4 p-4 sm:p-5 rounded-[20px] bg-card text-card-foreground cursor-default transition-all duration-300 hover:-translate-y-1 sf-animate-slide-up"
               style={{
                 boxShadow: "0 4px 20px rgba(37,99,235,0.06)",
                 animationDelay: `${i * 0.1}s`,
@@ -63,12 +65,12 @@ export function TrustStrip() {
                 />
               </div>
               <div className="min-w-0 text-center sm:text-left">
-                <div className="text-sm font-bold" style={{ color: "#1E3A5F" }}>
+                <h3 className="font-bold text-sm sm:text-base text-foreground group-hover:text-primary transition-colors duration-200">
                   {item.title}
-                </div>
-                <div className="text-xs mt-0.5" style={{ color: "#64748B" }}>
+                </h3>
+                <p className="text-xs sm:text-sm mt-1 text-muted-foreground leading-relaxed">
                   {item.sub}
-                </div>
+                </p>
               </div>
             </div>
           ))}

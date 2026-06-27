@@ -148,7 +148,7 @@ export default function StorefrontBlock() {
             <Badge variant="secondary" className="text-[9px]">7D</Badge>
           </div>
           <div className="hidden h-14 -mx-1 md:block">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
               <LineChart data={stats.spark}>
                 <Line
                   type="monotone"

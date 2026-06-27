@@ -23,39 +23,43 @@ import { QueryTier } from "@/lib/queryConfig";
  * AppProviders) seeds and updates this cache from Zustand during the
  * local-driver phase, so reads are reactive without manual invalidation.
  */
-export function useAccountsQuery() {
+export function useAccountsQuery(initialData?: any) {
   const { session, status } = useAuth();
   return useQuery({
     queryKey: accountKeys.list(),
     queryFn: () => accountsService.list(),
     enabled: status !== "loading" && !!session,
+    initialData,
     ...QueryTier.MASTER_DATA,
   });
 }
 
-export function useLedgerQuery(accountId?: string) {
+export function useLedgerQuery(accountId?: string, initialData?: any) {
   const { session, status } = useAuth();
   const { data: all } = useQuery({
     queryKey: ledgerKeys.list(),
     queryFn: () => accountsService.listLedger(),
     enabled: status !== "loading" && !!session,
+    initialData,
     ...QueryTier.MASTER_DATA,
   });
   return useMemo(
-    () => (accountId ? (all ?? []).filter((t) => t.accountId === accountId) : (all ?? [])),
+    () => (accountId ? (all ?? []).filter((t: any) => t.accountId === accountId) : (all ?? [])),
     [all, accountId],
   );
 }
 
 // ---------- Backward-compat hooks (now backed by the cache) ----------
 
-export function useAccounts(): FinancialAccount[] {
-  const { data } = useAccountsQuery();
+export function useAccounts(initialData?: FinancialAccount[]): FinancialAccount[] {
+  const { data } = useAccountsQuery(
+    initialData ? { items: initialData, total: initialData.length } : undefined
+  );
   return ((data as any)?.items ?? []) as FinancialAccount[];
 }
 
-export function useActiveAccounts(): FinancialAccount[] {
-  const accounts = useAccounts();
+export function useActiveAccounts(initialData?: FinancialAccount[]): FinancialAccount[] {
+  const accounts = useAccounts(initialData);
   return useMemo(() => accounts.filter((a) => !a.isArchived), [accounts]);
 }
 
@@ -64,14 +68,14 @@ export function useAccountsByType(type: AccountType) {
   return useMemo(() => accounts.filter((a) => a.type === type), [accounts, type]);
 }
 
-export function useLedger(accountId?: string): LedgerTransaction[] {
-  return useLedgerQuery(accountId);
+export function useLedger(accountId?: string, initialData?: LedgerTransaction[]): LedgerTransaction[] {
+  return useLedgerQuery(accountId, initialData);
 }
 
 /** Live balance per account derived from opening + ledger. */
-export function useAccountBalances(): Record<string, number> {
-  const accounts = useAccounts();
-  const ledger = useLedger();
+export function useAccountBalances(initialAccounts?: FinancialAccount[], initialLedger?: LedgerTransaction[]): Record<string, number> {
+  const accounts = useAccounts(initialAccounts);
+  const ledger = useLedger(undefined, initialLedger);
   return useMemo(() => {
     const map: Record<string, number> = {};
     for (const a of accounts) map[a.id] = computeBalance(ledger, a);
@@ -79,9 +83,9 @@ export function useAccountBalances(): Record<string, number> {
   }, [accounts, ledger]);
 }
 
-export function useAccountsByTypeTotals() {
-  const accounts = useActiveAccounts();
-  const balances = useAccountBalances();
+export function useAccountsByTypeTotals(initialAccounts?: FinancialAccount[], initialLedger?: LedgerTransaction[]) {
+  const accounts = useActiveAccounts(initialAccounts);
+  const balances = useAccountBalances(initialAccounts, initialLedger);
   return useMemo(() => {
     const totals: Record<AccountType, number> = {
       cash: 0,

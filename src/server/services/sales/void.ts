@@ -9,7 +9,7 @@ import { salesSerial } from "./salesSerial";
 
 /** Void (cancel) a sale — restores stock and reverses customer due. Requires MANAGER+. */
 export async function voidSale(ctx: Ctx, id: string, reason: string) {
-  requireRole(ctx, "MANAGER");
+  requireRole(ctx, "ADMIN");
 
   const { updatedSale, productIds } = await prisma.$transaction(async (tx) => {
     const sale = await tx.sale.findFirst({

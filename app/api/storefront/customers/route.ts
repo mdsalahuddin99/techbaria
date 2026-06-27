@@ -24,4 +24,4 @@ export const GET = apiHandler(async (ctx: Ctx) => {
   });
 
   return { items: users };
-}, "storefront:customers:list", ["MANAGER", "OWNER"]);
+}, "storefront:customers:list", ["ADMIN"]);

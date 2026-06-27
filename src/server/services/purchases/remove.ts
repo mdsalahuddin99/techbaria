@@ -9,7 +9,7 @@ import { cache } from "@/lib/cache";
 /** Delete a purchase. Requires MANAGER+.
  *  Blocked if any items exist — the purchase has already affected inventory. */
 export async function remove(ctx: Ctx, id: string) {
-  requireRole(ctx, "MANAGER");
+  requireRole(ctx, "ADMIN");
 
   const purchase = await prisma.purchase.findFirst({
     where: { id },

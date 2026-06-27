@@ -1,7 +1,9 @@
+"use client";
+
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  ShoppingBag, Menu, User, Phone, MapPin, Heart, GitCompareArrows,
+  ShoppingBag, Menu, User, Phone, MapPin, Heart, GitCompareArrows, LogOut, LogIn
 } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/shared/ui/sheet";
 import { useCartCount } from "../../store/useCartStore";
@@ -9,7 +11,8 @@ import { useWishlistCount } from "../../store/useWishlistStore";
 import { useCompareCount } from "../../store/useCompareStore";
 import { useStorefrontCategories } from "../../hooks/useStorefrontCategories";
 import { SmartSearch } from "../search/SmartSearch";
-import { MegaMenu } from "./MegaMenu";
+import { CategoryNav } from "./CategoryNav";
+import { useSession, signOut } from "next-auth/react";
 
 export function StorefrontHeader() {
   const pathname = usePathname();
@@ -17,6 +20,7 @@ export function StorefrontHeader() {
   const wishCount = useWishlistCount();
   const cmpCount = useCompareCount();
   const categories = useStorefrontCategories();
+  const { data: session } = useSession();
 
   return (
     <>
@@ -45,9 +49,29 @@ export function StorefrontHeader() {
             Track Order
           </Link>
           <span className="w-px h-3 bg-white/20" />
-          <Link href="/account" className="hover:text-white transition-colors">
-            My Account
-          </Link>
+          
+          {session?.user ? (
+            <>
+              <Link href="/account" className="hover:text-white transition-colors">
+                My Account
+              </Link>
+              <span className="w-px h-3 bg-white/20" />
+              <button onClick={() => signOut({ callbackUrl: "/" })} className="hover:text-white transition-colors">
+                Logout
+              </button>
+            </>
+          ) : (
+            <>
+              <Link href="/login" className="hover:text-white transition-colors">
+                Login
+              </Link>
+              <span className="w-px h-3 bg-white/20" />
+              <Link href="/register" className="hover:text-white transition-colors">
+                Register
+              </Link>
+            </>
+          )}
+
           <span className="w-px h-3 bg-white/20" />
           <span className="font-medium text-white/90">BDT ৳</span>
         </div>
@@ -148,8 +172,6 @@ export function StorefrontHeader() {
             </span>
           </Link>
 
-          <MegaMenu />
-
           <SmartSearch className="flex-1 max-w-md ml-auto md:ml-2" />
 
           {/* Wishlist */}
@@ -185,14 +207,14 @@ export function StorefrontHeader() {
             )}
           </Link>
 
-          {/* Account */}
+          {/* Account / Login */}
           <Link
-            href="/account"
+            href={session?.user ? "/account" : "/login"}
             className="hidden sm:inline-flex p-2 rounded-xl transition-colors hover:bg-[#EFF6FF]"
             style={{ color: "#475569" }}
-            aria-label="Account"
+            aria-label={session?.user ? "Account" : "Login"}
           >
-            <User className="h-5 w-5" />
+            {session?.user ? <User className="h-5 w-5" /> : <LogIn className="h-5 w-5" />}
           </Link>
 
           {/* Cart */}
@@ -214,6 +236,9 @@ export function StorefrontHeader() {
           </Link>
         </div>
       </header>
+
+      {/* New Star Tech style category navigation */}
+      <CategoryNav />
     </>
   );
 }

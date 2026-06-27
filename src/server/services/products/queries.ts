@@ -4,7 +4,7 @@ import { ServiceError } from "@/server/lib/errors";
 import { paginate, type PaginationParams, type Paginated } from "@/server/lib/paginate";
 import type { Ctx } from "@/server/lib/ctx";
 import { cache, cacheKeys, TTL } from "@/lib/cache";
-import { serialise, serialiseOne } from "./serialiser";
+import { serialise, serialiseOne, serialiseStorefront } from "./serialiser";
 import type { ProductListFilter } from "./types";
 
 /** Shared query logic for the products list — used both direct and cached. */
@@ -94,8 +94,8 @@ export async function getById(ctx: Ctx, id: string) {
 }
 
 /** Get a product by slug (for storefront). */
-export async function getBySlug(shopId: string, slug: string) {
-  const cacheKey = cacheKeys.products.bySlug(shopId, slug);
+export async function getBySlug(slug: string) {
+  const cacheKey = `products:storefront:slug:${slug}`;
   return cache.fetch(cacheKey, TTL.CATALOG, async () => {
     const product = await prisma.product.findFirst({
       where: { OR: [{ slug }, { id: slug }] },
@@ -109,45 +109,74 @@ export async function getBySlug(shopId: string, slug: string) {
       },
     });
     if (!product) throw new ServiceError("NOT_FOUND", "Product not found", 404);
-    return serialise(product);
+    return serialiseStorefront(product);
   });
 }
 
-/** List published products for public storefront. */
-export async function publicList(shopId: string, filter?: { categoryId?: string; search?: string }) {
-  const isUnfiltered = !filter?.categoryId && !filter?.search;
-  if (isUnfiltered) {
-    const cacheKey = `shop:${shopId}:products:storefront:unfiltered`;
-    return cache.fetch(cacheKey, TTL.CATALOG, async () => {
-      return runPublicListQuery(shopId, filter);
-    });
-  }
-  return runPublicListQuery(shopId, filter);
+/** Backward-compat alias — routes that already call publicList keep working. */
+export async function publicList(filter?: { categoryId?: string; search?: string }) {
+  return publicStorefrontList({ search: filter?.search });
 }
 
-async function runPublicListQuery(shopId: string, filter?: { categoryId?: string; search?: string }) {
-  return serialise(
-    await prisma.product.findMany({
-      where: {
-        isPublished: true,
-        categoryId: filter?.categoryId ?? undefined,
-        ...(filter?.search && {
-          OR: [
-            { name: { contains: filter.search, mode: "insensitive" as const } },
-            { sku: { contains: filter.search, mode: "insensitive" as const } },
-          ],
-        }),
-      },
-      include: {
-        category: true,
-        images: { orderBy: { position: "asc" } },
-        brand: true,
-        model: true,
-        series: true,
-      },
-      orderBy: { name: "asc" },
-    })
-  );
+/**
+ * Lean storefront product list — used by /api/storefront/products.
+ * ─ Only public-safe fields (no cost, no supplierId, no wholesale price).
+ * ─ category filter by NAME (not ID), excludeId for related queries, limit support.
+ * ─ Drops `series` JOIN (not needed for listing).
+ * ─ Caches the unfiltered result for 5 minutes.
+ */
+export async function publicStorefrontList(
+  filter?: {
+    category?: string;   // category NAME (not ID)
+    search?: string;
+    excludeId?: string;  // exclude a product from results (related queries)
+    limit?: number;
+  }
+) {
+  const isUnfiltered = !filter?.category && !filter?.search && !filter?.excludeId;
+
+  if (isUnfiltered) {
+    const cacheKey = `products:storefront:v2:unfiltered`;
+    return cache.fetch(cacheKey, TTL.CATALOG, () => runPublicStorefrontQuery(filter));
+  }
+
+  return runPublicStorefrontQuery(filter);
+}
+
+async function runPublicStorefrontQuery(
+  filter?: { category?: string; search?: string; excludeId?: string; limit?: number }
+) {
+  const rows = await prisma.product.findMany({
+    where: {
+      isPublished: true,
+      // Category filter by name (via relation)
+      ...(filter?.category && {
+        category: { name: { equals: filter.category, mode: "insensitive" as const } },
+      }),
+      // Search filter
+      ...(filter?.search && {
+        OR: [
+          { name: { contains: filter.search, mode: "insensitive" as const } },
+          { sku: { contains: filter.search, mode: "insensitive" as const } },
+          { brand: { name: { contains: filter.search, mode: "insensitive" as const } } },
+        ],
+      }),
+      // Exclude specific product (for "related" queries on PDP)
+      ...(filter?.excludeId && { id: { not: filter.excludeId } }),
+    },
+    include: {
+      category: { select: { name: true } } as any,
+      // Only first image — no need to load full array for listing
+      images: { orderBy: { position: "asc" as const }, take: 1, select: { url: true } } as any,
+      brand: { select: { name: true } } as any,
+      model: { select: { name: true } } as any,
+      // series omitted — not displayed in storefront listing
+    },
+    orderBy: { name: "asc" as const },
+    ...(filter?.limit ? { take: filter.limit } : {}),
+  });
+
+  return serialiseStorefront(rows);
 }
 
 /** Products where stock ≤ reorderLevel. */

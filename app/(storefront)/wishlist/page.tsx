@@ -1,7 +1,7 @@
 "use client";
 
 import { useWishlistStore } from "@/features/storefront/store/useWishlistStore";
-import { useProducts } from "@/features/products/hooks";
+import { useStorefrontProducts } from "@/features/storefront/hooks/useStorefrontProducts";
 import { ProductGrid } from "@/features/storefront/components/product/ProductGrid";
 import { useSeo } from "@/features/storefront";
 import { Heart, Trash2 } from "lucide-react";
@@ -11,7 +11,7 @@ export default function StorefrontWishlist() {
   useSeo({ title: "Wishlist · AmarShop", description: "আপনার সংরক্ষিত পণ্যসমূহ" });
   const ids = useWishlistStore((s) => s.ids);
   const clear = useWishlistStore((s) => s.clear);
-  const { data: all, isLoading } = useProducts();
+  const { all, isLoading } = useStorefrontProducts();
   const items = ids.map((id) => all.find((p) => p.id === id)).filter(Boolean) as typeof all;
 
   return (

@@ -62,7 +62,7 @@ export async function GET() {
             id: userId,
             name: "Owner Admin",
             email,
-            role: "OWNER",
+            role: "ADMIN",
             passwordHash,
           },
         });

@@ -24,4 +24,4 @@ export const GET = apiHandler(async (ctx: Ctx, req: Request) => {
 export const POST = apiHandler(async (ctx: Ctx, req: Request) => {
   const body = await parseBody(req, categoryCreateSchema);
   return categoriesService.create(ctx, body);
-}, "categories:create", ["MANAGER", "OWNER"]);
+}, "categories:create", ["ADMIN"]);

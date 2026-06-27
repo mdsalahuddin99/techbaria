@@ -14,5 +14,5 @@ export const GET = apiHandler(
     return purchasesService.listBySupplier(ctx, supplierId);
   },
   "purchases:listBySupplier",
-  ["MANAGER", "OWNER"],
+  ["ADMIN"],
 );

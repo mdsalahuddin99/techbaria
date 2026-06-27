@@ -50,7 +50,7 @@ export default function StorefrontCheckout() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!address.fullName || !address.phone || !address.address || !address.city) {
+    if (!address.fullName || !address.phone || !address.address) {
       toast.error("Please fill in required fields");
       return;
     }
@@ -79,18 +79,7 @@ export default function StorefrontCheckout() {
               <Field label="Phone *" value={address.phone} onChange={set("phone")} type="tel" placeholder="01XXXXXXXXX" />
               <Field label="Email" value={address.email ?? ""} onChange={set("email")} type="email" className="sm:col-span-2" />
               <Field label="Address *" value={address.address} onChange={set("address")} className="sm:col-span-2" />
-              <Field label="City *" value={address.city} onChange={set("city")} />
-              <Field label="Area / Thana" value={address.area ?? ""} onChange={set("area")} />
-              <Field label="Postcode" value={address.postcode ?? ""} onChange={set("postcode")} />
-              <div className="sm:col-span-2">
-                <label className="block text-xs text-slate-500 mb-1">Order notes</label>
-                <textarea
-                  value={address.notes}
-                  onChange={set("notes")}
-                  rows={2}
-                  className="w-full px-3 py-2 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0] text-sm focus:outline-none focus:border-[#2563EB]/60 text-[#1E3A5F]"
-                />
-              </div>
+
             </div>
           </Section>
 
