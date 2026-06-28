@@ -25,11 +25,7 @@ import { PageHeader, EmptyState } from "@/shared/components";
 import { useInfiniteSalesQuery, useSaleMutations } from "@/features/sales/hooks";
 import { useSettings } from "@/features/settings/hooks";
 
-export function SalesClient({
-  initialSales,
-}: {
-  initialSales: Sale[];
-}) {
+export function SalesClient() {
   usePageTitle("Sales");
   const router = useRouter();
   const settings = useSettings();
@@ -79,9 +75,9 @@ export function SalesClient({
   });
 
   const allSales = useMemo(() => {
-    if (!data) return initialSales;
+    if (!data) return [];
     return data.pages.flatMap((page: any) => page.items) as Sale[];
-  }, [data, initialSales]);
+  }, [data]);
 
   const total = allSales.reduce((s, x) => s + x.total, 0);
 

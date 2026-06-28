@@ -36,7 +36,7 @@ export function ActiveFilterChips({ value, bounds, onChange }: Props) {
         <button
           key={c.label}
           onClick={c.clear}
-          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-500/15 border border-indigo-400/30 text-xs text-indigo-200 hover:bg-rose-500/15 hover:border-rose-400/40 hover:text-rose-200 transition"
+          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-50 border border-green-200 text-xs font-medium text-green-700 hover:bg-rose-50 hover:border-rose-200 hover:text-rose-600 transition-colors shadow-sm"
         >
           {c.label}
           <X className="h-3 w-3" />

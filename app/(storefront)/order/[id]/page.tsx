@@ -40,7 +40,7 @@ export default function StorefrontOrderSuccess() {
   if (loading) {
     return (
       <div className="max-w-md mx-auto px-4 py-20 text-center">
-        <Loader2 className="h-8 w-8 animate-spin mx-auto text-[#2563EB]" />
+        <Loader2 className="h-8 w-8 animate-spin mx-auto text-[#16A34A]" />
         <p className="text-sm text-slate-500 mt-3">Loading order...</p>
       </div>
     );
@@ -50,14 +50,14 @@ export default function StorefrontOrderSuccess() {
     return (
       <div className="max-w-md mx-auto px-4 py-20 text-center">
         <h1 className="text-xl font-bold mb-2 text-[#1E3A5F]">Order not found</h1>
-        <Link href="/" className="font-bold text-[#2563EB] hover:text-[#1D4ED8]">← Back to home</Link>
+        <Link href="/" className="font-bold text-[#16A34A] hover:text-[#15803D]">← Back to home</Link>
       </div>
     );
   }
 
   return (
     <div className="max-w-2xl mx-auto px-3 sm:px-6 pt-8 sm:pt-12">
-      <div className="rounded-3xl bg-[#EFF6FF] border border-[#BFDBFE] p-6 sm:p-8 text-center">
+      <div className="rounded-3xl bg-[#F0FDF4] border border-[#BFDBFE] p-6 sm:p-8 text-center">
         <div className="mx-auto h-14 w-14 rounded-full bg-emerald-100 grid place-items-center mb-4">
           <CheckCircle2 className="h-7 w-7 text-emerald-500" />
         </div>
@@ -66,7 +66,7 @@ export default function StorefrontOrderSuccess() {
           Thank you for shopping with AmarShop. We'll contact you shortly to confirm delivery.
         </p>
         <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-[#E2E8F0] text-sm text-[#1E3A5F] shadow-sm">
-          <Package className="h-4 w-4 text-[#2563EB]" />
+          <Package className="h-4 w-4 text-[#16A34A]" />
           Order # <span className="font-mono font-bold">{order.orderNo}</span>
         </div>
       </div>
@@ -104,7 +104,7 @@ export default function StorefrontOrderSuccess() {
           </Button>
         </Link>
         <Link href="/account">
-          <Button className="bg-[#2563EB] hover:bg-[#1D4ED8] rounded-full text-white shadow-md shadow-blue-500/20">
+          <Button className="bg-[#16A34A] hover:bg-[#15803D] rounded-full text-white shadow-md shadow-green-500/20">
             View my orders <ArrowRight className="h-4 w-4 ml-1" />
           </Button>
         </Link>

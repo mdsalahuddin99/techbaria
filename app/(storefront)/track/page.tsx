@@ -13,7 +13,7 @@ export default function StorefrontTrackOrder() {
 
   const handle = (e: React.FormEvent) => {
     e.preventDefault();
-    if (orderNo.trim()) router.push(`/storefront/order/${orderNo.trim()}`);
+    if (orderNo.trim()) router.push(`/order/${orderNo.trim()}`);
   };
 
   return (
@@ -27,10 +27,10 @@ export default function StorefrontTrackOrder() {
             value={orderNo}
             onChange={(e) => setOrderNo(e.target.value)}
             placeholder="e.g. AS-123456"
-            className="w-full h-11 pl-9 pr-3 rounded-full bg-[#F8FAFC] border border-[#E2E8F0] text-sm focus:outline-none focus:border-[#2563EB]/60 text-[#1E3A5F]"
+            className="w-full h-11 pl-9 pr-3 rounded-full bg-[#F8FAFC] border border-[#E2E8F0] text-sm focus:outline-none focus:border-[#16A34A]/60 text-[#1E3A5F]"
           />
         </div>
-        <Button type="submit" className="w-full h-11 bg-[#2563EB] hover:bg-[#1D4ED8] rounded-full text-white shadow-md shadow-blue-500/20">
+        <Button type="submit" className="w-full h-11 bg-[#16A34A] hover:bg-[#15803D] rounded-full text-white shadow-md shadow-green-500/20">
           Track order
         </Button>
       </form>

@@ -17,6 +17,7 @@ interface Props {
   onChange: (v: ShopFilterState) => void;
   onReset: () => void;
   onCategoryNav: (cat: string | null) => void;
+  initialProducts?: any[];
 }
 
 const Section = ({ title, children, action }: { title: string; children: React.ReactNode; action?: React.ReactNode }) => (
@@ -29,9 +30,9 @@ const Section = ({ title, children, action }: { title: string; children: React.R
   </div>
 );
 
-export function ShopFilters({ value, bounds, onChange, onReset, onCategoryNav }: Props) {
-  const categories = useStorefrontCategories();
-  const brands = useStorefrontBrands(value.category);
+export function ShopFilters({ value, bounds, onChange, onReset, onCategoryNav, initialProducts }: Props) {
+  const categories = useStorefrontCategories({ initialData: initialProducts });
+  const brands = useStorefrontBrands(value.category, { initialData: initialProducts });
 
   const toggleBrand = (b: string) => {
     const next = value.brands.includes(b) ? value.brands.filter((x) => x !== b) : [...value.brands, b];

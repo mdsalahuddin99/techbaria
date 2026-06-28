@@ -35,7 +35,7 @@ export function FlashDealsSection({ products: allProducts }: Props) {
   return (
     <section
       className="relative overflow-hidden py-12 sm:py-16"
-      style={{ background: "linear-gradient(135deg, #1D4ED8 0%, #2563EB 60%, #1E40AF 100%)" }}
+      style={{ background: "linear-gradient(135deg, #15803D 0%, #16A34A 60%, #166534 100%)" }}
     >
       {/* Decorative blobs */}
       <div
@@ -134,7 +134,7 @@ export function FlashDealsSection({ products: allProducts }: Props) {
                 {/* Image area */}
                 <div
                   className="relative w-full aspect-square overflow-hidden"
-                  style={{ background: "#EFF6FF" }}
+                  style={{ background: "#F0FDF4" }}
                 >
                   {p.imageUrl ? (
                     <img
@@ -157,13 +157,13 @@ export function FlashDealsSection({ products: allProducts }: Props) {
                 {/* Info */}
                 <div className="p-3 flex flex-col gap-2">
                   <div
-                    className="text-[11px] sm:text-xs font-bold line-clamp-2 min-h-[2.2rem] leading-tight transition-colors duration-200 group-hover:text-[#2563EB]"
+                    className="text-[11px] sm:text-xs font-bold line-clamp-2 min-h-[2.2rem] leading-tight transition-colors duration-200 group-hover:text-[#16A34A]"
                     style={{ color: "#1E3A5F" }}
                   >
                     {productDisplayName(p)}
                   </div>
                   <div className="flex items-baseline gap-1.5">
-                    <span className="text-sm font-extrabold" style={{ color: "#2563EB" }}>
+                    <span className="text-sm font-extrabold" style={{ color: "#16A34A" }}>
                       {formatPrice(p.price)}
                     </span>
                     {old && (

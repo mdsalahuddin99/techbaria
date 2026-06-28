@@ -38,9 +38,11 @@ export const productSchema = z.object({
     z.number().int().nonnegative()
   ),
   unit: z.string().trim().min(1).max(20).default("pcs"),
-  active: z.boolean().default(true),
+  active: z.boolean().default(false),
+  isTrending: z.boolean().optional(),
   emoji: z.string().trim().min(1).max(8).default("📦"),
   imageUrl: z.string().url().optional().or(z.literal("")),
+  galleryImages: z.array(z.string().url().or(z.literal(""))).optional().default([]),
   supplierId: z.string().nullable().optional(),
   // ---- Electronics-specific (all optional) ----
   brand: optStr,

@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, use, Suspense } from "react";
 import {
   ArrowLeft,
   ShoppingBag,
@@ -40,10 +40,11 @@ import { publicStock } from "@/features/storefront/hooks/useStorefrontProducts";
 
 interface Props {
   product: StorefrontProduct;
-  related: StorefrontProduct[];
+  related?: StorefrontProduct[];
+  relatedPromise?: Promise<StorefrontProduct[]>;
 }
 
-export function ProductDetailClient({ product, related }: Props) {
+export function ProductDetailClient({ product, related = [], relatedPromise }: Props) {
   const router = useRouter();
   const stock = useMemo(() => publicStock(product, []), [product]);
   const outOfStock = stock <= 0;
@@ -347,7 +348,7 @@ export function ProductDetailClient({ product, related }: Props) {
               <Button
                 onClick={handleBuyNow}
                 disabled={outOfStock}
-                className="flex-1 h-12 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-md shadow-md font-bold text-base transition-all"
+                className="flex-1 h-12 bg-[#16A34A] hover:bg-[#15803D] text-white rounded-md shadow-md font-bold text-base transition-all"
               >
                 Buy Now
               </Button>
@@ -389,7 +390,7 @@ export function ProductDetailClient({ product, related }: Props) {
             onClick={() => setActiveTab("specification")}
             className={cn(
               "px-6 py-4 font-semibold text-sm sm:text-base border-b-2 transition-colors whitespace-nowrap",
-              activeTab === "specification" ? "border-[#2563EB] text-[#2563EB]" : "border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300"
+              activeTab === "specification" ? "border-[#16A34A] text-[#16A34A]" : "border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300"
             )}
           >
             Specification
@@ -398,7 +399,7 @@ export function ProductDetailClient({ product, related }: Props) {
             onClick={() => setActiveTab("description")}
             className={cn(
               "px-6 py-4 font-semibold text-sm sm:text-base border-b-2 transition-colors whitespace-nowrap",
-              activeTab === "description" ? "border-[#2563EB] text-[#2563EB]" : "border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300"
+              activeTab === "description" ? "border-[#16A34A] text-[#16A34A]" : "border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300"
             )}
           >
             Description
@@ -407,7 +408,7 @@ export function ProductDetailClient({ product, related }: Props) {
             onClick={() => setActiveTab("reviews")}
             className={cn(
               "px-6 py-4 font-semibold text-sm sm:text-base border-b-2 transition-colors whitespace-nowrap",
-              activeTab === "reviews" ? "border-[#2563EB] text-[#2563EB]" : "border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300"
+              activeTab === "reviews" ? "border-[#16A34A] text-[#16A34A]" : "border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300"
             )}
           >
             Customer Reviews
@@ -568,7 +569,7 @@ export function ProductDetailClient({ product, related }: Props) {
                   <Button
                     type="submit"
                     disabled={reviewForm.submitting}
-                    className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-lg h-11 px-8 text-sm font-bold shadow-sm w-full sm:w-auto"
+                    className="bg-[#16A34A] hover:bg-[#15803D] text-white rounded-lg h-11 px-8 text-sm font-bold shadow-sm w-full sm:w-auto"
                   >
                     {reviewForm.submitting ? (
                       <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -655,13 +656,19 @@ export function ProductDetailClient({ product, related }: Props) {
     </div>
 
     {/* === Related === */}
-      {related.length > 0 && (
+      {(related.length > 0 || relatedPromise) && (
         <section className="mt-16">
           <div className="flex items-center gap-3 mb-6">
             <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">You May Also Like</h2>
             <div className="flex-1 h-px bg-slate-200"></div>
           </div>
-          <ProductGrid products={related} allProducts={related} loading={false} />
+          {relatedPromise ? (
+            <Suspense fallback={<div className="h-40 flex items-center justify-center text-slate-500"><Loader2 className="h-6 w-6 animate-spin mr-2" /> Loading related products...</div>}>
+              <RelatedGridLoader relatedPromise={relatedPromise} />
+            </Suspense>
+          ) : (
+            <ProductGrid products={related} allProducts={related} loading={false} />
+          )}
         </section>
       )}
 
@@ -674,7 +681,7 @@ export function ProductDetailClient({ product, related }: Props) {
         <Button
           onClick={handleBuyNow}
           disabled={outOfStock}
-          className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-lg h-11 px-6 font-bold shadow-md"
+          className="bg-[#16A34A] hover:bg-[#15803D] text-white rounded-lg h-11 px-6 font-bold shadow-md"
         >
           Buy Now
         </Button>
@@ -699,4 +706,10 @@ function BadgeVerified() {
       <Check className="h-2.5 w-2.5" /> Verified
     </span>
   );
+}
+
+function RelatedGridLoader({ relatedPromise }: { relatedPromise: Promise<StorefrontProduct[]> }) {
+  const related = use(relatedPromise);
+  if (!related || related.length === 0) return null;
+  return <ProductGrid products={related} allProducts={related} loading={false} />;
 }

@@ -45,10 +45,6 @@ export default async function DashboardPage() {
       queryKey: productKeys.list(),
       queryFn: () => productQueries.list(ctx),
     }),
-    queryClient.prefetchQuery({
-      queryKey: customerKeys.list(),
-      queryFn: () => customersService.list(ctx),
-    }),
   ]);
 
   const dehydratedState = dehydrate(queryClient);

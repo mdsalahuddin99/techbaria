@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
@@ -111,7 +112,7 @@ export function InventoryProductTable({
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-2">
                       {p.imageUrl ? (
-                        <img src={p.imageUrl} alt={productDisplayName(p)} className="h-8 w-8 rounded object-cover border" />
+                        <Image src={p.imageUrl} alt={productDisplayName(p)} width={32} height={32} className="h-8 w-8 rounded object-cover border" />
                       ) : (
                         <span className="h-8 w-8 grid place-items-center text-lg">{p.emoji}</span>
                       )}

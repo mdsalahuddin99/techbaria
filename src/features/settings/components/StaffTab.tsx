@@ -37,7 +37,7 @@ const ROLE_LABELS: Record<string, string> = {
 
 const ROLE_COLORS: Record<string, string> = {
   OWNER: "bg-purple-500/10 text-purple-400 border-purple-500/30",
-  MANAGER: "bg-blue-500/10 text-blue-400 border-blue-500/30",
+  MANAGER: "bg-green-500/10 text-green-400 border-green-500/30",
   CASHIER: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
   VIEWER: "bg-slate-500/10 text-slate-400 border-slate-500/30",
 };

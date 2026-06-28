@@ -575,7 +575,7 @@ export function PurchaseFormDialog({
                             </SelectItem>
                           ))}
                           {supplierAdvance > 0 && (
-                            <SelectItem value="WALLET" className="font-semibold text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-900/20">
+                            <SelectItem value="WALLET" className="font-semibold text-green-600 dark:text-green-400 bg-green-50/50 dark:bg-green-900/20">
                               Supplier Wallet Advance · {formatCurrency(supplierAdvance)}
                             </SelectItem>
                           )}

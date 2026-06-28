@@ -17,10 +17,10 @@ export function SortMenu({ value, onChange }: Props) {
     <select
       value={value}
       onChange={(e) => onChange(e.target.value as SortKey)}
-      className="h-9 px-3 pr-8 rounded-full bg-card/5 border border-white/10 text-xs sm:text-sm text-slate-200 focus:outline-none focus:border-indigo-400/60"
+      className="h-8 w-[110px] sm:w-auto text-ellipsis px-2.5 pr-7 rounded-md bg-white border border-slate-200 text-[11px] sm:text-xs text-slate-700 focus:outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]"
     >
       {OPTIONS.map((o) => (
-        <option key={o.value} value={o.value} className="bg-[#0d0d24]">
+        <option key={o.value} value={o.value} className="text-[11px] sm:text-xs">
           {o.label}
         </option>
       ))}

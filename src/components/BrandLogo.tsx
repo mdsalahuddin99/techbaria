@@ -1,4 +1,5 @@
 import { Store } from "lucide-react";
+import Image from "next/image";
 import { cn } from "@/shared/lib/utils";
 
 interface Props {
@@ -24,15 +25,16 @@ export default function BrandLogo({
     return (
       <div
         className={cn(
-          "overflow-hidden bg-card border grid place-items-center",
+          "relative overflow-hidden bg-card border grid place-items-center",
           rounded,
           className,
         )}
       >
-        <img
+        <Image
           src={logoUrl}
           alt={`${shopName ?? "Shop"} logo`}
-          className="h-full w-full object-contain"
+          fill
+          className="object-contain"
         />
       </div>
     );

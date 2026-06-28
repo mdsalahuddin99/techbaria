@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/shared/ui/dialog";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
@@ -10,6 +10,7 @@ import { Printer, AlertTriangle } from "lucide-react";
 import { Product } from "@/shared/lib/types";
 import ProductLabel, { LabelSize, LabelTemplate, LABEL_DIMENSIONS } from "./ProductLabel";
 import { canPrint, downloadHtml, printHtml } from "@/shared/lib/print";
+import { getAvailableSerialsAction } from "@/server/actions/products";
 import { toast } from "sonner";
 
 interface Props {
@@ -30,6 +31,33 @@ export default function PrintLabelsDialog({ open, onOpenChange, products }: Prop
   const [showName, setShowName] = useState(true);
   const [showPrice, setShowPrice] = useState(true);
   const [showShop, setShowShop] = useState(true);
+  const [serialsMap, setSerialsMap] = useState<Record<string, string[]>>({});
+  const [fetchingSerials, setFetchingSerials] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    const fetchSerials = async () => {
+      const trackedProducts = products.filter(p => p.trackSerials);
+      if (trackedProducts.length === 0) return;
+      
+      setFetchingSerials(true);
+      try {
+        const newMap: Record<string, string[]> = {};
+        await Promise.all(
+          trackedProducts.map(async (p) => {
+            const serials = await getAvailableSerialsAction(p.id, MAX_COPIES_PER_PRODUCT);
+            newMap[p.id] = serials;
+          })
+        );
+        setSerialsMap(newMap);
+      } catch (err) {
+        console.error("Failed to fetch serials", err);
+      } finally {
+        setFetchingSerials(false);
+      }
+    };
+    fetchSerials();
+  }, [open, products]);
 
   const copiesNum = Math.max(1, Number(copies) || 1);
   const totalLabels = products.length * copiesNum;
@@ -41,10 +69,21 @@ export default function PrintLabelsDialog({ open, onOpenChange, products }: Prop
     if (hasError) return [];
     const out: Product[] = [];
     products.forEach((p) => {
-      for (let i = 0; i < copiesNum; i++) out.push(p);
+      const availableSerials = serialsMap[p.id] || [];
+      for (let i = 0; i < copiesNum; i++) {
+        if (p.trackSerials) {
+          if (i < availableSerials.length) {
+            out.push({ ...p, barcode: availableSerials[i] });
+          }
+        } else {
+          out.push(p);
+        }
+      }
     });
     return out;
-  }, [products, copiesNum, hasError]);
+  }, [products, copiesNum, hasError, serialsMap]);
+
+  const skippedCount = (products.length * copiesNum) - expanded.length;
 
   const buildThermalLabelHtml = () => {
     const clonedArea = printAreaRef.current?.cloneNode(true) as HTMLElement | undefined;
@@ -150,11 +189,17 @@ export default function PrintLabelsDialog({ open, onOpenChange, products }: Prop
                 <div>Copies per product can't exceed {MAX_COPIES_PER_PRODUCT}.</div>
               )}
               {totalOverLimit && (
-                <div>
-                  Total labels ({totalLabels}) exceeds the limit of {MAX_TOTAL_LABELS}. Reduce copies or
-                  selected products.
-                </div>
+                <div>Total labels can't exceed {MAX_TOTAL_LABELS} (currently {totalLabels}).</div>
               )}
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {!hasError && skippedCount > 0 && (
+          <Alert variant="default" className="print:hidden bg-yellow-50 text-yellow-900 border-yellow-200">
+            <AlertTriangle className="h-4 w-4 text-yellow-600" />
+            <AlertDescription>
+              Skipped {skippedCount} label(s) because there are not enough serial numbers in stock.
             </AlertDescription>
           </Alert>
         )}
@@ -198,13 +243,12 @@ export default function PrintLabelsDialog({ open, onOpenChange, products }: Prop
         </div>
 
         <DialogFooter className="print:hidden">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
-          <Button
-            onClick={handlePrint}
-            disabled={hasError}
-            className="bg-primary text-primary-foreground hover:bg-primary/90"
-          >
-            <Printer className="h-4 w-4 mr-2" /> Print {expanded.length} labels
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Close
+          </Button>
+          <Button onClick={handlePrint} disabled={hasError || expanded.length === 0 || fetchingSerials}>
+            <Printer className="mr-2 h-4 w-4" />
+            {fetchingSerials ? "Loading..." : `Print ${expanded.length} label${expanded.length === 1 ? "" : "s"}`}
           </Button>
         </DialogFooter>
 

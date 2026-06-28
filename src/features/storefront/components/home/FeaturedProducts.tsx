@@ -28,7 +28,7 @@ export function FeaturedProducts({ products: allProducts }: Props) {
           <Link
             href="/shop"
             className="hidden sm:inline-flex items-center gap-1.5 text-sm font-bold transition-all duration-200 hover:-translate-x-0.5"
-            style={{ color: "#2563EB" }}
+            style={{ color: "#16A34A" }}
           >
             View All <ChevronRight className="h-4 w-4" />
           </Link>
@@ -42,7 +42,7 @@ export function FeaturedProducts({ products: allProducts }: Props) {
             href="/shop"
             className="inline-flex items-center gap-2 px-6 py-3 rounded-[12px] text-sm font-bold text-white transition-all duration-200"
             style={{
-              background: "linear-gradient(135deg, #2563EB 0%, #3B82F6 100%)",
+              background: "linear-gradient(135deg, #16A34A 0%, #22C55E 100%)",
               boxShadow: "0 4px 14px rgba(37,99,235,0.35)",
             }}
           >

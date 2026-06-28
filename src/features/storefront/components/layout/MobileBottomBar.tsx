@@ -16,7 +16,7 @@ export function MobileBottomBar() {
 
   return (
     <nav
-      className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white/98 pb-safe"
+      className="md:hidden fixed bottom-0 inset-x-0 z-50 bg-white pb-safe"
       style={{
         borderTop: "1.5px solid #DBEAFE",
         boxShadow: "0 -4px 20px rgba(37,99,235,0.10)",
@@ -36,14 +36,14 @@ export function MobileBottomBar() {
               key={href}
               href={href}
               className="flex flex-col items-center justify-center gap-0.5 flex-1 py-2 text-[10px] font-semibold transition-all duration-200"
-              style={{ color: active ? "#2563EB" : "#94A3B8" }}
+              style={{ color: active ? "#16A34A" : "#94A3B8" }}
             >
               <div className="relative">
                 {/* Active pill indicator */}
                 {active && (
                   <div
                     className="absolute -inset-1.5 rounded-xl -z-10 transition-all"
-                    style={{ background: "#EFF6FF" }}
+                    style={{ background: "#F0FDF4" }}
                   />
                 )}
                 <Icon
@@ -54,7 +54,7 @@ export function MobileBottomBar() {
                   <span
                     className="absolute -top-1.5 -right-2 h-4 min-w-4 px-1 rounded-full text-[9px] grid place-items-center font-bold text-white"
                     style={{
-                      background: href === "/wishlist" ? "#F43F5E" : "#2563EB",
+                      background: href === "/wishlist" ? "#F43F5E" : "#16A34A",
                     }}
                   >
                     {badge}

@@ -40,7 +40,7 @@ export function CategoryRail({ products, realCategories = [] }: Props) {
           <Link
             href="/shop"
             className="hidden sm:inline-flex items-center gap-1.5 text-sm font-bold transition-all duration-200 hover:-translate-x-0.5"
-            style={{ color: "#2563EB" }}
+            style={{ color: "#16A34A" }}
           >
             View All <ChevronRight className="h-4 w-4" />
           </Link>
@@ -70,7 +70,7 @@ export function CategoryRail({ products, realCategories = [] }: Props) {
               <div
                 className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center overflow-hidden transition-transform duration-300 group-hover:scale-110"
                 style={{
-                  background: c.imageUrl ? "transparent" : "linear-gradient(135deg, #DBEAFE 0%, #EFF6FF 100%)",
+                  background: c.imageUrl ? "transparent" : "linear-gradient(135deg, #DBEAFE 0%, #F0FDF4 100%)",
                 }}
               >
                 {/* Hover overlay */}
@@ -86,7 +86,7 @@ export function CategoryRail({ products, realCategories = [] }: Props) {
                 ) : (
                   <c.icon
                     className="h-7 w-7 sm:h-8 sm:w-8 relative z-10 transition-colors duration-300"
-                    style={{ color: "#2563EB" }}
+                    style={{ color: "#16A34A" }}
                     onMouseEnter={(e) =>
                       ((e.currentTarget as SVGElement).style.color = "#ffffff")
                     }
@@ -97,7 +97,7 @@ export function CategoryRail({ products, realCategories = [] }: Props) {
               {/* Label */}
               <div className="text-center">
                 <div
-                  className="text-[11px] sm:text-xs font-bold leading-tight transition-colors duration-200 group-hover:text-[#2563EB] text-foreground"
+                  className="text-[11px] sm:text-xs font-bold leading-tight transition-colors duration-200 group-hover:text-[#16A34A] text-foreground"
                 >
                   {c.label}
                 </div>
@@ -116,7 +116,7 @@ export function CategoryRail({ products, realCategories = [] }: Props) {
           <Link
             href="/shop"
             className="inline-flex items-center gap-1 text-sm font-bold"
-            style={{ color: "#2563EB" }}
+            style={{ color: "#16A34A" }}
           >
             View All Categories <ChevronRight className="h-4 w-4" />
           </Link>

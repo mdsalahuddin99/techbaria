@@ -43,7 +43,7 @@ export default function StorefrontCheckout() {
     return (
       <div className="max-w-md mx-auto px-4 py-20 text-center">
         <h1 className="text-xl font-bold mb-2 text-[#1E3A5F]">Cart is empty</h1>
-        <Link href="/shop" className="font-bold text-[#2563EB] hover:text-[#1D4ED8]">← Back to shop</Link>
+        <Link href="/shop" className="font-bold text-[#16A34A] hover:text-[#15803D]">← Back to shop</Link>
       </div>
     );
   }
@@ -161,7 +161,7 @@ export default function StorefrontCheckout() {
           <Button
             type="submit"
             disabled={submitting}
-            className="w-full h-11 bg-[#2563EB] hover:bg-[#1D4ED8] rounded-full text-white shadow-md shadow-blue-500/20 disabled:opacity-60"
+            className="w-full h-11 bg-[#16A34A] hover:bg-[#15803D] rounded-full text-white shadow-md shadow-green-500/20 disabled:opacity-60"
           >
             {submitting ? "Placing order..." : <>Place order <ArrowRight className="h-4 w-4 ml-1" /></>}
           </Button>
@@ -198,7 +198,7 @@ function Field({
         onChange={onChange}
         type={type}
         placeholder={placeholder}
-        className="w-full h-10 px-3 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0] text-sm focus:outline-none focus:border-[#2563EB]/60 text-[#1E3A5F]"
+        className="w-full h-10 px-3 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0] text-sm focus:outline-none focus:border-[#16A34A]/60 text-[#1E3A5F]"
       />
     </div>
   );
@@ -215,13 +215,13 @@ function Radio({
       type="button"
       onClick={onChange}
       className={`w-full flex items-center gap-3 p-3 rounded-xl border transition text-left ${
-        checked ? "border-[#2563EB]/40 bg-[#EFF6FF]" : "border-[#E2E8F0] hover:border-slate-300 bg-white"
+        checked ? "border-[#16A34A]/40 bg-[#F0FDF4]" : "border-[#E2E8F0] hover:border-slate-300 bg-white"
       }`}
     >
-      <div className={`h-4 w-4 rounded-full border-2 grid place-items-center shrink-0 ${checked ? "border-[#2563EB]" : "border-slate-300"}`}>
-        {checked && <span className="h-2 w-2 rounded-full bg-[#2563EB]" />}
+      <div className={`h-4 w-4 rounded-full border-2 grid place-items-center shrink-0 ${checked ? "border-[#16A34A]" : "border-slate-300"}`}>
+        {checked && <span className="h-2 w-2 rounded-full bg-[#16A34A]" />}
       </div>
-      {Icon && <Icon className="h-5 w-5 text-[#2563EB] shrink-0" />}
+      {Icon && <Icon className="h-5 w-5 text-[#16A34A] shrink-0" />}
       <div className="flex-1 min-w-0">
         <div className="text-sm font-medium text-[#1E3A5F]">{title}</div>
         <div className="text-xs text-slate-500">{sub}</div>

@@ -26,9 +26,10 @@ import {
 } from "@/shared/ui/dropdown-menu";
 import { formatCurrency, productDisplayName } from "@/shared/lib/format";
 import { categoryName } from "@/shared/lib/categoryName";
-import { Plus, Search, Pencil, Trash2, Settings2, X, ScanLine, PackageOpen, Tag, Eye, MoreHorizontal, Sparkles } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Settings2, X, ScanLine, PackageOpen, Tag, Eye, EyeOff, MoreHorizontal, Sparkles, Star } from "lucide-react";
 import { Product, Category } from "@/shared/lib/types";
 import { toast } from "sonner";
+import Image from "next/image";
 import dynamic from "next/dynamic";
 const CameraScanner = dynamic(() => import("@/components/CameraScanner"), { ssr: false });
 const PrintLabelsDialog = dynamic(() => import("@/components/PrintLabelsDialog"), { ssr: false });
@@ -374,7 +375,7 @@ export function ProductsClient({
                   >
                     <div className="shrink-0">
                       {p.imageUrl ? (
-                        <img src={p.imageUrl} alt={productDisplayName(p)} className="h-12 w-12 object-cover rounded-lg" />
+                        <Image src={p.imageUrl} alt={productDisplayName(p)} width={48} height={48} className="h-12 w-12 object-cover rounded-lg" />
                       ) : (
                         <span className="text-3xl">{p.emoji}</span>
                       )}
@@ -443,8 +444,12 @@ export function ProductsClient({
                     <TableHead className="text-right">D. Price</TableHead>
                     <TableHead className="text-right">Stock</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Trending</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead className="text-center w-[1%] whitespace-nowrap" title="Trending">
+                      <Star className="h-4 w-4 mx-auto text-white" />
+                    </TableHead>
+                    <TableHead className="text-right w-[1%] whitespace-nowrap" title="Actions">
+                      <Settings2 className="h-4 w-4 ml-auto text-white" />
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -464,7 +469,7 @@ export function ProductsClient({
                         <TableCell>
                           <div className="flex items-center gap-3">
                             {p.imageUrl ? (
-                              <img src={p.imageUrl} alt={productDisplayName(p)} className="h-10 w-10 object-cover rounded-md" />
+                              <Image src={p.imageUrl} alt={productDisplayName(p)} width={40} height={40} className="h-10 w-10 object-cover rounded-md" />
                             ) : (
                               <div className="h-10 w-10 flex items-center justify-center bg-muted rounded-md text-2xl">{p.emoji}</div>
                             )}
@@ -485,7 +490,7 @@ export function ProductsClient({
                               : "border-accent text-accent"
                             }
                           >
-                            {p.stock} {p.unit}
+                            {p.stock} {p.unit === "pcs" ? "p" : p.unit}
                           </Badge>
                         </TableCell>
                         <TableCell>
@@ -495,11 +500,9 @@ export function ProductsClient({
                             <Badge className="bg-destructive text-white hover:bg-destructive/90 border-transparent">Inactive</Badge>
                           )}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="text-center">
                           {(p as any).isTrending ? (
-                            <Badge className="bg-amber-100 text-amber-700 border-amber-200 gap-1">
-                              <Sparkles className="h-3 w-3" /> Trending
-                            </Badge>
+                            <Star className="h-5 w-5 fill-amber-500 text-amber-500 mx-auto" aria-label="Trending" />
                           ) : (
                             <span className="text-xs text-muted-foreground">—</span>
                           )}
@@ -527,6 +530,12 @@ export function ProductsClient({
                               >
                                 <Sparkles className="mr-2 h-4 w-4" />
                                 {(p as any).isTrending ? "Remove Trending" : "Mark as Trending"}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => updateMutation.mutate({ id: p.id, patch: { active: !p.active } as any })}
+                              >
+                                {p.active ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
+                                {p.active ? "Hide from E-commerce" : "Show on E-commerce"}
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => setDeleteId(p.id)}>

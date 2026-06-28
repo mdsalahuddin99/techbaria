@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Minus, Plus, X } from "lucide-react";
 import { formatPrice } from "../../lib/formatPrice";
 import { useCartStore } from "../../store/useCartStore";
@@ -16,10 +17,10 @@ export function CartLineItem({ line }: Props) {
     <div className="flex gap-3 p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm">
       <Link
         href={`/p/${encodeURIComponent((line as any).slug || line.productId)}`}
-        className="shrink-0 h-16 w-16 sm:h-20 sm:w-20 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] grid place-items-center overflow-hidden"
+        className="relative shrink-0 h-16 w-16 sm:h-20 sm:w-20 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] grid place-items-center overflow-hidden"
       >
         {line.imageUrl ? (
-          <img src={line.imageUrl} alt={line.name} className="h-full w-full object-cover" />
+          <Image src={line.imageUrl} alt={line.name} fill sizes="80px" className="object-cover" />
         ) : (
           <span className="text-2xl sm:text-3xl">{line.emoji || "📦"}</span>
         )}
@@ -27,7 +28,7 @@ export function CartLineItem({ line }: Props) {
       <div className="flex-1 min-w-0">
         <Link
           href={`/p/${encodeURIComponent((line as any).slug || line.productId)}`}
-          className="text-sm font-semibold line-clamp-2 hover:text-[#2563EB] text-[#1E3A5F]"
+          className="text-sm font-semibold line-clamp-2 hover:text-[#16A34A] text-[#1E3A5F]"
         >
           {line.name}
         </Link>

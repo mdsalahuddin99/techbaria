@@ -62,11 +62,12 @@ export async function create(ctx: Ctx, input: ProductCreateInput) {
       trackSerials: input.trackSerials ?? true,
       warrantyStartDate: input.warrantyStartDate ? new Date(input.warrantyStartDate) : undefined,
       ...(input.warrantyMonths !== undefined && { warrantyMonths: input.warrantyMonths }),
-      ...(input.imageUrl ? {
-        images: {
-          create: { url: input.imageUrl, publicId: input.imageUrl.split("/").pop() ?? "img", position: 0 },
-        },
-      } : {}),
+      images: {
+        create: [
+          ...(input.imageUrl ? [{ url: input.imageUrl, publicId: input.imageUrl.split("/").pop() ?? "img", position: 0 }] : []),
+          ...(input.galleryImages ? input.galleryImages.map((url, i) => ({ url, publicId: url.split("/").pop() ?? "img", position: i + 1 })) : []),
+        ],
+      },
     },
     include: {
       category: true,

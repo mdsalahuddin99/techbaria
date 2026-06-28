@@ -28,7 +28,7 @@ export function MegaMenu() {
   if (!tree.length) {
     return (
       <nav className="hidden lg:flex items-center gap-5 text-sm text-slate-600 ml-2">
-        <Link href="/shop" className="hover:text-[#2563EB] font-medium transition-colors">
+        <Link href="/shop" className="hover:text-[#16A34A] font-medium transition-colors">
           Shop
         </Link>
       </nav>
@@ -37,7 +37,7 @@ export function MegaMenu() {
 
   return (
     <nav className="hidden lg:flex items-center gap-6 text-sm text-slate-600 ml-6">
-      <Link href="/shop" className="hover:text-[#2563EB] font-semibold transition-colors">
+      <Link href="/shop" className="hover:text-[#16A34A] font-semibold transition-colors">
         All Products
       </Link>
 
@@ -47,7 +47,7 @@ export function MegaMenu() {
         onMouseEnter={() => { clearClose(); if (!activeCat) setActiveCat(tree[0]?.category ?? null); }}
         onMouseLeave={scheduleClose}
       >
-        <button className="flex items-center gap-1 hover:text-[#2563EB] font-semibold transition-colors">
+        <button className="flex items-center gap-1 hover:text-[#16A34A] font-semibold transition-colors">
           Categories <ChevronDown className="h-3.5 w-3.5" />
         </button>
 
@@ -64,8 +64,8 @@ export function MegaMenu() {
                   href={`/shop/${encodeURIComponent(cat.category)}`}
                   className={`flex items-center justify-between px-4 py-2.5 text-sm font-medium transition-colors whitespace-nowrap
                     ${activeCat === cat.category
-                      ? "bg-[#EFF6FF] text-[#2563EB]"
-                      : "text-slate-700 hover:bg-[#EFF6FF] hover:text-[#2563EB]"}`}
+                      ? "bg-[#F0FDF4] text-[#16A34A]"
+                      : "text-slate-700 hover:bg-[#F0FDF4] hover:text-[#16A34A]"}`}
                 >
                   {cat.category}
                   {cat.subcategories.length > 0 && (
@@ -89,8 +89,8 @@ export function MegaMenu() {
                           href={`/shop/${encodeURIComponent(cat.category)}?sub=${encodeURIComponent(sub.subcategory)}`}
                           className={`flex items-center justify-between px-4 py-2.5 text-sm transition-colors whitespace-nowrap
                             ${activeSub === sub.subcategory
-                              ? "bg-[#EFF6FF] text-[#2563EB] font-medium"
-                              : "text-slate-600 hover:bg-[#EFF6FF] hover:text-[#2563EB]"}`}
+                              ? "bg-[#F0FDF4] text-[#16A34A] font-medium"
+                              : "text-slate-600 hover:bg-[#F0FDF4] hover:text-[#16A34A]"}`}
                         >
                           {sub.subcategory}
                           {sub.brands.length > 0 && (
@@ -108,7 +108,7 @@ export function MegaMenu() {
                               <Link
                                 key={brand}
                                 href={`/shop/${encodeURIComponent(cat.category)}?brand=${encodeURIComponent(brand)}`}
-                                className="block px-4 py-2.5 text-sm text-slate-600 hover:bg-[#EFF6FF] hover:text-[#2563EB] transition-colors whitespace-nowrap"
+                                className="block px-4 py-2.5 text-sm text-slate-600 hover:bg-[#F0FDF4] hover:text-[#16A34A] transition-colors whitespace-nowrap"
                               >
                                 {brand}
                               </Link>

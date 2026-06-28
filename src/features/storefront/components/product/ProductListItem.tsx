@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Heart, ShoppingBag, Eye, GitCompareArrows, Star, ShieldCheck, Truck } from "lucide-react";
 import type { StorefrontProduct } from "@/features/storefront/types";
 import { formatPrice, calcDiscountPct } from "../../lib/formatPrice";
@@ -49,11 +50,12 @@ export function ProductListItem({ product, allProducts }: Props) {
     >
       <div className="relative h-28 w-28 sm:h-40 sm:w-40 shrink-0 rounded-xl bg-gradient-to-br from-indigo-950/40 to-transparent overflow-hidden grid place-items-center">
         {product.imageUrl ? (
-          <img
+          <Image
             src={product.imageUrl}
             alt={productDisplayName(product)}
-            loading="lazy"
-            className="absolute inset-0 h-full w-full object-cover group-hover:scale-105 transition duration-500"
+            fill
+            sizes="(max-width: 640px) 112px, 160px"
+            className="object-cover group-hover:scale-105 transition duration-500"
           />
         ) : (
           <span className="text-5xl">{product.emoji || "📦"}</span>

@@ -14,6 +14,7 @@ export interface ProductCreateInput {
   shortDescription?: string;
   categoryId?: string;
   imageUrl?: string;
+  galleryImages?: string[];
   price: number;
   cost?: number;
   stock?: number;
@@ -44,6 +45,7 @@ export interface ProductUpdateInput {
   shortDescription?: string;
   categoryId?: string | null;
   imageUrl?: string | null;
+  galleryImages?: string[];
   price?: number;
   cost?: number;
   stock?: number;

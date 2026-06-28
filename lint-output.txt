@@ -1,0 +1,106 @@
+
+> shebatech360-nextjs@0.0.1 lint
+> eslint .
+
+
+G:\CLIENT PROJECT\pos99-main\pos99-main\app\(dashboard)\dashboard\inventory\InventoryClient.tsx
+  189:5  warning  React Hook useMemo has a missing dependency: 'isParentCat'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+G:\CLIENT PROJECT\pos99-main\pos99-main\app\(dashboard)\dashboard\inventory\restock\RestockClient.tsx
+  30:9  warning  The 'products' logical expression could make the dependencies of useMemo Hook (at line 49) change on every render. Move it inside the useMemo callback. Alternatively, wrap the initialization of 'products' in its own useMemo() Hook  react-hooks/exhaustive-deps
+
+G:\CLIENT PROJECT\pos99-main\pos99-main\app\(dashboard)\dashboard\notifications\NotificationsClient.tsx
+  44:9  warning  The 'products' logical expression could make the dependencies of useMemo Hook (at line 52) change on every render. Move it inside the useMemo callback. Alternatively, wrap the initialization of 'products' in its own useMemo() Hook  react-hooks/exhaustive-deps
+
+G:\CLIENT PROJECT\pos99-main\pos99-main\app\(dashboard)\dashboard\purchases\PurchasesClient.tsx
+  66:9  warning  The 'warehouses' logical expression could make the dependencies of useEffect Hook (at line 74) change on every render. To fix this, wrap the initialization of 'warehouses' in its own useMemo() Hook  react-hooks/exhaustive-deps
+
+G:\CLIENT PROJECT\pos99-main\pos99-main\app\(dashboard)\dashboard\sales\create\CreateSaleClient.tsx
+  379:6   warning  React Hook useCallback has an unnecessary dependency: 'session'. Either exclude it or remove the dependency array  react-hooks/exhaustive-deps
+  410:17  error    Empty block statement                                                                                              no-empty
+
+G:\CLIENT PROJECT\pos99-main\pos99-main\app\layout.tsx
+  21:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  59:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+G:\CLIENT PROJECT\pos99-main\pos99-main\src\__tests__\test-utils.tsx
+  15:7  warning  Fast refresh only works when a file only exports components. Move your component(s) to a separate file  react-refresh/only-export-components
+  22:1  warning  This rule can't verify that `export *` only exports components                                          react-refresh/only-export-components
+
+G:\CLIENT PROJECT\pos99-main\pos99-main\src\components\ProductLabel.tsx
+  10:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  73:6   warning  React Hook useEffect has a missing dependency: 'renderBarcode'. Either include it or remove the dependency array                react-hooks/exhaustive-deps
+
+G:\CLIENT PROJECT\pos99-main\pos99-main\src\features\accounts\hooks.ts
+  252:9  warning  The 'sales' logical expression could make the dependencies of useMemo Hook (at line 259) change on every render. Move it inside the useMemo callback. Alternatively, wrap the initialization of 'sales' in its own useMemo() Hook  react-hooks/exhaustive-deps
+
+G:\CLIENT PROJECT\pos99-main\pos99-main\src\features\auth\AuthProvider.tsx
+  148:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+G:\CLIENT PROJECT\pos99-main\pos99-main\src\features\auth\__mocks__\AuthProvider.tsx
+   6:14  warning  Fast refresh only works when a file only exports components. Move your React context(s) to a separate file                      react-refresh/only-export-components
+   9:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  38:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+G:\CLIENT PROJECT\pos99-main\pos99-main\src\features\customers\hooks.ts
+  52:9  warning  The 'customers' logical expression could make the dependencies of useMemo Hook (at line 55) change on every render. Move it inside the useMemo callback. Alternatively, wrap the initialization of 'customers' in its own useMemo() Hook  react-hooks/exhaustive-deps
+  62:9  warning  The 'customers' logical expression could make the dependencies of useMemo Hook (at line 65) change on every render. Move it inside the useMemo callback. Alternatively, wrap the initialization of 'customers' in its own useMemo() Hook  react-hooks/exhaustive-deps
+
+G:\CLIENT PROJECT\pos99-main\pos99-main\src\features\products\components\BulkEditDialog.tsx
+  24:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+G:\CLIENT PROJECT\pos99-main\pos99-main\src\features\products\components\BundleComponentsEditor.tsx
+  25:9  warning  The 'products' logical expression could make the dependencies of useMemo Hook (at line 30) change on every render. To fix this, wrap the initialization of 'products' in its own useMemo() Hook      react-hooks/exhaustive-deps
+  25:9  warning  The 'products' logical expression could make the dependencies of useMemo Hook (at line 52) change on every render. To fix this, wrap the initialization of 'products' in its own useMemo() Hook      react-hooks/exhaustive-deps
+  26:9  warning  The 'components' logical expression could make the dependencies of useMemo Hook (at line 52) change on every render. To fix this, wrap the initialization of 'components' in its own useMemo() Hook  react-hooks/exhaustive-deps
+
+G:\CLIENT PROJECT\pos99-main\pos99-main\src\features\products\hooks.ts
+   70:9  warning  The 'products' logical expression could make the dependencies of useMemo Hook (at line 84) change on every render. Move it inside the useMemo callback. Alternatively, wrap the initialization of 'products' in its own useMemo() Hook   react-hooks/exhaustive-deps
+   93:9  warning  The 'products' logical expression could make the dependencies of useMemo Hook (at line 102) change on every render. Move it inside the useMemo callback. Alternatively, wrap the initialization of 'products' in its own useMemo() Hook  react-hooks/exhaustive-deps
+  108:9  warning  The 'products' logical expression could make the dependencies of useMemo Hook (at line 111) change on every render. Move it inside the useMemo callback. Alternatively, wrap the initialization of 'products' in its own useMemo() Hook  react-hooks/exhaustive-deps
+
+G:\CLIENT PROJECT\pos99-main\pos99-main\src\features\purchases\components\PurchaseList.tsx
+  20:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+G:\CLIENT PROJECT\pos99-main\pos99-main\src\features\sales\components\ProductFilterBar.tsx
+  147:5  warning  React Hook useCallback has a missing dependency: 'onShowSuggestions'. Either include it or remove the dependency array. If 'onShowSuggestions' changes too often, find the parent component that defines it and wrap that definition in useCallback  react-hooks/exhaustive-deps
+
+G:\CLIENT PROJECT\pos99-main\pos99-main\src\features\sales\hooks.ts
+  50:9  warning  The 'sales' logical expression could make the dependencies of useMemo Hook (at line 54) change on every render. Move it inside the useMemo callback. Alternatively, wrap the initialization of 'sales' in its own useMemo() Hook  react-hooks/exhaustive-deps
+
+G:\CLIENT PROJECT\pos99-main\pos99-main\src\features\storefront\components\home\HeroBanner.tsx
+  89:6  warning  React Hook useEffect has a missing dependency: 'activeSlides.length'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+G:\CLIENT PROJECT\pos99-main\pos99-main\src\features\suppliers\hooks.ts
+  58:9  warning  The 'suppliers' logical expression could make the dependencies of useMemo Hook (at line 61) change on every render. Move it inside the useMemo callback. Alternatively, wrap the initialization of 'suppliers' in its own useMemo() Hook  react-hooks/exhaustive-deps
+  68:9  warning  The 'suppliers' logical expression could make the dependencies of useMemo Hook (at line 71) change on every render. Move it inside the useMemo callback. Alternatively, wrap the initialization of 'suppliers' in its own useMemo() Hook  react-hooks/exhaustive-deps
+
+G:\CLIENT PROJECT\pos99-main\pos99-main\src\shared\hooks\use-search-handler.ts
+  158:9  warning  The 'clientData' conditional could make the dependencies of useMemo Hook (at line 182) change on every render. To fix this, wrap the initialization of 'clientData' in its own useMemo() Hook  react-hooks/exhaustive-deps
+
+G:\CLIENT PROJECT\pos99-main\pos99-main\src\shared\ui\badge.tsx
+  29:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+G:\CLIENT PROJECT\pos99-main\pos99-main\src\shared\ui\button.tsx
+  47:18  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+G:\CLIENT PROJECT\pos99-main\pos99-main\src\shared\ui\form.tsx
+  129:10  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+G:\CLIENT PROJECT\pos99-main\pos99-main\src\shared\ui\loading-button.tsx
+  59:43  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+G:\CLIENT PROJECT\pos99-main\pos99-main\src\shared\ui\navigation-menu.tsx
+  111:3  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+G:\CLIENT PROJECT\pos99-main\pos99-main\src\shared\ui\sidebar.tsx
+  636:3  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+G:\CLIENT PROJECT\pos99-main\pos99-main\src\shared\ui\sonner.tsx
+  30:19  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+G:\CLIENT PROJECT\pos99-main\pos99-main\src\shared\ui\toggle.tsx
+  37:18  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+✖ 41 problems (1 error, 40 warnings)
+

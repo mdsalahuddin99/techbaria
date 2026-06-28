@@ -45,7 +45,20 @@ import { z } from "zod";
 const formSchema = heroSlideSchema.omit({ id: true, createdAt: true, updatedAt: true });
 type FormValues = z.infer<typeof formSchema>;
 
-export function StorefrontSettingsClient() {
+import { GeneralSettingsForm } from "./_components/GeneralSettingsForm";
+import { SocialSettingsForm } from "./_components/SocialSettingsForm";
+import { CheckoutSettingsForm } from "./_components/CheckoutSettingsForm";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
+
+export function StorefrontSettingsClient({ 
+  initialGeneral, 
+  initialSocial, 
+  initialCheckout 
+}: { 
+  initialGeneral?: any; 
+  initialSocial?: any; 
+  initialCheckout?: any; 
+}) {
   usePageTitle("Storefront Settings");
   const { heroSlides, isLoading, createSlide, updateSlide, deleteSlide, isDeleting } = useHeroSlides();
 
@@ -140,17 +153,52 @@ export function StorefrontSettingsClient() {
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Hero Slides</h1>
-          <p className="text-muted-foreground text-sm">
-            Manage the dynamic banners displayed on your storefront homepage.
-          </p>
-        </div>
-        <Button onClick={handleOpenCreate}>
-          <Plus className="mr-2 h-4 w-4" /> Add Slide
-        </Button>
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Storefront Settings</h1>
+        <p className="text-muted-foreground text-sm">
+          Manage your website's configuration, banners, and links.
+        </p>
       </div>
+
+      <Tabs defaultValue="general" className="w-full">
+        <TabsList className="mb-4">
+          <TabsTrigger value="general">General Info</TabsTrigger>
+          <TabsTrigger value="social">Social Links</TabsTrigger>
+          <TabsTrigger value="checkout">Checkout</TabsTrigger>
+          <TabsTrigger value="hero">Hero Slides</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="general">
+          <Card>
+            <CardContent className="pt-6">
+              <GeneralSettingsForm initialData={initialGeneral} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="social">
+          <Card>
+            <CardContent className="pt-6">
+              <SocialSettingsForm initialData={initialSocial} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="checkout">
+          <Card>
+            <CardContent className="pt-6">
+              <CheckoutSettingsForm initialData={initialCheckout} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="hero" className="space-y-4">
+          <div className="flex justify-between items-center">
+            <h2 className="text-lg font-semibold">Hero Slides</h2>
+            <Button onClick={handleOpenCreate}>
+              <Plus className="mr-2 h-4 w-4" /> Add Slide
+            </Button>
+          </div>
 
       <Card>
         <CardContent className="p-0">
@@ -348,6 +396,8 @@ export function StorefrontSettingsClient() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      </TabsContent>
+      </Tabs>
     </div>
   );
 }

@@ -45,8 +45,8 @@ export function CategoryNav() {
                 href={`/shop/${encodeURIComponent(cat.category)}`}
                 className={`block px-3 py-2 text-[13px] font-bold rounded-lg transition-colors whitespace-nowrap
                   ${activeCat === cat.category
-                    ? "text-[#2563EB] bg-[#EFF6FF]"
-                    : "text-slate-700 hover:text-[#2563EB] hover:bg-[#EFF6FF]"}`}
+                    ? "text-[#16A34A] bg-[#F0FDF4]"
+                    : "text-slate-700 hover:text-[#16A34A] hover:bg-[#F0FDF4]"}`}
               >
                 {cat.category}
               </Link>
@@ -68,8 +68,8 @@ export function CategoryNav() {
                         href={`/shop/${encodeURIComponent(cat.category)}?sub=${encodeURIComponent(sub.subcategory)}`}
                         className={`flex items-center justify-between px-4 py-2.5 text-sm transition-colors whitespace-nowrap
                           ${activeSub === sub.subcategory
-                            ? "bg-[#EFF6FF] text-[#2563EB] font-medium"
-                            : "text-slate-600 hover:bg-[#EFF6FF] hover:text-[#2563EB]"}`}
+                            ? "bg-[#F0FDF4] text-[#16A34A] font-medium"
+                            : "text-slate-600 hover:bg-[#F0FDF4] hover:text-[#16A34A]"}`}
                       >
                         {sub.subcategory}
                         {sub.brands.length > 0 && (
@@ -87,7 +87,7 @@ export function CategoryNav() {
                             <Link
                               key={brand}
                               href={`/shop/${encodeURIComponent(cat.category)}?brand=${encodeURIComponent(brand)}`}
-                              className="block px-4 py-2 text-sm text-slate-600 hover:bg-[#EFF6FF] hover:text-[#2563EB] transition-colors whitespace-nowrap"
+                              className="block px-4 py-2 text-sm text-slate-600 hover:bg-[#F0FDF4] hover:text-[#16A34A] transition-colors whitespace-nowrap"
                             >
                               {brand}
                             </Link>

@@ -203,8 +203,9 @@ export const cache = {
   },
 
   /** Helper: invalidate all product caches for a shop. */
-  invalidateProducts(shopId: string) {
-    return cache.invalidate(`shop:${shopId}:products:*`);
+  async invalidateProducts(shopId: string) {
+    await cache.invalidate(`shop:${shopId}:products:*`);
+    await cache.invalidate(`products:storefront:*`);
   },
 
   /** Helper: invalidate specific product caches (by ID) and product list. */
@@ -213,9 +214,14 @@ export const cache = {
 
     const keys = [
       cacheKeys.products.list(shopId),
-      ...productIds.map(productId => cacheKeys.products.byId(shopId, productId))
+      `products:storefront:v2:unfiltered`,
+      ...productIds.map(productId => cacheKeys.products.byId(shopId, productId)),
+      ...productIds.map(productId => `products:storefront:slug:${productId}`)
     ];
     await cache.del(...keys);
+    
+    // As a fallback to clear slug-based caches if slug wasn't the ID:
+    await cache.invalidate(`products:storefront:slug:*`);
   },
 
   /** Helper: invalidate all category caches for a shop. */

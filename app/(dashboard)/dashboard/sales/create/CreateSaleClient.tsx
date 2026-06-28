@@ -407,7 +407,9 @@ export function CreateSaleClient() {
           const res = await apiFetch<{ items: any[] }>(`/api/products/search?q=${customEvent.detail}`);
           const p = res.items.find(x => x.id === customEvent.detail);
           if (p) addProductToVoucher(p);
-        } catch { }
+        } catch {
+          // Ignore fetch errors
+        }
       }
     };
     const handleSelectCustomerById = (e: Event) => {

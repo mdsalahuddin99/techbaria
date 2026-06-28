@@ -140,6 +140,12 @@ export async function publicStorefrontList(
     return cache.fetch(cacheKey, TTL.CATALOG, () => runPublicStorefrontQuery(filter));
   }
 
+  // Cache related products query
+  if (filter?.category && filter?.excludeId && !filter?.search) {
+    const cacheKey = `products:storefront:related:${filter.category}:${filter.excludeId}`;
+    return cache.fetch(cacheKey, TTL.CATALOG, () => runPublicStorefrontQuery(filter));
+  }
+
   return runPublicStorefrontQuery(filter);
 }
 
@@ -164,13 +170,27 @@ async function runPublicStorefrontQuery(
       // Exclude specific product (for "related" queries on PDP)
       ...(filter?.excludeId && { id: { not: filter.excludeId } }),
     },
-    include: {
+    select: {
+      id: true,
+      slug: true,
+      name: true,
+      price: true,
+      stock: true,
+      emoji: true,
+      subcategory: true,
+      color: true,
+      storage: true,
+      ram: true,
+      isPublished: true,
+      sku: true,
+      description: true,
+      condition: true,
+      warrantyMonths: true,
+      isTrending: true,
       category: { select: { name: true } } as any,
-      // Only first image — no need to load full array for listing
       images: { orderBy: { position: "asc" as const }, take: 1, select: { url: true } } as any,
       brand: { select: { name: true } } as any,
       model: { select: { name: true } } as any,
-      // series omitted — not displayed in storefront listing
     },
     orderBy: { name: "asc" as const },
     ...(filter?.limit ? { take: filter.limit } : {}),

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { Heart, Star, ShoppingBag, Eye, GitCompareArrows } from "lucide-react";
 import type { StorefrontProduct } from "@/features/storefront/types";
 import { formatPrice, calcDiscountPct } from "../../lib/formatPrice";
@@ -87,11 +88,12 @@ export function ProductCard({ product, allProducts }: Props) {
       >
         {/* Product image */}
         {product.imageUrl ? (
-          <img
+          <Image
             src={product.imageUrl}
             alt={productDisplayName(product)}
-            loading="lazy"
-            className="absolute inset-0 h-full w-full object-contain p-4 transition-transform duration-700 ease-out group-hover:scale-110"
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+            className="object-contain p-4 transition-transform duration-700 ease-out group-hover:scale-110"
           />
         ) : (
           <div className="absolute inset-0 grid place-items-center text-5xl sm:text-6xl transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-3">
@@ -133,9 +135,9 @@ export function ProductCard({ product, allProducts }: Props) {
           <button
             onClick={stopAnd(() => openQuick(product.id))}
             aria-label="Quick view"
-            className="h-8 w-8 rounded-full bg-white border border-[#E2E8F0] shadow-sm flex items-center justify-center transition-all duration-200 hover:border-[#2563EB] hover:bg-[#EFF6FF]"
+            className="h-8 w-8 rounded-full bg-white border border-[#E2E8F0] shadow-sm flex items-center justify-center transition-all duration-200 hover:border-[#16A34A] hover:bg-[#F0FDF4]"
           >
-            <Eye className="h-3.5 w-3.5" style={{ color: "#2563EB" }} />
+            <Eye className="h-3.5 w-3.5" style={{ color: "#16A34A" }} />
           </button>
           <button
             onClick={stopAnd(() => {
@@ -146,13 +148,13 @@ export function ProductCard({ product, allProducts }: Props) {
             aria-label="Compare"
             className={`h-8 w-8 rounded-full border shadow-sm flex items-center justify-center transition-all duration-200 ${
               isCmp
-                ? "bg-[#EFF6FF] border-[#2563EB]"
-                : "bg-white border-[#E2E8F0] hover:border-[#2563EB] hover:bg-[#EFF6FF]"
+                ? "bg-[#F0FDF4] border-[#16A34A]"
+                : "bg-white border-[#E2E8F0] hover:border-[#16A34A] hover:bg-[#F0FDF4]"
             }`}
           >
             <GitCompareArrows
               className="h-3.5 w-3.5"
-              style={{ color: "#2563EB" }}
+              style={{ color: "#16A34A" }}
             />
           </button>
         </div>
@@ -182,7 +184,7 @@ export function ProductCard({ product, allProducts }: Props) {
 
         {/* Product name — 2-line clamp */}
         <div
-          className="text-xs sm:text-sm font-bold line-clamp-2 leading-snug min-h-[2.5rem] transition-colors duration-200 group-hover:text-[#2563EB]"
+          className="text-xs sm:text-sm font-bold line-clamp-2 leading-snug min-h-[2.5rem] transition-colors duration-200 group-hover:text-[#16A34A]"
           style={{ color: "#1E3A5F" }}
         >
           {productDisplayName(product)}
@@ -214,7 +216,7 @@ export function ProductCard({ product, allProducts }: Props) {
 
         {/* Price row */}
         <div className="flex items-baseline gap-2 mt-0.5">
-          <span className="text-base sm:text-lg font-extrabold" style={{ color: "#2563EB" }}>
+          <span className="text-base sm:text-lg font-extrabold" style={{ color: "#16A34A" }}>
             {formatPrice(product.price)}
           </span>
           {oldPrice && (

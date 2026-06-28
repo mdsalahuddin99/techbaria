@@ -99,10 +99,10 @@ export function ShopClient({ initialProducts }: Props) {
   return (
     <div className="max-w-7xl mx-auto px-3 sm:px-6 pt-3 sm:pt-4">
       {/* Breadcrumb — Electro style */}
-      <nav className="text-xs text-slate-500 flex items-center gap-1.5 mb-4 bg-[#EFF6FF] border border-[#BFDBFE] px-3 py-2 rounded-md" aria-label="Breadcrumb">
-        <Link href="/" className="hover:text-[#2563EB] font-medium">Home</Link>
+      <nav className="text-xs text-slate-500 flex items-center gap-1.5 mb-4 bg-[#F0FDF4] border border-[#BFDBFE] px-3 py-2 rounded-md" aria-label="Breadcrumb">
+        <Link href="/" className="hover:text-[#16A34A] font-medium">Home</Link>
         <ChevronRight className="h-3 w-3 text-slate-300" />
-        <Link href="/shop" className="hover:text-[#2563EB] font-medium">Shop</Link>
+        <Link href="/shop" className="hover:text-[#16A34A] font-medium">Shop</Link>
         {decoded && (
           <>
             <ChevronRight className="h-3 w-3 text-slate-300" />
@@ -114,7 +114,7 @@ export function ShopClient({ initialProducts }: Props) {
       {/* Category header — Electro style: compact with left yellow border accent */}
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-3">
-          <span className="w-1 h-7 bg-[#2563EB] rounded-full shrink-0" />
+          <span className="w-1 h-7 bg-[#16A34A] rounded-full shrink-0" />
           <div>
             <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-[#1E3A5F]">
               {decoded ?? "All Products"}
@@ -126,13 +126,13 @@ export function ShopClient({ initialProducts }: Props) {
         </div>
       </div>
 
-      <SubCategoryTags category={decoded} />
+      <SubCategoryTags category={decoded} initialProducts={initialProducts} />
 
       {/* Layout: sidebar + content */}
       <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-5">
         {/* Sidebar — desktop */}
         <aside className="hidden lg:block">
-          <div className="sticky top-24 rounded-lg border border-slate-200 bg-white p-4 max-h-[calc(100vh-7rem)] overflow-y-auto">
+          <div className="sticky top-24 rounded-lg border border-slate-200 bg-white p-4 max-h-[calc(100vh-7rem)] overflow-y-auto [&::-webkit-scrollbar]:hidden">
             <ShopFilters
               value={filters}
               bounds={bounds}
@@ -142,17 +142,18 @@ export function ShopClient({ initialProducts }: Props) {
               }}
               onReset={reset}
               onCategoryNav={onCategoryNav}
+              initialProducts={initialProducts}
             />
           </div>
         </aside>
 
         <div className="min-w-0">
           {/* Toolbar — Electro style */}
-          <div className="flex flex-wrap items-center justify-between gap-2 mb-4 bg-slate-50 border border-slate-200 rounded-md px-3 py-2">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between gap-2 mb-3 bg-slate-50 border border-slate-200 rounded-md px-2.5 py-1.5">
+            <div className="flex items-center gap-2 shrink-0">
               <Sheet>
                 <SheetTrigger asChild>
-                  <button className="lg:hidden inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-[#2563EB] text-white text-sm font-bold hover:bg-[#1D4ED8] transition">
+                  <button className="lg:hidden inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-[#16A34A] text-white text-sm font-bold hover:bg-[#15803D] transition">
                     <Filter className="h-4 w-4" /> Filters
                   </button>
                 </SheetTrigger>
@@ -167,30 +168,20 @@ export function ShopClient({ initialProducts }: Props) {
                       }}
                       onReset={reset}
                       onCategoryNav={onCategoryNav}
+                      initialProducts={initialProducts}
                     />
                   </div>
                 </SheetContent>
               </Sheet>
-
-              <div className="flex-1 min-w-0">
-                <ActiveFilterChips
-                  value={filters}
-                  bounds={bounds}
-                  onChange={(v) => {
-                    setFilters(v);
-                    setPage(1);
-                  }}
-                />
-              </div>
             </div>
 
-            <div className="flex items-center gap-2 ml-auto">
+            <div className="flex items-center gap-2 ml-auto shrink-0">
               <span className="text-xs text-slate-500 hidden sm:inline">{visible.length} items</span>
               <div className="inline-flex rounded-md border border-slate-200 bg-white overflow-hidden">
                 <button
                   onClick={() => setView("grid")}
                   className={`h-8 w-8 grid place-items-center transition ${
-                    view === "grid" ? "bg-[#2563EB] text-white" : "text-slate-500 hover:bg-slate-50"
+                    view === "grid" ? "bg-[#16A34A] text-white" : "text-slate-500 hover:bg-slate-50"
                   }`}
                   aria-label="Grid view"
                 >
@@ -199,7 +190,7 @@ export function ShopClient({ initialProducts }: Props) {
                 <button
                   onClick={() => setView("list")}
                   className={`h-8 w-8 grid place-items-center border-l border-slate-200 transition ${
-                    view === "list" ? "bg-[#2563EB] text-white" : "text-slate-500 hover:bg-slate-50"
+                    view === "list" ? "bg-[#16A34A] text-white" : "text-slate-500 hover:bg-slate-50"
                   }`}
                   aria-label="List view"
                 >
@@ -209,6 +200,19 @@ export function ShopClient({ initialProducts }: Props) {
 
               <SortMenu value={sort} onChange={setSort} />
             </div>
+          </div>
+
+
+          {/* Active Filters */}
+          <div className="mb-4">
+            <ActiveFilterChips
+              value={filters}
+              bounds={bounds}
+              onChange={(v) => {
+                setFilters(v);
+                setPage(1);
+              }}
+            />
           </div>
 
           {/* Results */}
@@ -233,7 +237,7 @@ export function ShopClient({ initialProducts }: Props) {
             <div className="mt-8 flex justify-center">
               <button
                 onClick={() => setPage((p) => p + 1)}
-                className="h-11 px-8 rounded-full bg-[#2563EB] text-white text-sm font-extrabold hover:bg-[#1D4ED8] transition shadow-md shadow-blue-500/20"
+                className="h-11 px-8 rounded-full bg-[#16A34A] text-white text-sm font-extrabold hover:bg-[#15803D] transition shadow-md shadow-green-500/20"
               >
                 Load more ({products.length - visible.length} বাকি)
               </button>

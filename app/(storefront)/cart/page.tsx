@@ -19,7 +19,7 @@ export default function StorefrontCart() {
         <h1 className="text-xl font-bold mb-2 text-[#1E3A5F]">Your cart is empty</h1>
         <p className="text-sm text-slate-500 mb-6">কেনার জন্য কিছু পণ্য যোগ করুন।</p>
         <Link href="/shop">
-          <Button className="bg-[#2563EB] hover:bg-[#1D4ED8] rounded-full text-white shadow-md shadow-blue-500/20">
+          <Button className="bg-[#16A34A] hover:bg-[#15803D] rounded-full text-white shadow-md shadow-green-500/20">
             Continue shopping <ArrowRight className="h-4 w-4 ml-1" />
           </Button>
         </Link>
@@ -39,7 +39,7 @@ export default function StorefrontCart() {
         <aside className="space-y-3">
           <CartSummary subtotal={subtotal} total={subtotal} />
           <Link href="/checkout">
-            <Button className="w-full h-11 bg-[#2563EB] hover:bg-[#1D4ED8] rounded-full text-white shadow-md shadow-blue-500/20">
+            <Button className="w-full h-11 bg-[#16A34A] hover:bg-[#15803D] rounded-full text-white shadow-md shadow-green-500/20">
               Checkout <ArrowRight className="h-4 w-4 ml-1" />
             </Button>
           </Link>

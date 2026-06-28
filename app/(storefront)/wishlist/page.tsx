@@ -38,7 +38,7 @@ export default function StorefrontWishlist() {
           <Heart className="h-12 w-12 mx-auto text-slate-400 mb-3" />
           <div className="text-[#1E3A5F] font-semibold">Wishlist এখনো খালি</div>
           <p className="text-sm text-slate-500 mt-1">পছন্দের পণ্য সেভ করতে heart আইকনে চাপুন।</p>
-          <Link href="/shop" className="inline-block mt-5 px-5 h-10 leading-10 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-sm font-semibold shadow-md shadow-blue-500/20">
+          <Link href="/shop" className="inline-block mt-5 px-5 h-10 leading-10 rounded-full bg-[#16A34A] hover:bg-[#15803D] text-white text-sm font-semibold shadow-md shadow-green-500/20">
             Browse shop
           </Link>
         </div>

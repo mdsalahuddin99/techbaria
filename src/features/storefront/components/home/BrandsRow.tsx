@@ -18,7 +18,7 @@ export function BrandsRow() {
             <span className="sf-section-accent" />
             <div>
               <h2 className="sf-section-title">Top Brands</h2>
-              <p className="text-sm mt-1" style={{ color: "#2563EB" }}>
+              <p className="text-sm mt-1" style={{ color: "#16A34A" }}>
                 অথেনটিক ব্র্যান্ডের সেরা প্রোডাক্ট
               </p>
             </div>
@@ -26,7 +26,7 @@ export function BrandsRow() {
           <Link
             href="/shop"
             className="hidden sm:inline-flex items-center gap-1 text-sm font-bold transition-all"
-            style={{ color: "#1D4ED8" }}
+            style={{ color: "#15803D" }}
           >
             All Brands <ChevronRight className="h-4 w-4" />
           </Link>
@@ -44,7 +44,7 @@ export function BrandsRow() {
                 animationDelay: `${i * 0.05}s`,
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = "#2563EB";
+                e.currentTarget.style.borderColor = "#16A34A";
                 e.currentTarget.style.boxShadow = "0 8px 24px rgba(37,99,235,0.16)";
               }}
               onMouseLeave={(e) => {

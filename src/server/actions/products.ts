@@ -1,6 +1,7 @@
 "use server";
 
 import { auth } from "@/server/auth/config";
+import { prisma } from "@/server/db/client";
 import { buildCtx } from "@/server/lib/ctx";
 import { ServiceError } from "@/server/lib/errors";
 import { productsService, type ProductCreateInput, type ProductUpdateInput } from "@/server/services/productsService";
@@ -55,4 +56,19 @@ export async function deleteProductAction(id: string) {
 export async function getProductDistinctValuesAction(field: string, parent?: string) {
   const ctx = await getActionCtx();
   return productsService.distinctFieldValues(ctx, field, parent);
+}
+
+export async function getAvailableSerialsAction(productId: string, limit: number) {
+  const ctx = await getActionCtx();
+  const serials = await prisma.serialNumber.findMany({
+    where: {
+      productId,
+      status: "IN_STOCK",
+      // optionally add warehouse filtering if needed, but for labels IN_STOCK is enough
+    },
+    select: { serial: true },
+    take: limit,
+    orderBy: { createdAt: "asc" },
+  });
+  return serials.map((s) => s.serial);
 }

@@ -1,4 +1,6 @@
-import { Dialog, DialogContent } from "@/shared/ui/dialog";
+"use client";
+
+import { Dialog, DialogContent, DialogTitle } from "@/shared/ui/dialog";
 import { useStorefrontProducts } from "../../hooks/useStorefrontProducts";
 import Link from "next/link";
 import { Heart, ShoppingBag, GitCompareArrows, Star, X, ShieldCheck, Truck } from "lucide-react";
@@ -37,6 +39,7 @@ export function QuickViewDialog() {
   return (
     <Dialog open={!!id} onOpenChange={(v) => !v && close()}>
       <DialogContent className="sm:max-w-3xl bg-[#0b0b22] border-white/10 text-slate-100 p-0 overflow-hidden">
+        <DialogTitle className="sr-only">{productDisplayName(product)}</DialogTitle>
         <button
           onClick={close}
           className="absolute top-3 right-3 z-10 h-8 w-8 rounded-full bg-black/40 backdrop-blur grid place-items-center hover:bg-black/60"

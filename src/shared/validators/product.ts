@@ -38,7 +38,8 @@ export const productBaseSchema = z
     stock: z.number().int().min(0).max(1_000_000).default(0),
     minStock: minStockPreprocessor,
     unit: z.string().trim().min(1).max(20).default("pcs"),
-    active: z.boolean().default(true),
+    active: z.boolean().default(false),
+    isTrending: z.boolean().optional(),
     emoji: z.string().max(8).default("📦"),
     imageUrl: z.string().url().max(2048).optional().or(z.literal("")).transform((v) => v || undefined),
     color: z.string().trim().max(40).optional(),
@@ -95,6 +96,7 @@ export const productCreateSchema = productBaseSchema.transform((input) => {
     trackSerials: input.trackSerials,
     warrantyStartDate: input.warrantyStartDate,
     warrantyMonths: input.warrantyMonths,
+    isTrending: input.isTrending ?? false,
   };
 });
 
@@ -130,6 +132,7 @@ export const productUpdateSchema = productBaseSchema.partial().transform((input)
   if (input.warrantyStartDate !== undefined) result.warrantyStartDate = input.warrantyStartDate;
   // warrantyMonths — now a direct column
   if (input.warrantyMonths !== undefined) result.warrantyMonths = input.warrantyMonths;
+  if (input.isTrending !== undefined) result.isTrending = input.isTrending;
   return result;
 });
 

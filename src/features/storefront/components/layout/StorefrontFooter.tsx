@@ -4,54 +4,84 @@ import {
   Facebook, Instagram, Youtube,
   MessageCircle, ShieldCheck, Truck, CreditCard, PackageCheck,
 } from "lucide-react";
+import { getSiteConfig } from "../../actions/config.actions";
 
-export function StorefrontFooter() {
+export async function StorefrontFooter() {
+  const general = ((await getSiteConfig("general")) as Record<string, any>) || {};
+  const social = ((await getSiteConfig("social")) as Record<string, any>) || {};
+  const footer = ((await getSiteConfig("footer")) as Record<string, any>) || {};
+  
+  const shopName = general.storeName || "AmarShop";
+  const phone = general.phone || "+880 1700-000000";
+  const email = general.email || "support@amarshop.bd";
+  const address = general.address || "Dhaka, Bangladesh";
+
+  const socialLinks = [];
+  if (social.facebook) socialLinks.push({ Icon: Facebook, href: social.facebook, label: "Facebook" });
+  if (social.instagram) socialLinks.push({ Icon: Instagram, href: social.instagram, label: "Instagram" });
+  if (social.youtube) socialLinks.push({ Icon: Youtube, href: social.youtube, label: "YouTube" });
+  // Always keep WhatsApp for now, or use phone number to generate wa.me link
+  socialLinks.push({ Icon: MessageCircle, href: `https://wa.me/${phone.replace(/[^0-9]/g, '')}`, label: "WhatsApp" });
+
+  const aboutText = footer.aboutText || "অরিজিনাল ব্র্যান্ডেড মোবাইল, ল্যাপটপ, CCTV ও গ্যাজেট। সারাদেশে ডেলিভারি ও EMI সুবিধা।";
+  
+  const shopLinks = footer.shopLinks || [
+    { label: "All Products", url: "/shop" },
+    { label: "Mobile", url: "/shop/Mobile" },
+    { label: "Laptop", url: "/shop/Laptop" },
+    { label: "CCTV Camera", url: "/shop/CCTV%20Camera" },
+    { label: "Accessories", url: "/shop" },
+  ];
+
+  const helpLinks = footer.helpLinks || [
+    { label: "Track Order", url: "/track" },
+    { label: "My Account", url: "/account" },
+    { label: "Return Policy", url: "#" },
+    { label: "Warranty Info", url: "#" },
+    { label: "Privacy Policy", url: "#" },
+  ];
+
   return (
     <footer className="w-full text-white">
 
 
       {/* ── Main footer grid ── */}
-      <div style={{ background: "#1E40AF" }}>
+      <div style={{ background: "#166534" }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 sm:py-14 grid grid-cols-2 md:grid-cols-4 gap-8 sm:gap-10">
         {/* Brand column */}
         <div className="col-span-2 md:col-span-1">
           <div className="flex items-center gap-2.5 mb-4">
-            <div
-              className="h-10 w-10 rounded-xl flex items-center justify-center font-extrabold text-[#1D4ED8] text-lg"
-              style={{ background: "rgba(255,255,255,0.95)" }}
-            >
-              A
-            </div>
-            <span className="text-xl font-extrabold text-white tracking-tight">AmarShop</span>
+            {general.logoUrl ? (
+              <img 
+                src={general.logoUrl} 
+                alt={shopName} 
+                className="h-12 w-auto max-w-[160px] object-contain"
+              />
+            ) : (
+              <>
+                <div
+                  className="h-10 w-10 rounded-xl flex items-center justify-center font-extrabold text-[#15803D] text-lg"
+                  style={{ background: "rgba(255,255,255,0.95)" }}
+                >
+                  {shopName.charAt(0).toUpperCase()}
+                </div>
+                <span className="text-xl font-extrabold text-white tracking-tight">{shopName}</span>
+              </>
+            )}
           </div>
-          <p className="text-xs text-white/60 leading-relaxed mb-5">
-            অরিজিনাল ব্র্যান্ডেড মোবাইল, ল্যাপটপ, CCTV ও গ্যাজেট। সারাদেশে ডেলিভারি ও EMI সুবিধা।
+          <p className="text-xs text-white/60 leading-relaxed mb-5 whitespace-pre-line">
+            {aboutText}
           </p>
           {/* Social icons */}
           <div className="flex items-center gap-2">
-            {[
-              { Icon: Facebook, href: "#", label: "Facebook" },
-              { Icon: Instagram, href: "#", label: "Instagram" },
-              { Icon: Youtube, href: "#", label: "YouTube" },
-              { Icon: MessageCircle, href: "https://wa.me/8801700000000", label: "WhatsApp" },
-            ].map(({ Icon, href, label }) => (
+            {socialLinks.map(({ Icon, href, label }) => (
               <a
                 key={label}
                 href={href}
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label={label}
-                className="h-9 w-9 rounded-xl flex items-center justify-center transition-all duration-200 hover:-translate-y-0.5"
-                style={{
-                  background: "rgba(255,255,255,0.12)",
-                  border: "1px solid rgba(255,255,255,0.2)",
-                }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.background = "rgba(255,255,255,0.22)")
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.background = "rgba(255,255,255,0.12)")
-                }
+                className="h-9 w-9 rounded-xl flex items-center justify-center transition-all duration-200 hover:-translate-y-0.5 bg-white/10 border border-white/20 hover:bg-white/20"
               >
                 <Icon className="h-4 w-4 text-white" />
               </a>
@@ -63,19 +93,13 @@ export function StorefrontFooter() {
         <div>
           <div className="text-sm font-bold text-white mb-4">Shop</div>
           <ul className="space-y-2.5 text-xs text-white/60">
-            {[
-              ["All Products", "/shop"],
-              ["Mobile", "/shop/Mobile"],
-              ["Laptop", "/shop/Laptop"],
-              ["CCTV Camera", "/shop/CCTV%20Camera"],
-              ["Accessories", "/shop"],
-            ].map(([label, href]) => (
-              <li key={label}>
+            {shopLinks.map((link: any, i: number) => (
+              <li key={i}>
                 <Link
-                  href={href}
+                  href={link.url}
                   className="hover:text-white transition-colors duration-150"
                 >
-                  {label}
+                  {link.label}
                 </Link>
               </li>
             ))}
@@ -86,19 +110,13 @@ export function StorefrontFooter() {
         <div>
           <div className="text-sm font-bold text-white mb-4">Help & Support</div>
           <ul className="space-y-2.5 text-xs text-white/60">
-            {[
-              ["Track Order", "/track"],
-              ["My Account", "/account"],
-              ["Return Policy", "#"],
-              ["Warranty Info", "#"],
-              ["Privacy Policy", "#"],
-            ].map(([label, href]) => (
-              <li key={label}>
+            {helpLinks.map((link: any, i: number) => (
+              <li key={i}>
                 <Link
-                  href={href}
+                  href={link.url}
                   className="hover:text-white transition-colors duration-150"
                 >
-                  {label}
+                  {link.label}
                 </Link>
               </li>
             ))}
@@ -106,20 +124,20 @@ export function StorefrontFooter() {
         </div>
 
         {/* Contact */}
-        <div>
+        <div className="col-span-2 md:col-span-1">
           <div className="text-sm font-bold text-white mb-4">Contact Us</div>
           <ul className="space-y-3 text-xs text-white/60">
             <li className="flex items-center gap-2.5">
               <Phone className="h-3.5 w-3.5 text-[#93C5FD] shrink-0" />
-              <a href="tel:+8801700000000" className="hover:text-white">+880 1700-000000</a>
+              <a href={`tel:${phone.replace(/[^0-9+]/g, '')}`} className="hover:text-white">{phone}</a>
             </li>
             <li className="flex items-center gap-2.5">
               <Mail className="h-3.5 w-3.5 text-[#93C5FD] shrink-0" />
-              <a href="mailto:support@amarshop.bd" className="hover:text-white">support@amarshop.bd</a>
+              <a href={`mailto:${email}`} className="hover:text-white">{email}</a>
             </li>
             <li className="flex items-start gap-2.5">
               <MapPin className="h-3.5 w-3.5 text-[#93C5FD] shrink-0 mt-0.5" />
-              <span>Dhaka, Bangladesh</span>
+              <span>{address}</span>
             </li>
           </ul>
 
@@ -151,7 +169,7 @@ export function StorefrontFooter() {
         style={{ background: "#1E3A8A", borderColor: "rgba(255,255,255,0.10)" }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-white/50">
-          <span>© {new Date().getFullYear()} AmarShop. All rights reserved.</span>
+          <span>© {new Date().getFullYear()} {shopName}. All rights reserved.</span>
           <div className="flex items-center gap-3">
             <ShieldCheck className="h-3.5 w-3.5 text-[#93C5FD]" />
             <span>SSL Secured &amp; 100% Safe Checkout</span>

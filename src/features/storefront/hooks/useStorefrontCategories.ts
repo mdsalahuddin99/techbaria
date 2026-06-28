@@ -64,8 +64,8 @@ export function deriveCategories(products: StorefrontProduct[]): StorefrontCateg
  * Derives the visible category list from products in stock.
  * No separate categories fetch — keeps the public catalog tight.
  */
-export function useStorefrontCategories(): StorefrontCategory[] {
-  const { data: products = [] } = useQuery<StorefrontProduct[]>({
+export function useStorefrontCategories(options?: { initialData?: StorefrontProduct[] }): StorefrontCategory[] {
+  const { data = options?.initialData ?? [] } = useQuery<StorefrontProduct[]>({
     queryKey: ["storefront", "products"],
     queryFn: async () => {
       const res = await fetch("/api/storefront/products");
@@ -74,7 +74,7 @@ export function useStorefrontCategories(): StorefrontCategory[] {
     },
   });
 
-  return useMemo(() => deriveCategories(products), [products]);
+  return useMemo(() => deriveCategories(data), [data]);
 }
 
 /** Pure function to derive brands. */
@@ -88,8 +88,8 @@ export function deriveBrands(products: StorefrontProduct[]): string[] {
 }
 
 /** All brands present in the catalog. Filtered by category if provided. */
-export function useStorefrontBrands(category?: string | null): string[] {
-  const { data: products = [] } = useQuery<StorefrontProduct[]>({
+export function useStorefrontBrands(category?: string | null, options?: { initialData?: StorefrontProduct[] }): string[] {
+  const { data = options?.initialData ?? [] } = useQuery<StorefrontProduct[]>({
     queryKey: ["storefront", "products"],
     queryFn: async () => {
       const res = await fetch("/api/storefront/products");
@@ -98,15 +98,15 @@ export function useStorefrontBrands(category?: string | null): string[] {
     },
   });
   return useMemo(() => {
-    let filtered = products;
+    let filtered = data;
     if (category) {
       const c = category.toLowerCase();
-      filtered = products.filter(
+      filtered = data.filter(
         (p) => p.category.toLowerCase() === c || (p.subcategory ?? "").toLowerCase() === c
       );
     }
     return deriveBrands(filtered);
-  }, [products, category]);
+  }, [data, category]);
 }
 
 export interface MegaMenuTree {
@@ -117,21 +117,22 @@ export interface MegaMenuTree {
   }[];
 }
 
-export function useMegaMenuTree(): MegaMenuTree[] {
-  const { data: products = [] } = useQuery<StorefrontProduct[]>({
+export function useMegaMenuTree(options?: { initialData?: StorefrontProduct[] }): MegaMenuTree[] {
+  const { data = options?.initialData ?? [] } = useQuery<StorefrontProduct[]>({
     queryKey: ["storefront", "products"],
     queryFn: async () => {
       const res = await fetch("/api/storefront/products");
       if (!res.ok) throw new Error("Failed to fetch storefront products");
       return res.json();
     },
+    initialData: options?.initialData,
   });
 
   return useMemo(() => {
     // Map<Category, Map<Subcategory, Set<Brand>>>
     const tree = new Map<string, Map<string, Set<string>>>();
 
-    for (const p of products) {
+    for (const p of data) {
       if (p.active === false) continue;
       
       const cat = p.category;
@@ -176,5 +177,5 @@ export function useMegaMenuTree(): MegaMenuTree[] {
     result.sort((a, b) => a.category.localeCompare(b.category));
     
     return result;
-  }, [products]);
+  }, [data]);
 }

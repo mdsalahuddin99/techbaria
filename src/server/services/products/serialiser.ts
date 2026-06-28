@@ -26,6 +26,7 @@ export function serialiseOne(p: any) {
     minStock: p.reorderLevel,
     // Frontend type uses `imageUrl` but Prisma stores images as relation array
     imageUrl: ((p as any).images as Array<{ url: string }> | undefined)?.[0]?.url ?? "",
+    galleryImages: ((p as any).images as Array<{ url: string }> | undefined)?.slice(1).map(img => img.url) ?? [],
     description: p.description ?? "",
     shortDescription: p.shortDescription ?? "",
     // Extended fields — expose both display names AND FK IDs for edit form

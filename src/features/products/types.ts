@@ -54,8 +54,10 @@ export interface Product {
   minStock: number;
   unit: string;
   active: boolean;
+  isTrending?: boolean;
   emoji: string;
   imageUrl?: string;
+  galleryImages?: string[];
   supplierId?: string | null;
   // ---- Electronics-specific (optional) ----
   /** Optional sub-category name (child of `category`). */

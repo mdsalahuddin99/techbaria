@@ -5,14 +5,14 @@ import { MessageCircle, Phone, ChevronRight } from "lucide-react";
 
 /**
  * Expert CTA block — conversion section between FeaturedProducts and BrandsRow.
- * Gradient: #2563EB → #06B6D4 (Blue to Cyan)
+ * Gradient: #16A34A → #06B6D4 (Blue to Cyan)
  */
 export function ExpertCTA() {
   return (
     <section
       className="relative overflow-hidden py-14 sm:py-20"
       style={{
-        background: "linear-gradient(135deg, #2563EB 0%, #06B6D4 100%)",
+        background: "linear-gradient(135deg, #16A34A 0%, #06B6D4 100%)",
       }}
     >
       {/* Decorative blobs */}

@@ -449,8 +449,8 @@ export default function DashboardClient() {
             subtitle="Latest POS & Online sales"
             href="/dashboard/sales"
             linkLabel="All Sales"
-            iconBg="bg-blue-500/10"
-            iconColor="text-blue-600"
+            iconBg="bg-green-500/10"
+            iconColor="text-green-600"
           />
           {recent.length === 0 ? (
             <div className="py-20 flex flex-col items-center justify-center text-slate-400 bg-slate-50/50 m-4 rounded-xl border border-dashed border-slate-200">

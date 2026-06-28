@@ -7,7 +7,7 @@ const items = [
     icon: Truck,
     title: "Fast Delivery",
     sub: "ঢাকায় ১৫০০৳+ অর্ডারে Free",
-    color: "#2563EB",
+    color: "#16A34A",
     bg: "#DBEAFE",
   },
   {
@@ -21,7 +21,7 @@ const items = [
     icon: RotateCcw,
     title: "Easy Return",
     sub: "৭ দিনের রিটার্ন গ্যারান্টি",
-    color: "#2563EB",
+    color: "#16A34A",
     bg: "#DBEAFE",
   },
   {
@@ -35,7 +35,7 @@ const items = [
 
 export function TrustStrip() {
   return (
-    <section style={{ background: "#EFF6FF" }} className="py-10 sm:py-14">
+    <section style={{ background: "#F0FDF4" }} className="py-10 sm:py-14">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-5">
           {items.map((item, i) => (

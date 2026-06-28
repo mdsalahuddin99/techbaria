@@ -13,7 +13,7 @@ export function LiveDealTicker() {
   return (
     <div
       className="relative overflow-hidden"
-      style={{ background: "linear-gradient(90deg, #1D4ED8 0%, #2563EB 50%, #1D4ED8 100%)" }}
+      style={{ background: "linear-gradient(90deg, #15803D 0%, #16A34A 50%, #15803D 100%)" }}
     >
       {/* Shimmer overlay */}
       <div

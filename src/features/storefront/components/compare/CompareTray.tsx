@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { GitCompareArrows, X } from "lucide-react";
 import { useCompareStore } from "../../store/useCompareStore";

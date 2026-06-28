@@ -10,14 +10,13 @@ import { deriveFeaturedProducts } from "@/features/storefront/hooks/useStorefron
 import { productsService } from "@/server/services/productsService";
 import { categoriesService } from "@/server/services/categoriesService";
 import { storefrontService } from "@/server/services/storefrontService";
-import { getInternalCtx } from "@/server/lib/internalCtx";
+export const revalidate = 300; // 5 minutes ISR
 
 export default async function StorefrontHome() {
   // Fetch data server-side
-  const ctx = getInternalCtx();
   const products = await productsService.publicStorefrontList();
-  const categories = await categoriesService.listFlat(ctx);
-  const heroSlides = await storefrontService.listHeroSlides(ctx);
+  const categories = await categoriesService.listFlat({} as any);
+  const heroSlides = await storefrontService.listHeroSlides({} as any);
   const activeSlides = heroSlides.filter(s => s.isActive);
   
   const featured = deriveFeaturedProducts(products, 1);

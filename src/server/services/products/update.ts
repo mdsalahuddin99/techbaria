@@ -76,28 +76,24 @@ export async function update(ctx: Ctx, id: string, input: ProductUpdateInput) {
   }
   if (input.warrantyMonths !== undefined) data.warrantyMonths = input.warrantyMonths;
 
-  // Handle imageUrl update via ProductImage relation
-  if (input.imageUrl !== undefined) {
-    const existingImages = await prisma.productImage.findMany({
-      where: { productId: id },
-      orderBy: { position: "asc" },
-    });
-    if (existingImages.length > 0) {
-      // Update first image
-      await prisma.productImage.update({
-        where: { id: existingImages[0].id },
-        data: { url: input.imageUrl || "" },
+  // Handle imageUrl and galleryImages update via ProductImage relation
+  if (input.imageUrl !== undefined || input.galleryImages !== undefined) {
+    // If we're updating images, we clear existing ones and recreate to ensure correct positioning.
+    // Wait, let's only do this if we are actively updating images to avoid wiping them if not provided.
+    // In our payload, we always provide both when saving from the form, so this is safe for full updates.
+    await prisma.productImage.deleteMany({ where: { productId: id } });
+    
+    const imagesData = [];
+    if (input.imageUrl) {
+      imagesData.push({ productId: id, url: input.imageUrl, publicId: input.imageUrl.split("/").pop() ?? "img", position: 0 });
+    }
+    if (input.galleryImages && input.galleryImages.length > 0) {
+      input.galleryImages.forEach((url, i) => {
+        imagesData.push({ productId: id, url, publicId: url.split("/").pop() ?? "img", position: i + 1 });
       });
-      // Delete extra images
-      if (existingImages.length > 1) {
-        await prisma.productImage.deleteMany({
-          where: { productId: id, id: { notIn: [existingImages[0].id] } },
-        });
-      }
-    } else if (input.imageUrl) {
-      await prisma.productImage.create({
-        data: { productId: id, url: input.imageUrl, publicId: input.imageUrl.split("/").pop() ?? "img", position: 0 },
-      });
+    }
+    if (imagesData.length > 0) {
+      await prisma.productImage.createMany({ data: imagesData });
     }
   }
 

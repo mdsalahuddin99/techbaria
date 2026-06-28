@@ -161,7 +161,7 @@ export function ReportsClient() {
         {/* ── PROFIT & LOSS ── */}
         <TabsContent value="pl" className="space-y-6 mt-0">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            <Stat label="Total Revenue" value={formatCurrency(metrics.totalRevenue)} icon={TrendingUp} bg="from-blue-50 to-cyan-50" text="text-blue-700" />
+            <Stat label="Total Revenue" value={formatCurrency(metrics.totalRevenue)} icon={TrendingUp} bg="from-blue-50 to-cyan-50" text="text-green-700" />
             <Stat label="Cost of Goods (COGS)" value={formatCurrency(metrics.cogs)} icon={Layers} bg="from-amber-50 to-orange-50" text="text-amber-700" />
             <Stat label="Gross Profit" value={formatCurrency(metrics.grossProfit)} icon={Calculator} bg="from-emerald-50 to-teal-50" text="text-emerald-700" />
             <Stat label="Net Profit" value={formatCurrency(metrics.netProfit)} icon={TrendingUp} bg={metrics.netProfit >= 0 ? "from-indigo-50 to-purple-50" : "from-red-50 to-rose-50"} text={metrics.netProfit >= 0 ? "text-indigo-700" : "text-red-600"} />
@@ -242,7 +242,7 @@ export function ReportsClient() {
         <TabsContent value="sales" className="space-y-6 mt-0">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
             <Stat label="Total Revenue" value={formatCurrency(metrics.totalRevenue)} icon={TrendingUp} bg="from-indigo-50 to-purple-50" text="text-indigo-700" />
-            <Stat label="Transactions" value={metrics.txnCount.toString()} icon={Receipt} bg="from-blue-50 to-cyan-50" text="text-blue-700" />
+            <Stat label="Transactions" value={metrics.txnCount.toString()} icon={Receipt} bg="from-blue-50 to-cyan-50" text="text-green-700" />
             <Stat label="Average Order Value" value={formatCurrency(metrics.aov)} icon={Calculator} bg="from-emerald-50 to-teal-50" text="text-emerald-700" />
           </div>
 

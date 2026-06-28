@@ -101,10 +101,19 @@ export const storefrontOrder = {
       });
 
       for (const item of input.items) {
-        await tx.product.update({
-          where: { id: item.productId },
+        const updateResult = await tx.product.updateMany({
+          where: { id: item.productId, stock: { gte: item.qty } },
           data: { stock: { decrement: item.qty } },
         });
+        
+        if (updateResult.count === 0) {
+          const product = productMap.get(item.productId);
+          throw new ServiceError(
+            "STOCK", 
+            `Concurrency conflict: Product ${product?.name || item.productId} ran out of stock during checkout.`, 
+            409
+          );
+        }
       }
 
       // Assign serials FIFO for tracked products (storefront customers don't scan)

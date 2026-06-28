@@ -13,6 +13,7 @@ import { useStorefrontCategories } from "../../hooks/useStorefrontCategories";
 import { SmartSearch } from "../search/SmartSearch";
 import { CategoryNav } from "./CategoryNav";
 import { useSession, signOut } from "next-auth/react";
+import { useSiteConfig } from "../../hooks/useSiteConfig";
 
 export function StorefrontHeader() {
   const pathname = usePathname();
@@ -21,91 +22,32 @@ export function StorefrontHeader() {
   const cmpCount = useCompareCount();
   const categories = useStorefrontCategories();
   const { data: session } = useSession();
+  const { data: generalData } = useSiteConfig("general");
 
   return (
     <>
-      {/* Top utility bar — Royal Blue */}
-      <div
-        className="hidden md:flex text-[11px] py-1.5 px-6 justify-between"
-        style={{
-          background: "#1D4ED8",
-          color: "rgba(255,255,255,0.85)",
-          borderBottom: "1px solid rgba(255,255,255,0.12)",
-        }}
-      >
-        <div className="flex items-center gap-4">
-          <a
-            href="tel:+8801700000000"
-            className="inline-flex items-center gap-1.5 hover:text-white transition-colors"
-          >
-            <Phone className="h-3 w-3" /> +880 1700-000000
-          </a>
-          <span className="inline-flex items-center gap-1.5">
-            <MapPin className="h-3 w-3" /> Dhaka, Bangladesh
-          </span>
-        </div>
-        <div className="flex items-center gap-4">
-          <Link href="/track" className="hover:text-white transition-colors">
-            Track Order
-          </Link>
-          <span className="w-px h-3 bg-white/20" />
-          
-          {session?.user ? (
-            <>
-              <Link href="/account" className="hover:text-white transition-colors">
-                My Account
-              </Link>
-              <span className="w-px h-3 bg-white/20" />
-              <button onClick={() => signOut({ callbackUrl: "/" })} className="hover:text-white transition-colors">
-                Logout
-              </button>
-            </>
-          ) : (
-            <>
-              <Link href="/login" className="hover:text-white transition-colors">
-                Login
-              </Link>
-              <span className="w-px h-3 bg-white/20" />
-              <Link href="/register" className="hover:text-white transition-colors">
-                Register
-              </Link>
-            </>
-          )}
-
-          <span className="w-px h-3 bg-white/20" />
-          <span className="font-medium text-white/90">BDT ৳</span>
-        </div>
-      </div>
-
-      {/* Main header — sticky, white/95 */}
-      <header
-        className="sticky top-0 z-40 bg-white/95 backdrop-blur-xl border-b"
-        style={{
-          borderColor: "#DBEAFE",
-          boxShadow: "0 4px 20px rgba(37,99,235,0.08)",
-        }}
-      >
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 h-14 sm:h-16 flex items-center gap-2 sm:gap-4">
+      {/* Main header — sticky, white/90 frosted glass */}
+      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-slate-200/60 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 py-3 sm:py-0 min-h-[4rem] sm:h-20 flex flex-wrap sm:flex-nowrap items-center justify-between sm:justify-start gap-y-3 sm:gap-6">
+          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
           {/* Mobile menu */}
           <Sheet>
             <SheetTrigger asChild>
               <button
-                className="md:hidden p-2 -ml-2 rounded-xl transition-colors hover:bg-[#EFF6FF]"
-                style={{ color: "#2563EB" }}
+                className="md:hidden p-2.5 -ml-2 rounded-full transition-all duration-300 hover:bg-emerald-50 text-slate-700 hover:text-emerald-600"
                 aria-label="Menu"
               >
                 <Menu className="h-5 w-5" />
               </button>
             </SheetTrigger>
-            <SheetContent side="left" className="bg-white border-[#DBEAFE] text-[#1E3A5F] w-[85vw] sm:w-80">
+            <SheetContent side="left" className="bg-white/95 backdrop-blur-lg border-emerald-100/50 text-slate-800 w-[85vw] sm:w-80 shadow-2xl">
               <SheetHeader>
-                <SheetTitle style={{ color: "#1D4ED8" }}>Browse</SheetTitle>
+                <SheetTitle className="text-emerald-700 font-bold">Browse</SheetTitle>
               </SheetHeader>
               <div className="mt-6 space-y-1">
                 <Link
                   href="/shop"
-                  className="block p-3 rounded-xl font-semibold transition-colors hover:bg-[#EFF6FF] hover:text-[#2563EB]"
-                  style={{ color: "#1E3A5F" }}
+                  className="block p-3 rounded-xl font-semibold transition-colors hover:bg-emerald-50 hover:text-emerald-600 text-slate-700"
                 >
                   All Products
                 </Link>
@@ -113,127 +55,145 @@ export function StorefrontHeader() {
                   <Link
                     key={c.value}
                     href={`/shop/${encodeURIComponent(c.value)}`}
-                    className="w-full flex items-center justify-between p-3 rounded-xl transition-colors hover:bg-[#EFF6FF] hover:text-[#2563EB]"
-                    style={{ color: "#475569" }}
+                    className="w-full flex items-center justify-between p-3 rounded-xl transition-colors hover:bg-emerald-50 hover:text-emerald-600 text-slate-600"
                   >
                     <span className="flex items-center gap-3">
-                      <c.icon className="h-5 w-5" style={{ color: "#2563EB" }} />
+                      <c.icon className="h-5 w-5 text-emerald-500" />
                       {c.label}
                     </span>
-                    <span className="text-xs" style={{ color: "#94A3B8" }}>
+                    <span className="text-xs text-slate-400">
                       {c.count}
                     </span>
                   </Link>
                 ))}
               </div>
-              <div
-                className="mt-6 pt-5 border-t grid grid-cols-2 gap-2"
-                style={{ borderColor: "#DBEAFE" }}
-              >
+              <div className="mt-6 pt-5 border-t border-slate-100 grid grid-cols-2 gap-2">
                 <Link
                   href="/wishlist"
-                  className="p-3 rounded-xl flex items-center gap-2 text-sm font-medium transition-colors hover:bg-[#EFF6FF] hover:text-[#2563EB]"
-                  style={{ background: "#EFF6FF", color: "#1E3A5F" }}
+                  className="p-3 rounded-xl flex items-center justify-center gap-2 text-sm font-medium transition-all hover:bg-emerald-50 bg-slate-50 text-slate-700 hover:text-emerald-600 border border-slate-100"
                 >
                   <Heart className="h-4 w-4 text-rose-500" /> Wishlist
                 </Link>
                 <Link
                   href="/compare"
-                  className="p-3 rounded-xl flex items-center gap-2 text-sm font-medium transition-colors hover:bg-[#EFF6FF] hover:text-[#2563EB]"
-                  style={{ background: "#EFF6FF", color: "#1E3A5F" }}
+                  className="p-3 rounded-xl flex items-center justify-center gap-2 text-sm font-medium transition-all hover:bg-emerald-50 bg-slate-50 text-slate-700 hover:text-emerald-600 border border-slate-100"
                 >
-                  <GitCompareArrows className="h-4 w-4 text-[#2563EB]" /> Compare
+                  <GitCompareArrows className="h-4 w-4 text-emerald-500" /> Compare
+                </Link>
+                <Link
+                  href="/track"
+                  className="p-3 rounded-xl flex items-center justify-center gap-2 text-sm font-medium transition-all hover:bg-emerald-50 bg-slate-50 text-slate-700 hover:text-emerald-600 border border-slate-100 col-span-2"
+                >
+                  Track Order
                 </Link>
               </div>
             </SheetContent>
           </Sheet>
 
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 shrink-0">
-            <div
-              className="h-8 w-8 rounded-xl grid place-items-center font-extrabold text-white shadow-lg"
-              style={{
-                background: "linear-gradient(135deg, #2563EB 0%, #06B6D4 100%)",
-                boxShadow: "0 4px 14px rgba(37,99,235,0.35)",
-              }}
+          <Link href="/" className="flex items-center gap-2.5 shrink-0 group">
+            {generalData?.logoUrl ? (
+              <img 
+                src={generalData.logoUrl} 
+                alt={generalData?.storeName || "Logo"} 
+                className="h-10 w-auto max-w-[140px] object-contain group-hover:scale-105 transition-transform duration-300"
+              />
+            ) : (
+              <>
+                <div className="h-10 w-10 rounded-xl grid place-items-center font-black text-white shadow-lg bg-gradient-to-br from-emerald-500 to-emerald-700 group-hover:scale-105 transition-transform duration-300 ring-2 ring-emerald-500/20">
+                  {generalData?.storeName ? generalData.storeName.charAt(0).toUpperCase() : "A"}
+                </div>
+                <span className="text-xl font-extrabold tracking-tight hidden xs:inline sm:inline bg-clip-text text-transparent bg-gradient-to-r from-emerald-800 to-emerald-600">
+                  {generalData?.storeName || "AmarShop"}
+                </span>
+              </>
+            )}
+          </Link>
+          </div>
+
+          <SmartSearch className="w-full order-last sm:order-none sm:flex-1 sm:max-w-xl sm:ml-auto md:ml-4 lg:ml-8 transition-all duration-300" />
+
+          {/* Actions */}
+          <div className="flex items-center gap-1 sm:gap-2 ml-auto sm:ml-0">
+            
+            <Link href="/track" className="hidden lg:flex items-center text-[13px] font-semibold text-slate-500 hover:text-emerald-600 transition-colors mr-2">
+              Track Order
+            </Link>
+
+            {/* Wishlist */}
+            <Link
+              href="/wishlist"
+              className="relative hidden sm:flex h-11 w-11 items-center justify-center rounded-full transition-all duration-300 hover:bg-slate-100 text-slate-500 hover:text-rose-500"
+              aria-label="Wishlist"
             >
-              A
+              <Heart className="h-5 w-5" />
+              {wishCount > 0 && (
+                <span className="absolute top-1.5 right-1.5 h-4 min-w-[16px] px-1 rounded-full bg-rose-500 text-[10px] flex items-center justify-center font-bold text-white shadow-sm ring-2 ring-white">
+                  {wishCount}
+                </span>
+              )}
+            </Link>
+
+            {/* Compare */}
+            <Link
+              href="/compare"
+              className="relative hidden sm:flex h-11 w-11 items-center justify-center rounded-full transition-all duration-300 hover:bg-slate-100 text-slate-500 hover:text-emerald-600"
+              aria-label="Compare"
+            >
+              <GitCompareArrows className="h-5 w-5" />
+              {cmpCount > 0 && (
+                <span className="absolute top-1.5 right-1.5 h-4 min-w-[16px] px-1 rounded-full bg-emerald-500 text-[10px] flex items-center justify-center font-bold text-white shadow-sm ring-2 ring-white">
+                  {cmpCount}
+                </span>
+              )}
+            </Link>
+
+            {/* Account / Login - Icon for mobile/tablet */}
+            <Link
+              href={session?.user ? "/account" : "/login"}
+              className="hidden sm:flex lg:hidden h-11 w-11 items-center justify-center rounded-full transition-all duration-300 hover:bg-slate-100 text-slate-500 hover:text-emerald-600"
+              aria-label={session?.user ? "Account" : "Login"}
+            >
+              {session?.user ? <User className="h-5 w-5" /> : <LogIn className="h-5 w-5" />}
+            </Link>
+
+            {/* Account / Login - Text for desktop */}
+            <div className="hidden lg:flex items-center gap-4 border-l border-slate-200 pl-4 ml-1">
+              {session?.user ? (
+                <>
+                  <Link href="/account" className="flex items-center gap-1.5 text-[13px] font-semibold text-slate-500 hover:text-emerald-600 transition-colors">
+                    <User className="h-4 w-4" /> My Account
+                  </Link>
+                  <button onClick={() => signOut({ callbackUrl: "/" })} className="flex items-center gap-1.5 text-[13px] font-semibold text-slate-500 hover:text-rose-500 transition-colors">
+                    <LogOut className="h-4 w-4" /> Logout
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link href="/login" className="flex items-center gap-1.5 text-[13px] font-semibold text-slate-500 hover:text-emerald-600 transition-colors">
+                    <LogIn className="h-4 w-4" /> Login
+                  </Link>
+                  <Link href="/register" className="flex items-center gap-1.5 text-[13px] font-semibold text-slate-500 hover:text-emerald-600 transition-colors">
+                    Register
+                  </Link>
+                </>
+              )}
             </div>
-            <span
-              className="text-base sm:text-lg font-extrabold tracking-tight hidden xs:inline sm:inline"
-              style={{
-                background: "linear-gradient(135deg, #1D4ED8 0%, #2563EB 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
-              }}
+
+            {/* Cart */}
+            <Link
+              href="/cart"
+              className="relative flex h-11 w-11 items-center justify-center rounded-full transition-all duration-300 hover:bg-emerald-50 text-emerald-600 hover:text-emerald-700 bg-emerald-50/50 sm:bg-transparent sm:ml-2"
+              aria-label="Cart"
             >
-              AmarShop
-            </span>
-          </Link>
-
-          <SmartSearch className="flex-1 max-w-md ml-auto md:ml-2" />
-
-          {/* Wishlist */}
-          <Link
-            href="/wishlist"
-            className="relative hidden sm:inline-flex p-2 rounded-xl transition-colors hover:bg-[#EFF6FF]"
-            style={{ color: "#475569" }}
-            aria-label="Wishlist"
-          >
-            <Heart className="h-5 w-5" />
-            {wishCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 h-4 min-w-4 px-1 rounded-full bg-rose-500 text-[10px] grid place-items-center font-bold text-white shadow-sm">
-                {wishCount}
-              </span>
-            )}
-          </Link>
-
-          {/* Compare */}
-          <Link
-            href="/compare"
-            className="relative hidden sm:inline-flex p-2 rounded-xl transition-colors hover:bg-[#EFF6FF]"
-            style={{ color: "#475569" }}
-            aria-label="Compare"
-          >
-            <GitCompareArrows className="h-5 w-5" />
-            {cmpCount > 0 && (
-              <span
-                className="absolute -top-0.5 -right-0.5 h-4 min-w-4 px-1 rounded-full text-[10px] grid place-items-center font-bold text-white shadow-sm"
-                style={{ background: "#2563EB" }}
-              >
-                {cmpCount}
-              </span>
-            )}
-          </Link>
-
-          {/* Account / Login */}
-          <Link
-            href={session?.user ? "/account" : "/login"}
-            className="hidden sm:inline-flex p-2 rounded-xl transition-colors hover:bg-[#EFF6FF]"
-            style={{ color: "#475569" }}
-            aria-label={session?.user ? "Account" : "Login"}
-          >
-            {session?.user ? <User className="h-5 w-5" /> : <LogIn className="h-5 w-5" />}
-          </Link>
-
-          {/* Cart */}
-          <Link
-            href="/cart"
-            className="relative p-2 rounded-xl transition-all"
-            style={{ color: "#2563EB" }}
-            aria-label="Cart"
-          >
-            <ShoppingBag className="h-5 w-5" />
-            {cartCount > 0 && (
-              <span
-                className="absolute -top-0.5 -right-0.5 h-4 min-w-4 px-1 rounded-full text-[10px] grid place-items-center font-bold text-white shadow-sm"
-                style={{ background: "#2563EB", boxShadow: "0 2px 8px rgba(37,99,235,0.4)" }}
-              >
-                {cartCount}
-              </span>
-            )}
-          </Link>
+              <ShoppingBag className="h-5 w-5" />
+              {cartCount > 0 && (
+                <span className="absolute top-1.5 right-1.5 h-4 min-w-[16px] px-1 rounded-full bg-emerald-600 text-[10px] flex items-center justify-center font-bold text-white shadow-md ring-2 ring-white">
+                  {cartCount}
+                </span>
+              )}
+            </Link>
+          </div>
         </div>
       </header>
 

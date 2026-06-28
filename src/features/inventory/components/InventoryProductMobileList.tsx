@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import Image from "next/image";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
@@ -50,7 +51,7 @@ export function InventoryProductMobileList({
           >
             <div className="flex items-center gap-3">
               {p.imageUrl ? (
-                <img src={p.imageUrl} alt={productDisplayName(p)} className="h-12 w-12 rounded-lg object-cover border shrink-0" />
+                <Image src={p.imageUrl} alt={productDisplayName(p)} width={48} height={48} className="h-12 w-12 rounded-lg object-cover border shrink-0" />
               ) : (
                 <span className="h-12 w-12 grid place-items-center text-2xl rounded-lg bg-secondary shrink-0">{p.emoji}</span>
               )}
