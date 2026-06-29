@@ -5,11 +5,13 @@ import { usePathname } from "next/navigation";
 import { Home, Grid2x2, ShoppingBag, User, Heart } from "lucide-react";
 import { useCartCount } from "../../store/useCartStore";
 import { useWishlistCount } from "../../store/useWishlistStore";
+import { useHydration } from "@/shared/hooks/useHydration";
 
 export function MobileBottomBar() {
   const pathname = usePathname();
   const cartCount = useCartCount();
   const wishCount = useWishlistCount();
+  const isMounted = useHydration();
 
   const isActive = (path: string) =>
     path === "/" ? pathname === "/" : pathname.startsWith(path);
@@ -50,7 +52,7 @@ export function MobileBottomBar() {
                   className="h-5 w-5 relative z-10 transition-transform"
                   style={{ transform: active ? "scale(1.1)" : "scale(1)" }}
                 />
-                {badge !== undefined && badge > 0 && (
+                {isMounted && badge !== undefined && badge > 0 && (
                   <span
                     className="absolute -top-1.5 -right-2 h-4 min-w-4 px-1 rounded-full text-[9px] grid place-items-center font-bold text-white"
                     style={{

@@ -5,7 +5,7 @@ import { cn } from "@/shared/lib/utils";
 import { cva, type VariantProps } from "class-variance-authority";
 
 const tableContainerVariants = cva(
-  "relative w-full overflow-auto rounded-xl",
+  "relative w-full overflow-auto rounded-md",
   {
     variants: {
       variant: {
@@ -67,7 +67,7 @@ const TableHead = React.forwardRef<HTMLTableCellElement, React.ThHTMLAttributes<
     <th
       ref={ref}
       className={cn(
-        "h-10 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0",
+        "h-8 px-3 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0",
         className,
       )}
       {...props}
@@ -78,7 +78,7 @@ TableHead.displayName = "TableHead";
 
 const TableCell = React.forwardRef<HTMLTableCellElement, React.TdHTMLAttributes<HTMLTableCellElement>>(
   ({ className, ...props }, ref) => (
-    <td ref={ref} className={cn("p-2 px-4 align-middle [&:has([role=checkbox])]:pr-0", className)} {...props} />
+    <td ref={ref} className={cn("py-1.5 px-3 align-middle [&:has([role=checkbox])]:pr-0", className)} {...props} />
   ),
 );
 TableCell.displayName = "TableCell";

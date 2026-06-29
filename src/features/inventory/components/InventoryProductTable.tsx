@@ -55,9 +55,9 @@ export function InventoryProductTable({
   return (
     <Card className="hidden md:block">
       <div className="overflow-x-auto">
-        <Table>
+        <Table className="text-[13px]">
           <TableHeader>
-            <TableRow>
+            <TableRow className="hover:bg-transparent">
               {selectable && (
                 <TableHead className="w-10">
                   <Checkbox
@@ -69,15 +69,15 @@ export function InventoryProductTable({
               )}
               <TableHead>Product</TableHead>
               <TableHead>SKU</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead className="hidden lg:table-cell">Sub-category</TableHead>
+              <TableHead>Cat.</TableHead>
+              <TableHead className="hidden lg:table-cell">Sub-Cat.</TableHead>
               <TableHead className="text-right">Stock</TableHead>
-              <TableHead className="text-right">Min</TableHead>
-              <TableHead className="text-right">Reorder</TableHead>
+              <TableHead className="text-right" title="Minimum Stock">Min</TableHead>
+              <TableHead className="text-right" title="Reorder Point">Reord.</TableHead>
               <TableHead className="text-right">Cost</TableHead>
               <TableHead className="text-right">Value</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead className="whitespace-nowrap">Warranty</TableHead>
+              <TableHead className="whitespace-nowrap" title="Warranty">Wrnty.</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -109,34 +109,38 @@ export function InventoryProductTable({
                       />
                     </TableCell>
                   )}
-                  <TableCell className="font-medium">
-                    <div className="flex items-center gap-2">
+                  <TableCell className="font-medium max-w-[250px]">
+                    <div className="flex items-center gap-2.5">
                       {p.imageUrl ? (
-                        <Image src={p.imageUrl} alt={productDisplayName(p)} width={32} height={32} className="h-8 w-8 rounded object-cover border" />
+                        <Image src={p.imageUrl} alt={productDisplayName(p)} width={32} height={32} className="h-8 w-8 rounded-md object-cover border border-slate-200 shrink-0" />
                       ) : (
-                        <span className="h-8 w-8 grid place-items-center text-lg">{p.emoji}</span>
+                        <span className="h-8 w-8 grid place-items-center text-lg shrink-0">{p.emoji}</span>
                       )}
-                      <span>{productDisplayName(p)}</span>
+                      <span className="line-clamp-2 leading-snug text-[13px]">{productDisplayName(p)}</span>
                     </div>
                   </TableCell>
-                  <TableCell className="text-muted-foreground text-sm">{p.sku}</TableCell>
-                  <TableCell><Badge variant="secondary">{categoryName(p)}</Badge></TableCell>
-                  <TableCell className="hidden lg:table-cell text-muted-foreground text-sm">{p.subcategory || "—"}</TableCell>
-                  <TableCell className="text-right font-medium">{p.stock} {p.unit}</TableCell>
-                  <TableCell className="text-right text-muted-foreground">{p.minStock}</TableCell>
-                  <TableCell className={cn("text-right text-sm", needsReorder && "text-warning font-semibold")}>
+                  <TableCell className="text-muted-foreground text-[13px] whitespace-nowrap">{p.sku}</TableCell>
+                  <TableCell className="whitespace-nowrap"><Badge variant="secondary" className="font-medium">{categoryName(p)}</Badge></TableCell>
+                  <TableCell className="hidden lg:table-cell text-muted-foreground text-[13px] whitespace-nowrap">{p.subcategory || "—"}</TableCell>
+                  <TableCell className="text-right font-semibold whitespace-nowrap">{p.stock} {p.unit}</TableCell>
+                  <TableCell className="text-right text-muted-foreground whitespace-nowrap">{p.minStock}</TableCell>
+                  <TableCell className={cn("text-right text-[13px] whitespace-nowrap", needsReorder && "text-warning font-semibold")}>
                     {reorderPoint}
                   </TableCell>
-                  <TableCell className="text-right">{formatCurrency(p.costPrice, locale)}</TableCell>
-                  <TableCell className="text-right">{formatCurrency(p.stock * p.costPrice, locale)}</TableCell>
-                  <TableCell>
-                    {out ? <Badge variant="outline" className="border-destructive text-destructive">Out</Badge> :
-                     low ? <Badge variant="outline" className="border-warning text-warning">Low</Badge> :
-                           <Badge variant="outline" className="border-accent text-accent">OK</Badge>}
+                  <TableCell className="text-right whitespace-nowrap font-medium text-slate-600">{formatCurrency(p.costPrice, locale)}</TableCell>
+                  <TableCell className="text-right whitespace-nowrap font-medium">{formatCurrency(p.stock * p.costPrice, locale)}</TableCell>
+                  <TableCell className="whitespace-nowrap">
+                    {out ? <Badge variant="outline" className="border-destructive/30 text-destructive bg-destructive/5 font-semibold">Out</Badge> :
+                     low ? <Badge variant="outline" className="border-warning/40 text-warning bg-warning/5 font-semibold">Low</Badge> :
+                           <Badge variant="outline" className="border-accent/30 text-accent bg-accent/5 font-semibold">OK</Badge>}
                   </TableCell>
-                  <TableCell className="text-xs whitespace-nowrap">
+                  <TableCell className="text-[13px] whitespace-nowrap">
                     {w.kind === "none" ? (
-                      <span className="text-muted-foreground">—</span>
+                      p.warrantyMonths ? (
+                        <span className="text-muted-foreground">{p.warrantyMonths} mo</span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )
                     ) : w.kind === "expired" ? (
                       <span className="inline-flex items-center gap-1 text-destructive font-medium" title={`Expired ${w.daysAgo}d ago`}>
                         <ShieldX className="h-3.5 w-3.5" />

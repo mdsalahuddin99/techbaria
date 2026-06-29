@@ -61,7 +61,7 @@ export const heldSalesService = {
     const sale = await prisma.heldSale.create({
       data: {
         userId: ctx.userId,
-        customerId: input.customerId,
+        customerId: input.customerId || null,
         customerName: input.customerName,
         cart: input.cart,
         discount: input.discount,

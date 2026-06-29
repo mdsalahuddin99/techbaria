@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState, use, Suspense } from "react";
 import {
   ArrowLeft,
@@ -41,10 +42,10 @@ import { publicStock } from "@/features/storefront/hooks/useStorefrontProducts";
 interface Props {
   product: StorefrontProduct;
   related?: StorefrontProduct[];
-  relatedPromise?: Promise<StorefrontProduct[]>;
+  children?: React.ReactNode;
 }
 
-export function ProductDetailClient({ product, related = [], relatedPromise }: Props) {
+export function ProductDetailClient({ product, related = [], children }: Props) {
   const router = useRouter();
   const stock = useMemo(() => publicStock(product, []), [product]);
   const outOfStock = stock <= 0;
@@ -230,10 +231,13 @@ export function ProductDetailClient({ product, related = [], relatedPromise }: P
                 onMouseLeave={() => setZoom((z) => ({ ...z, active: false }))}
               >
                 {gallery[activeImage] ? (
-                  <img
+                  <Image
                     src={gallery[activeImage]}
                     alt={product.name}
-                    className="absolute inset-0 h-full w-full object-contain p-6 transition-transform duration-300 mix-blend-multiply"
+                    fill
+                    priority
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                    className="object-contain p-6 transition-transform duration-300 mix-blend-multiply"
                     style={
                       zoom.active
                         ? { transform: "scale(1.8)", transformOrigin: `${zoom.x}% ${zoom.y}%` }
@@ -269,11 +273,11 @@ export function ProductDetailClient({ product, related = [], relatedPromise }: P
                       key={i}
                       onClick={() => setActiveImage(i)}
                       className={cn(
-                        "h-16 w-16 shrink-0 rounded-lg overflow-hidden border-2 bg-white transition flex items-center justify-center",
+                        "relative h-16 w-16 shrink-0 rounded-lg overflow-hidden border-2 bg-white transition flex items-center justify-center",
                         i === activeImage ? "border-indigo-600 shadow-sm" : "border-slate-100 hover:border-slate-300",
                       )}
                     >
-                      <img src={src} alt="" className="h-full w-full object-contain mix-blend-multiply p-1" />
+                      <Image src={src} alt="" fill sizes="64px" className="object-contain mix-blend-multiply p-1" />
                     </button>
                   ))}
                 </div>
@@ -656,21 +660,17 @@ export function ProductDetailClient({ product, related = [], relatedPromise }: P
     </div>
 
     {/* === Related === */}
-      {(related.length > 0 || relatedPromise) && (
+      {children ? (
+        children
+      ) : related.length > 0 ? (
         <section className="mt-16">
           <div className="flex items-center gap-3 mb-6">
             <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">You May Also Like</h2>
             <div className="flex-1 h-px bg-slate-200"></div>
           </div>
-          {relatedPromise ? (
-            <Suspense fallback={<div className="h-40 flex items-center justify-center text-slate-500"><Loader2 className="h-6 w-6 animate-spin mr-2" /> Loading related products...</div>}>
-              <RelatedGridLoader relatedPromise={relatedPromise} />
-            </Suspense>
-          ) : (
-            <ProductGrid products={related} allProducts={related} loading={false} />
-          )}
+          <ProductGrid products={related} allProducts={related} loading={false} />
         </section>
-      )}
+      ) : null}
 
       {/* === Mobile Sticky Action Bar === */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-3 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] md:hidden z-50 flex items-center gap-3">
@@ -708,8 +708,3 @@ function BadgeVerified() {
   );
 }
 
-function RelatedGridLoader({ relatedPromise }: { relatedPromise: Promise<StorefrontProduct[]> }) {
-  const related = use(relatedPromise);
-  if (!related || related.length === 0) return null;
-  return <ProductGrid products={related} allProducts={related} loading={false} />;
-}

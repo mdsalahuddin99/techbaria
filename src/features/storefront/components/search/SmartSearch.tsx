@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Search, Mic, X, TrendingUp, Clock, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -171,7 +172,7 @@ export function SmartSearch({ className = "", variant = "header" }: Props) {
                   >
                     <div className="h-10 w-10 rounded-lg bg-slate-50 border border-slate-200 grid place-items-center overflow-hidden shrink-0">
                       {p.imageUrl ? (
-                        <img src={p.imageUrl} alt="" className="h-full w-full object-cover" />
+                        <Image src={p.imageUrl} alt="" fill sizes="40px" className="object-cover" />
                       ) : (
                         <span className="text-lg">{p.emoji || "📦"}</span>
                       )}

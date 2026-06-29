@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { ChevronRight } from "lucide-react";
 import { deriveCategories } from "../../hooks/useStorefrontCategories";
 import type { StorefrontProduct } from "@/features/storefront/types";
@@ -82,7 +83,7 @@ export function CategoryRail({ products, realCategories = [] }: Props) {
                 />
                 
                 {c.imageUrl ? (
-                  <img src={c.imageUrl} alt={c.label} className="absolute inset-0 w-full h-full object-contain p-1 z-10" />
+                  <Image src={c.imageUrl} alt={c.label} fill sizes="(max-width: 768px) 56px, 64px" className="object-contain p-1 z-10" />
                 ) : (
                   <c.icon
                     className="h-7 w-7 sm:h-8 sm:w-8 relative z-10 transition-colors duration-300"

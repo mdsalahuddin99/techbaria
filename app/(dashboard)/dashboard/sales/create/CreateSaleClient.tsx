@@ -451,15 +451,20 @@ export function CreateSaleClient() {
           destination: destination || undefined,
           attention: attention || undefined,
           notes: narration || undefined,
-          vat,
-          extraCharges,
+          vat: Number(vat) || 0,
+          extraCharges: Number(extraCharges) || 0,
         }),
       });
       toast.success("Draft saved!");
       refetchHeldSales();
       clearVoucher();
     } catch (err: any) {
-      toast.error(err.message || "Failed to save draft");
+      console.error(err);
+      if (err.issues) {
+        toast.error("Validation Error: " + JSON.stringify(err.issues));
+      } else {
+        toast.error(err.message || "Failed to save draft");
+      }
     }
   };
 
@@ -629,41 +634,36 @@ export function CreateSaleClient() {
   return (
     <div className="w-full max-w-[1600px] mx-auto p-0 space-y-6">
       {/* ── Premium POS Header (Light Theme) ── */}
-      <div className="relative overflow-hidden rounded-2xl bg-white/80 backdrop-blur-xl border border-slate-200/60 p-5 sm:p-6 shadow-sm">
+      <div className="relative overflow-hidden rounded-xl bg-white/80 backdrop-blur-xl border border-slate-200/60 p-3 sm:px-4 sm:py-3 shadow-sm">
         {/* Subtle background glow for premium feel */}
-        <div className="absolute -top-24 -right-24 h-64 w-64 bg-indigo-500/10 blur-[80px] rounded-full pointer-events-none" />
-        <div className="absolute -bottom-24 -left-24 h-64 w-64 bg-emerald-500/10 blur-[80px] rounded-full pointer-events-none" />
+        <div className="absolute -top-12 -right-12 h-32 w-32 bg-indigo-500/10 blur-[40px] rounded-full pointer-events-none" />
+        <div className="absolute -bottom-12 -left-12 h-32 w-32 bg-emerald-500/10 blur-[40px] rounded-full pointer-events-none" />
         
-        <div className="relative z-10 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="relative z-10 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           {/* Left Side: Title & Info */}
-          <div>
-            <div className="flex items-center gap-2 mb-1.5">
-              <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                POS Active
-              </span>
-              <span className="text-xs text-slate-500 font-medium">
-                {new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
-              </span>
-            </div>
-            <h1 className="text-xl md:text-2xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            <h1 className="text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2">
               {editingSaleId ? "Edit Sale Invoice" : "New Sale Invoice"}
             </h1>
-            <p className="text-sm text-slate-500 font-medium mt-1 max-w-lg">
-              {editingSaleId
-                ? "Update the existing invoice details."
-                : "Add products and record payment. Start scanning to add items to cart."}
-            </p>
+            <div className="hidden sm:flex items-center gap-2 border-l pl-3 border-slate-200">
+              <span className="inline-flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-wider text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+                <span className="h-1 w-1 rounded-full bg-emerald-500 animate-pulse" />
+                POS Active
+              </span>
+              <span className="text-[11px] text-slate-500 font-medium">
+                {new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+              </span>
+            </div>
           </div>
 
           {/* Right Side: Actions & Search */}
-          <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+          <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
             <Button
               variant="outline"
               onClick={() => router.push("/dashboard/sales")}
-              className="h-10 px-4 border-slate-200 bg-white text-sm font-semibold rounded-lg hover:bg-slate-50 text-slate-700 flex items-center gap-2 shadow-sm transition-colors"
+              className="h-9 px-3 border-slate-200 bg-white text-xs font-semibold rounded-lg hover:bg-slate-50 text-slate-700 flex items-center gap-1.5 shadow-sm transition-colors"
             >
-              <Search className="h-4 w-4 text-slate-400" />
+              <Search className="h-3.5 w-3.5 text-slate-400" />
               Invoice Search
             </Button>
 
@@ -671,12 +671,12 @@ export function CreateSaleClient() {
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
-                  className="h-10 px-4 border-slate-200 bg-white text-sm font-semibold rounded-lg hover:bg-slate-50 text-slate-700 relative flex items-center gap-2 shadow-sm transition-colors"
+                  className="h-9 px-3 border-slate-200 bg-white text-xs font-semibold rounded-lg hover:bg-slate-50 text-slate-700 relative flex items-center gap-1.5 shadow-sm transition-colors"
                 >
-                  <FileText className="h-4 w-4 text-slate-400" />
+                  <FileText className="h-3.5 w-3.5 text-slate-400" />
                   Draft Invoices
                   {heldSales.length > 0 && (
-                    <span className="absolute -top-1.5 -right-1.5 bg-indigo-600 text-white text-[10px] h-5 w-5 flex items-center justify-center rounded-full font-bold shadow-sm">
+                    <span className="absolute -top-1.5 -right-1.5 bg-indigo-600 text-white text-[9px] h-4 w-4 flex items-center justify-center rounded-full font-bold shadow-sm">
                       {heldSales.length}
                     </span>
                   )}
@@ -767,22 +767,22 @@ export function CreateSaleClient() {
               <Button
                 variant="ghost"
                 onClick={clearVoucher}
-                className="h-10 px-4 text-sm font-semibold rounded-lg text-red-600 hover:bg-red-50 hover:text-red-700 flex items-center gap-2 transition-colors"
+                className="h-9 px-3 text-xs font-semibold rounded-lg text-red-600 hover:bg-red-50 hover:text-red-700 flex items-center gap-1.5 transition-colors"
               >
-                <Trash2 className="h-4 w-4" />
+                <Trash2 className="h-3.5 w-3.5" />
                 Clear Cart
               </Button>
             )}
 
             {/* Global Search trigger bar inside the page */}
-            <div className="w-full sm:w-64 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+            <div className="w-full sm:w-56 relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
               <Input
-                placeholder="Search products, customers, orders..."
+                placeholder="Search products, customers..."
                 onClick={() => {
                   window.dispatchEvent(new CustomEvent("cmd:open-palette"));
                 }}
-                className="pl-9 h-10 bg-white border-slate-200 text-sm text-slate-700 placeholder-slate-400 rounded-lg cursor-pointer w-full focus:ring-2 focus:ring-indigo-500/20 hover:border-slate-300 transition-colors shadow-sm"
+                className="pl-8 h-9 bg-white border-slate-200 text-xs text-slate-700 placeholder-slate-400 rounded-lg cursor-pointer w-full focus:ring-2 focus:ring-indigo-500/20 hover:border-slate-300 transition-colors shadow-sm"
                 readOnly
               />
             </div>

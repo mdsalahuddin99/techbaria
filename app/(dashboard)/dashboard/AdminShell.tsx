@@ -404,7 +404,7 @@ export function AdminShell({
         </header>
 
         <main className={cn(
-          "flex-1 px-2.5 md:px-4 py-3 md:py-4 overflow-y-auto overflow-x-hidden scroll-smooth pb-nav w-full print:p-0 print:overflow-visible print:block",
+          "flex-1 px-2 md:px-3 py-2 md:py-3 overflow-y-auto overflow-x-hidden scroll-smooth pb-nav w-full print:p-0 print:overflow-visible print:block",
           getThemeClass(pathname)
         )}>
           <div className="print:hidden">

@@ -73,6 +73,15 @@ export default function RootLayout({
     // Use it in CSS/Tailwind: font-family: var(--font-inter)
     <html lang="en" className={inter.variable} data-scroll-behavior="smooth">
       <body className={inter.className}>
+        <script dangerouslySetInnerHTML={{ __html: `
+          if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+              for(let registration of registrations) {
+                registration.unregister();
+              }
+            });
+          }
+        `}} />
         <Providers>{children}</Providers>
       </body>
     </html>

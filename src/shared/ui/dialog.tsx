@@ -47,7 +47,7 @@ const DialogContent = React.forwardRef<
       ref={ref}
       aria-describedby={props["aria-describedby"] || undefined}
       className={cn(
-        "fixed z-50 grid gap-4 border bg-background p-4 sm:p-6 shadow-lg duration-200 overflow-y-auto overscroll-contain",
+        "fixed z-50 grid gap-3 border bg-background p-3 sm:p-4 shadow-lg duration-200 overflow-y-auto overscroll-contain",
         "max-h-[calc(100dvh-1rem)] sm:max-h-[calc(100dvh-2rem)]",
         "inset-x-2 top-[2%] sm:left-[50%] sm:top-[50%]",
         "sm:w-[calc(100vw-1rem)] sm:max-w-lg",
@@ -73,7 +73,7 @@ const DialogContent = React.forwardRef<
 DialogContent.displayName = DialogPrimitive.Content.displayName;
 
 const DialogHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
-  <div className={cn("flex flex-col space-y-1.5 text-center sm:text-left", className)} {...props} />
+  <div className={cn("flex flex-col space-y-1 text-center sm:text-left", className)} {...props} />
 );
 DialogHeader.displayName = "DialogHeader";
 

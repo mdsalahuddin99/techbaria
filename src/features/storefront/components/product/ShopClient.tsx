@@ -220,7 +220,7 @@ export function ShopClient({ initialProducts }: Props) {
             <ProductGrid
               products={visible}
               allProducts={all}
-              loading={isLoading}
+              loading={isLoading && all.length === 0}
               emptyHint="এই filter-এ কোনো পণ্য নেই — পরিবর্তন করে দেখুন।"
             />
           ) : visible.length === 0 && !isLoading ? (

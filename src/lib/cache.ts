@@ -40,7 +40,36 @@ function getRedis(): Redis | null {
   redis = new Redis({
     url: getCleanEnv("UPSTASH_REDIS_REST_URL"),
     token: getCleanEnv("UPSTASH_REDIS_REST_TOKEN"),
-  });
+    fetch: (input: any, init: any) => {
+      // Avoid DYNAMIC_SERVER_USAGE during Next.js SSG build phase
+      const isBuild = process.env.npm_lifecycle_event === "build" || process.env.NEXT_PHASE === "phase-production-build";
+      if (isBuild) {
+        let isGet = false;
+        try {
+           const bodyParsed = init?.body ? JSON.parse(init.body) : null;
+           const cmd = Array.isArray(bodyParsed) && Array.isArray(bodyParsed[0]) ? bodyParsed[0][0] : (Array.isArray(bodyParsed) ? bodyParsed[0] : null);
+           if (typeof cmd === 'string' && cmd.toLowerCase() === 'get') isGet = true;
+        } catch(e) {}
+        
+        // Return cache miss for GET, and success for SET/DEL without making any real fetch
+        const result = isGet ? null : "OK";
+        return Promise.resolve(new Response(JSON.stringify({ result }), { status: 200 }));
+      }
+
+      if (init) {
+        delete init.cache;
+        delete init.keepalive; // Next.js forces no-store if keepalive is true
+      }
+      
+      const controller = new AbortController();
+      const id = setTimeout(() => controller.abort(), 2000);
+      return fetch(input, { 
+        ...init, 
+        cache: "no-store", // Force no-store at runtime so Redis is always fresh
+        signal: controller.signal 
+      }).finally(() => clearTimeout(id));
+    }
+  } as any);
   return redis;
 }
 

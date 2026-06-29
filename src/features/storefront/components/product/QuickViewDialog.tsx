@@ -3,6 +3,7 @@
 import { Dialog, DialogContent, DialogTitle } from "@/shared/ui/dialog";
 import { useStorefrontProducts } from "../../hooks/useStorefrontProducts";
 import Link from "next/link";
+import Image from "next/image";
 import { Heart, ShoppingBag, GitCompareArrows, Star, X, ShieldCheck, Truck } from "lucide-react";
 import { useQuickViewStore } from "../../store/useQuickViewStore";
 import { useCartStore } from "../../store/useCartStore";
@@ -50,7 +51,7 @@ export function QuickViewDialog() {
         <div className="grid md:grid-cols-2">
           <div className="relative aspect-square bg-gradient-to-br from-indigo-900/30 to-[#020617] grid place-items-center overflow-hidden">
             {product.imageUrl ? (
-              <img src={product.imageUrl} alt={productDisplayName(product)} className="absolute inset-0 h-full w-full object-cover" />
+              <Image src={product.imageUrl} alt={productDisplayName(product)} fill sizes="(max-width: 768px) 100vw, 50vw" className="object-cover" />
             ) : (
               <span className="text-[8rem] drop-shadow-[0_20px_50px_rgba(79,70,229,0.4)]">{product.emoji || "📦"}</span>
             )}

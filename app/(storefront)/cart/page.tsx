@@ -6,11 +6,15 @@ import { Button } from "@/shared/ui/button";
 import { useCartStore, useCartSubtotal, useSeo } from "@/features/storefront";
 import { CartLineItem } from "@/features/storefront/components/cart/CartLineItem";
 import { CartSummary } from "@/features/storefront/components/cart/CartSummary";
+import { useHydration } from "@/shared/hooks/useHydration";
 
 export default function StorefrontCart() {
   const lines = useCartStore((s) => s.lines);
   const subtotal = useCartSubtotal();
   useSeo({ title: "Cart — AmarShop" });
+  const isMounted = useHydration();
+
+  if (!isMounted) return null;
 
   if (lines.length === 0) {
     return (

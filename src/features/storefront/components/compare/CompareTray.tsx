@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { GitCompareArrows, X } from "lucide-react";
 import { useCompareStore } from "../../store/useCompareStore";
 import { useStorefrontProducts } from "../../hooks/useStorefrontProducts";
@@ -27,7 +28,7 @@ export function CompareTray() {
           {items.map((p) => (
             <div key={p!.id} className="relative shrink-0 h-12 w-12 rounded-lg bg-card/5 border border-white/10 overflow-hidden">
               {p!.imageUrl ? (
-                <img src={p!.imageUrl} alt="" className="h-full w-full object-cover" />
+                <Image src={p!.imageUrl} alt="" fill sizes="48px" className="object-cover" />
               ) : (
                 <div className="h-full w-full grid place-items-center text-xl">{p!.emoji || "📦"}</div>
               )}

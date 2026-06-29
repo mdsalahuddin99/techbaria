@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   ShoppingBag, Menu, User, Phone, MapPin, Heart, GitCompareArrows, LogOut, LogIn
@@ -14,6 +15,7 @@ import { SmartSearch } from "../search/SmartSearch";
 import { CategoryNav } from "./CategoryNav";
 import { useSession, signOut } from "next-auth/react";
 import { useSiteConfig } from "../../hooks/useSiteConfig";
+import { useHydration } from "@/shared/hooks/useHydration";
 
 export function StorefrontHeader() {
   const pathname = usePathname();
@@ -23,6 +25,7 @@ export function StorefrontHeader() {
   const categories = useStorefrontCategories();
   const { data: session } = useSession();
   const { data: generalData } = useSiteConfig("general");
+  const isMounted = useHydration();
 
   return (
     <>
@@ -93,11 +96,15 @@ export function StorefrontHeader() {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5 shrink-0 group">
             {generalData?.logoUrl ? (
-              <img 
-                src={generalData.logoUrl} 
-                alt={generalData?.storeName || "Logo"} 
-                className="h-10 w-auto max-w-[140px] object-contain group-hover:scale-105 transition-transform duration-300"
-              />
+              <div className="relative h-10 w-[140px]">
+                <Image 
+                  src={generalData.logoUrl} 
+                  alt={generalData?.storeName || "Logo"} 
+                  fill
+                  sizes="140px"
+                  className="object-contain object-left group-hover:scale-105 transition-transform duration-300"
+                />
+              </div>
             ) : (
               <>
                 <div className="h-10 w-10 rounded-xl grid place-items-center font-black text-white shadow-lg bg-gradient-to-br from-emerald-500 to-emerald-700 group-hover:scale-105 transition-transform duration-300 ring-2 ring-emerald-500/20">
@@ -127,7 +134,7 @@ export function StorefrontHeader() {
               aria-label="Wishlist"
             >
               <Heart className="h-5 w-5" />
-              {wishCount > 0 && (
+              {isMounted && wishCount > 0 && (
                 <span className="absolute top-1.5 right-1.5 h-4 min-w-[16px] px-1 rounded-full bg-rose-500 text-[10px] flex items-center justify-center font-bold text-white shadow-sm ring-2 ring-white">
                   {wishCount}
                 </span>
@@ -141,7 +148,7 @@ export function StorefrontHeader() {
               aria-label="Compare"
             >
               <GitCompareArrows className="h-5 w-5" />
-              {cmpCount > 0 && (
+              {isMounted && cmpCount > 0 && (
                 <span className="absolute top-1.5 right-1.5 h-4 min-w-[16px] px-1 rounded-full bg-emerald-500 text-[10px] flex items-center justify-center font-bold text-white shadow-sm ring-2 ring-white">
                   {cmpCount}
                 </span>
@@ -187,7 +194,7 @@ export function StorefrontHeader() {
               aria-label="Cart"
             >
               <ShoppingBag className="h-5 w-5" />
-              {cartCount > 0 && (
+              {isMounted && cartCount > 0 && (
                 <span className="absolute top-1.5 right-1.5 h-4 min-w-[16px] px-1 rounded-full bg-emerald-600 text-[10px] flex items-center justify-center font-bold text-white shadow-md ring-2 ring-white">
                   {cartCount}
                 </span>

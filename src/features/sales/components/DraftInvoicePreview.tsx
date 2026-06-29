@@ -306,7 +306,7 @@ function buildDraftInvoiceHtml(
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Quotation — \${esc(settings.shopName)}</title>
+<title>Quotation — ${esc(settings.shopName)}</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap');
   @page { size:A4 portrait; margin:0; }
@@ -363,7 +363,7 @@ function buildDraftInvoiceHtml(
   <div class="draft-watermark">DRAFT</div>
 
   <!-- HEADER -->
-  \${headerHtml}
+  ${headerHtml}
 
   <!-- TITLE -->
   <div style="text-align:center;margin-bottom:13px;">
@@ -377,20 +377,20 @@ function buildDraftInvoiceHtml(
     <tr>
       <td style="width:62%;vertical-align:top;border-right:1px solid #888;padding:7px 10px;">
         <table style="border-collapse:collapse;width:100%;">
-          <tr><td style="font-weight:700;width:88px;padding:2.5px 0;vertical-align:top;">Customer</td><td style="padding:2.5px 0;font-weight:700;vertical-align:top;">: \${esc(customerName || "—")}</td></tr>
-          <tr><td style="font-weight:600;padding:2px 0;vertical-align:top;">Address</td><td style="padding:2px 0;vertical-align:top;">: \${esc(customerAddress || "")}</td></tr>
-          <tr><td style="font-weight:600;padding:2px 0;vertical-align:top;">Mobile</td><td style="padding:2px 0;vertical-align:top;">: \${esc(customerPhone || "")}</td></tr>
-          <tr><td style="font-weight:600;padding:2px 0;vertical-align:top;">Attention</td><td style="padding:2px 0;vertical-align:top;">: \${esc(draftAttention || "")}</td></tr>
-          <tr><td style="font-weight:600;padding:2px 0;vertical-align:top;">Destination</td><td style="padding:2px 0;vertical-align:top;">: \${esc(draftDestination || "")}</td></tr>
+          <tr><td style="font-weight:700;width:88px;padding:2.5px 0;vertical-align:top;">Customer</td><td style="padding:2.5px 0;font-weight:700;vertical-align:top;">: ${esc(customerName || "—")}</td></tr>
+          <tr><td style="font-weight:600;padding:2px 0;vertical-align:top;">Address</td><td style="padding:2px 0;vertical-align:top;">: ${esc(customerAddress || "")}</td></tr>
+          <tr><td style="font-weight:600;padding:2px 0;vertical-align:top;">Mobile</td><td style="padding:2px 0;vertical-align:top;">: ${esc(customerPhone || "")}</td></tr>
+          <tr><td style="font-weight:600;padding:2px 0;vertical-align:top;">Attention</td><td style="padding:2px 0;vertical-align:top;">: ${esc(draftAttention || "")}</td></tr>
+          <tr><td style="font-weight:600;padding:2px 0;vertical-align:top;">Destination</td><td style="padding:2px 0;vertical-align:top;">: ${esc(draftDestination || "")}</td></tr>
         </table>
       </td>
       <td style="width:38%;vertical-align:top;padding:0;">
         <table style="border-collapse:collapse;width:100%;height:100%;">
-          <tr style="border-bottom:1px solid #888;"><td style="padding:4px 8px;font-weight:700;width:102px;background:#f5f5f5;border-right:1px solid #888;">Ref No.</td><td style="padding:4px 8px;font-weight:700;">\${esc(draft.id.slice(-8).toUpperCase())}</td></tr>
-          <tr style="border-bottom:1px solid #888;"><td style="padding:4px 8px;font-weight:700;background:#f5f5f5;border-right:1px solid #888;">Date</td><td style="padding:4px 8px;font-weight:600;">\${esc(dateStr)}</td></tr>
-          <tr style="border-bottom:1px solid #888;"><td style="padding:4px 8px;font-weight:700;background:#f5f5f5;border-right:1px solid #888;">Entry Time</td><td style="padding:4px 8px;">\${esc(timeStr)}</td></tr>
-          <tr style="border-bottom:1px solid #888;"><td style="padding:4px 8px;font-weight:700;background:#f5f5f5;border-right:1px solid #888;">Prepared By</td><td style="padding:4px 8px;">\${esc(draft.cashier || "—")}</td></tr>
-          <tr style="border-bottom:1px solid #888;"><td style="padding:4px 8px;font-weight:700;background:#f5f5f5;border-right:1px solid #888;">Sales Person</td><td style="padding:4px 8px;">\${esc(draft.salesPerson || "—")}</td></tr>
+          <tr style="border-bottom:1px solid #888;"><td style="padding:4px 8px;font-weight:700;width:102px;background:#f5f5f5;border-right:1px solid #888;">Ref No.</td><td style="padding:4px 8px;font-weight:700;">${esc(draft.id.slice(-8).toUpperCase())}</td></tr>
+          <tr style="border-bottom:1px solid #888;"><td style="padding:4px 8px;font-weight:700;background:#f5f5f5;border-right:1px solid #888;">Date</td><td style="padding:4px 8px;font-weight:600;">${esc(dateStr)}</td></tr>
+          <tr style="border-bottom:1px solid #888;"><td style="padding:4px 8px;font-weight:700;background:#f5f5f5;border-right:1px solid #888;">Entry Time</td><td style="padding:4px 8px;">${esc(timeStr)}</td></tr>
+          <tr style="border-bottom:1px solid #888;"><td style="padding:4px 8px;font-weight:700;background:#f5f5f5;border-right:1px solid #888;">Prepared By</td><td style="padding:4px 8px;">${esc(draft.cashier || "—")}</td></tr>
+          <tr style="border-bottom:1px solid #888;"><td style="padding:4px 8px;font-weight:700;background:#f5f5f5;border-right:1px solid #888;">Sales Person</td><td style="padding:4px 8px;">${esc(draft.salesPerson || "—")}</td></tr>
           <tr><td style="padding:4px 8px;font-weight:700;background:#f5f5f5;border-right:1px solid #888;">Status</td><td style="padding:4px 8px;font-weight:700;color:#ca8a04;">QUOTATION</td></tr>
         </table>
       </td>
@@ -410,7 +410,7 @@ function buildDraftInvoiceHtml(
         <th style="padding:6px 8px;text-align:right;width:92px;font-weight:700;">Amount</th>
       </tr>
     </thead>
-    <tbody>\${itemRows}</tbody>
+    <tbody>${itemRows}</tbody>
   </table>
 
   <!-- BOTTOM SECTION -->
@@ -418,10 +418,10 @@ function buildDraftInvoiceHtml(
     <tr>
       <td style="width:54%;vertical-align:top;border-right:1px solid #888;padding:8px 10px;">
         <div style="border:1.5px solid #555;display:inline-block;padding:3px 12px;font-weight:700;font-size:11px;margin-bottom:8px;">
-          Total Qty :&nbsp;&nbsp;&nbsp; \${totalQty.toFixed(2)}
+          Total Qty :&nbsp;&nbsp;&nbsp; ${totalQty.toFixed(2)}
         </div>
-        <div style="margin-bottom:7px;"><span style="font-weight:700;">Take In Word : </span><span>\${esc(words)}</span></div>
-        <div style="margin-bottom:10px;"><span style="font-weight:700;">Narration : </span><span>\${esc(draft.notes || "")}</span></div>
+        <div style="margin-bottom:7px;"><span style="font-weight:700;">Take In Word : </span><span>${esc(words)}</span></div>
+        <div style="margin-bottom:10px;"><span style="font-weight:700;">Narration : </span><span>${esc(draft.notes || "")}</span></div>
         <div style="font-weight:700;margin-bottom:4px;">Terms &amp; Conditions :</div>
         <div style="font-size:9.5px;color:#333;line-height:1.65;">
           - This quotation is valid for 7 days from the date of issue.<br/>
@@ -431,11 +431,11 @@ function buildDraftInvoiceHtml(
       </td>
       <td style="width:46%;vertical-align:top;padding:0;">
         <table style="border-collapse:collapse;width:100%;font-size:10.5px;">
-          <tr style="border-bottom:1px solid #ccc;"><td style="padding:5px 10px;font-weight:600;background:#f5f5f5;border-right:1px solid #ccc;">Total Amount</td><td style="padding:5px 10px;text-align:right;font-weight:600;">\${subtotal.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td></tr>
-          <tr style="border-bottom:1px solid #ccc;"><td style="padding:5px 10px;font-weight:600;background:#f5f5f5;border-right:1px solid #ccc;">Less Discount</td><td style="padding:5px 10px;text-align:right;">\${totalDiscount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td></tr>
-          <tr style="border-bottom:1px solid #ccc;"><td style="padding:5px 10px;font-weight:600;background:#f5f5f5;border-right:1px solid #ccc;">Add VAT</td><td style="padding:5px 10px;text-align:right;">\${(draft.vat ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td></tr>
-          <tr style="border-bottom:1px solid #ccc;"><td style="padding:5px 10px;font-weight:600;background:#f5f5f5;border-right:1px solid #ccc;">Add Extra Charges</td><td style="padding:5px 10px;text-align:right;">\${(draft.extraCharges ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td></tr>
-          <tr style="background:#efefef;"><td style="padding:6px 10px;font-weight:700;font-size:11px;border-right:1px solid #ccc;">Net Payable Amount</td><td style="padding:6px 10px;text-align:right;font-weight:700;font-size:11px;">\${total.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td></tr>
+          <tr style="border-bottom:1px solid #ccc;"><td style="padding:5px 10px;font-weight:600;background:#f5f5f5;border-right:1px solid #ccc;">Total Amount</td><td style="padding:5px 10px;text-align:right;font-weight:600;">${subtotal.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td></tr>
+          <tr style="border-bottom:1px solid #ccc;"><td style="padding:5px 10px;font-weight:600;background:#f5f5f5;border-right:1px solid #ccc;">Less Discount</td><td style="padding:5px 10px;text-align:right;">${totalDiscount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td></tr>
+          <tr style="border-bottom:1px solid #ccc;"><td style="padding:5px 10px;font-weight:600;background:#f5f5f5;border-right:1px solid #ccc;">Add VAT</td><td style="padding:5px 10px;text-align:right;">${(draft.vat ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td></tr>
+          <tr style="border-bottom:1px solid #ccc;"><td style="padding:5px 10px;font-weight:600;background:#f5f5f5;border-right:1px solid #ccc;">Add Extra Charges</td><td style="padding:5px 10px;text-align:right;">${(draft.extraCharges ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td></tr>
+          <tr style="background:#efefef;"><td style="padding:6px 10px;font-weight:700;font-size:11px;border-right:1px solid #ccc;">Net Payable Amount</td><td style="padding:6px 10px;text-align:right;font-weight:700;font-size:11px;">${total.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td></tr>
         </table>
       </td>
     </tr>

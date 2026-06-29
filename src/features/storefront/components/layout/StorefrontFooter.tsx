@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import {
   Phone, MapPin, Mail,
   Facebook, Instagram, Youtube,
@@ -52,11 +53,15 @@ export async function StorefrontFooter() {
         <div className="col-span-2 md:col-span-1">
           <div className="flex items-center gap-2.5 mb-4">
             {general.logoUrl ? (
-              <img 
-                src={general.logoUrl} 
-                alt={shopName} 
-                className="h-12 w-auto max-w-[160px] object-contain"
-              />
+              <div className="relative h-12 w-[160px]">
+                <Image 
+                  src={general.logoUrl} 
+                  alt={shopName} 
+                  fill
+                  sizes="160px"
+                  className="object-contain object-left"
+                />
+              </div>
             ) : (
               <>
                 <div

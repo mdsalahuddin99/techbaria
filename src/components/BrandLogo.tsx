@@ -34,6 +34,7 @@ export default function BrandLogo({
           src={logoUrl}
           alt={`${shopName ?? "Shop"} logo`}
           fill
+          sizes="120px"
           className="object-contain"
         />
       </div>

@@ -152,13 +152,20 @@ export async function publicStorefrontList(
 async function runPublicStorefrontQuery(
   filter?: { category?: string; search?: string; excludeId?: string; limit?: number }
 ) {
+  let categoryId: string | undefined = undefined;
+  
+  if (filter?.category) {
+    const cat = await prisma.category.findFirst({
+      where: { name: { equals: filter.category, mode: "insensitive" } },
+      select: { id: true }
+    });
+    if (cat) categoryId = cat.id;
+  }
+
   const rows = await prisma.product.findMany({
     where: {
       isPublished: true,
-      // Category filter by name (via relation)
-      ...(filter?.category && {
-        category: { name: { equals: filter.category, mode: "insensitive" as const } },
-      }),
+      ...(categoryId && { categoryId }),
       // Search filter
       ...(filter?.search && {
         OR: [

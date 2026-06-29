@@ -42,7 +42,8 @@ import {
   Hourglass,
 } from "lucide-react";
 import { effectiveReorderPoint, suggestedPoQty } from "@/features/products/bundle";
-import StorefrontBlock from "@/components/dashboard/StorefrontBlock";
+import dynamic from "next/dynamic";
+const StorefrontBlock = dynamic(() => import("@/components/dashboard/StorefrontBlock"), { ssr: false });
 
 // ─── Custom tooltip for charts ───────────────────────────────────────────────
 
@@ -214,37 +215,34 @@ export default function DashboardClient() {
     <div className="space-y-6 max-w-[1600px] mx-auto animate-in fade-in duration-500">
       
       {/* ── Page header ── */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 p-6 sm:p-8 shadow-xl">
+      <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 p-4 sm:px-6 sm:py-4 shadow-xl">
         <div className="absolute inset-0 bg-[url('/noise.svg')] opacity-10 mix-blend-overlay" />
-        <div className="absolute -top-24 -right-24 h-64 w-64 bg-indigo-500/30 blur-[80px] rounded-full" />
+        <div className="absolute -top-12 -right-12 h-32 w-32 bg-indigo-500/30 blur-[40px] rounded-full" />
         
-        <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.2)]">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                Live Sync
-              </span>
-              <span className="text-xs text-slate-400 font-semibold">
-                {new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
-              </span>
-            </div>
-            <h1 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">
+        <div className="relative z-10 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <h1 className="text-xl md:text-2xl font-extrabold text-white tracking-tight flex items-center gap-2">
               {greeting}, Mizan <span className="inline-block origin-[70%_70%] animate-[wave_2s_ease-in-out_infinite]">👋</span>
             </h1>
-            <p className="text-sm text-slate-300 font-medium mt-1.5 max-w-lg">
-              Here&apos;s a quick summary of what&apos;s happening with your business today. Your store is performing beautifully!
-            </p>
+            <div className="hidden sm:flex items-center gap-2 border-l border-slate-700 pl-3">
+              <span className="inline-flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-wider text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.2)]">
+                <span className="h-1 w-1 rounded-full bg-emerald-400 animate-pulse" />
+                Live Sync
+              </span>
+              <span className="text-[11px] text-slate-400 font-semibold">
+                {new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+              </span>
+            </div>
           </div>
-          <div className="flex items-center gap-3 shrink-0">
-            <Button asChild variant="outline" size="sm" className="h-10 px-4 text-sm font-semibold text-slate-700 bg-white/95 hover:bg-white border-white/20 shadow-lg hover:shadow-xl transition-all">
+          <div className="flex items-center gap-2 shrink-0">
+            <Button asChild variant="outline" size="sm" className="h-9 px-3 text-xs font-semibold text-slate-700 bg-white/95 hover:bg-white border-white/20 shadow-lg hover:shadow-xl transition-all">
               <Link href="/dashboard/products">
-                <Package className="h-4 w-4 mr-2 text-indigo-600" /> Products
+                <Package className="h-3.5 w-3.5 mr-1.5 text-indigo-600" /> Products
               </Link>
             </Button>
-            <Button asChild size="sm" className="h-10 px-4 text-sm font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-[0_0_20px_rgba(79,70,229,0.4)] hover:shadow-[0_0_25px_rgba(79,70,229,0.6)] border-none transition-all">
+            <Button asChild size="sm" className="h-9 px-3 text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-[0_0_20px_rgba(79,70,229,0.4)] hover:shadow-[0_0_25px_rgba(79,70,229,0.6)] border-none transition-all">
               <Link href="/dashboard/sales/create">
-                <ScanBarcode className="h-4 w-4 mr-2" /> New Invoice
+                <ScanBarcode className="h-3.5 w-3.5 mr-1.5" /> New Invoice
               </Link>
             </Button>
           </div>

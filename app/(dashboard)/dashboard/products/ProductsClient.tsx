@@ -278,11 +278,11 @@ export function ProductsClient({
         description="Manage your product catalog, pricing and stock levels."
         actions={
           <>
-            <Button onClick={openScanForNew} variant="outline" title="Scan barcode to add product">
-              <ScanLine className="h-4 w-4 mr-2" />Scan
+            <Button size="sm" onClick={openScanForNew} variant="outline" title="Scan barcode to add product">
+              <ScanLine className="h-3.5 w-3.5 mr-1.5" />Scan
             </Button>
-            <Button onClick={openNew} className="bg-primary text-primary-foreground hover:bg-primary/90">
-              <Plus className="h-4 w-4 mr-2" />Add Product
+            <Button size="sm" onClick={openNew} className="bg-primary text-primary-foreground hover:bg-primary/90">
+              <Plus className="h-3.5 w-3.5 mr-1.5" />Add Product
             </Button>
           </>
         }

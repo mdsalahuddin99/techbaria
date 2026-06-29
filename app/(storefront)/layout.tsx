@@ -19,7 +19,7 @@ export default function StorefrontLayout({
     >
       <OrganizationJsonLd
         name="ShopFlow"
-        url={typeof window !== "undefined" ? window.location.origin : "https://shebatech360.com"}
+        url={process.env.NEXT_PUBLIC_SITE_URL || "https://shebatech360.com"}
       />
       <StorefrontFonts />
       <style>{`

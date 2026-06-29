@@ -132,7 +132,7 @@ export function apiHandler<T>(
         // Zod validation errors → 422
         if (err instanceof z.ZodError) {
           logger.warn(
-            { issues: err.issues.length, duration, path },
+            { issues: err.issues, duration, path },
             "Validation error",
           );
           return json(

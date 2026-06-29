@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight, Star, ShieldCheck, Sparkles, Zap } from "lucide-react";
 import { formatPrice } from "../../lib/formatPrice";
 import { productDisplayName } from "@/shared/lib/format";
@@ -78,10 +79,13 @@ export function BentoHero({ featured, secondary = [] }: Props) {
           >
             <div className="absolute inset-0">
               {featured?.imageUrl ? (
-                <img
+                <Image
                   src={featured.imageUrl}
                   alt={featured.name}
-                  className="h-full w-full object-cover opacity-90 group-hover:scale-105 transition duration-700"
+                  fill
+                  priority
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  className="object-cover opacity-90 group-hover:scale-105 transition duration-700"
                 />
               ) : (
                 <div className="h-full w-full grid place-items-center text-[12rem] opacity-80">
@@ -120,7 +124,7 @@ export function BentoHero({ featured, secondary = [] }: Props) {
               >
                 <div className="absolute inset-0 grid place-items-center overflow-hidden">
                   {p?.imageUrl ? (
-                    <img src={p.imageUrl} alt={productDisplayName(p)} className="h-full w-full object-cover group-hover:scale-105 transition duration-500" />
+                    <Image src={p.imageUrl} alt={productDisplayName(p)} fill sizes="(max-width: 768px) 50vw, 33vw" className="object-cover group-hover:scale-105 transition duration-500" />
                   ) : (
                     <span className="text-5xl">{p?.emoji ?? "💎"}</span>
                   )}
