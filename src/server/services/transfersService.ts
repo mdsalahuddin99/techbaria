@@ -38,7 +38,13 @@ export const transfersService = {
     });
     const warehouseMap = new Map(warehouses.map((w) => [w.id, w.name]));
 
+    const productIds = new Set<string>();
+    raw.items.forEach((t: any) => {
+      t.items.forEach((i: any) => productIds.add(i.productId));
+    });
+    
     const products = await prisma.product.findMany({
+      where: { id: { in: Array.from(productIds) } },
       select: { id: true, name: true },
     });
     const productMap = new Map(products.map((p) => [p.id, p.name]));
@@ -78,7 +84,9 @@ export const transfersService = {
     });
     const warehouseMap = new Map(warehouses.map((w) => [w.id, w.name]));
 
+    const productIds = t.items.map(i => i.productId);
     const products = await prisma.product.findMany({
+      where: { id: { in: productIds } },
       select: { id: true, name: true },
     });
     const productMap = new Map(products.map((p) => [p.id, p.name]));

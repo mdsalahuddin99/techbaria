@@ -4,8 +4,7 @@ import { AuthProvider } from '@/features/auth/AuthProvider';
 
 // Minimal mock auth context values – can be overridden per test if needed
 const mockAuth = {
-  user: { id: 'test-user', name: 'টেস্ট ইউজার', role: 'MANAGER', shopId: 'test-shop' } as any,
-  shopId: 'test-shop',
+  user: { id: 'test-user', name: 'টেস্ট ইউজার', role: 'MANAGER' } as any,
   branchId: 'test-branch',
   isAuthenticated: true,
   login: async () => {},

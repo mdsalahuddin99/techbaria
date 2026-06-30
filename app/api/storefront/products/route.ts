@@ -23,9 +23,9 @@ export const GET = publicApiHandler(async (req: Request) => {
   const search     = url.searchParams.get("search")     ?? undefined;
   const excludeId  = url.searchParams.get("excludeId")  ?? undefined;
   const limitParam = url.searchParams.get("limit");
-  const limit      = limitParam ? parseInt(limitParam, 10) : undefined;
+  const limit      = limitParam ? parseInt(limitParam, 10) : 10000;
 
-  const data = await productsService.publicStorefrontList({
+  const { items: data } = await productsService.publicStorefrontList({
     category,
     search,
     excludeId,

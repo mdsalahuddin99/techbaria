@@ -10,6 +10,7 @@ export async function listRestocks(ctx: Ctx) {
   const restocks = await prisma.restockOrder.findMany({
     include: { items: true },
     orderBy: { createdAt: "desc" },
+    take: 50, // Limit to prevent memory spike
   });
   return { items: restocks };
 }
@@ -18,21 +19,18 @@ export async function listRestocks(ctx: Ctx) {
  * Auto-generate a restock draft based on low stock products
  */
 export async function createRestockDraft(ctx: Ctx, note?: string) {
-  // Find products where stock is at or below reorderLevel (minStock)
-  const lowStockProducts = await prisma.product.findMany({
-    where: {
-      isPublished: true, 
-    },
-    select: {
-      id: true,
-      name: true,
-      stock: true,
-      reorderLevel: true,
-      cost: true,
-    },
-  });
+  const lowStockProducts = await prisma.$queryRaw<Array<{ id: string, name: string, stock: number, reorderLevel: number, cost: number }>>`
+    SELECT id, name, stock, "reorderLevel", cost
+    FROM "Product"
+    WHERE "isPublished" = true AND stock <= "reorderLevel"
+  `;
 
-  const itemsToOrder = lowStockProducts.filter(p => p.stock <= p.reorderLevel);
+  const itemsToOrder = lowStockProducts.map(p => ({
+    ...p,
+    stock: Number(p.stock),
+    reorderLevel: Number(p.reorderLevel),
+    cost: Number(p.cost || 0),
+  }));
 
   if (itemsToOrder.length === 0) {
     throw new ServiceError("VALIDATION", "No products are below their minimum stock level", 400);

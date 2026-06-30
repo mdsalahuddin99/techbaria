@@ -34,6 +34,7 @@ interface Product {
   categoryId?: string;
   category?: string;
   subcategory?: string;
+  warehouseStocks?: Array<{ qty: number }>;
 }
 
 interface ProductFilterBarProps {
@@ -108,8 +109,15 @@ export function ProductFilterBar({
   const filteredProducts = (searchResults || []).filter((p) => {
     // Exclude products where available qty would be 0 after accounting for invoice rows
     const inInvoice = invoiceRows.find((r) => r.productId === p.id)?.qty ?? 0;
-    const stock = Number(p.stock ?? 0);
-    if (stock - inInvoice <= 0) return false;
+    
+    let availableStock = Number(p.stock ?? 0);
+    if (warehouseId && p.warehouseStocks && p.warehouseStocks.length > 0) {
+      availableStock = Number(p.warehouseStocks[0].qty ?? 0);
+    } else if (warehouseId) {
+      availableStock = 0;
+    }
+
+    if (availableStock - inInvoice <= 0) return false;
     return true;
   });
 
@@ -176,7 +184,15 @@ export function ProductFilterBar({
               <div className="max-h-64 overflow-y-auto divide-y divide-border">
                 {filteredProducts.slice(0, 12).map((p) => {
                   const inInvoice = invoiceRows.find((r) => r.productId === p.id)?.qty ?? 0;
-                  const available = p.stock - inInvoice;
+                  
+                  let availableStock = Number(p.stock ?? 0);
+                  if (warehouseId && p.warehouseStocks && p.warehouseStocks.length > 0) {
+                    availableStock = Number(p.warehouseStocks[0].qty ?? 0);
+                  } else if (warehouseId) {
+                    availableStock = 0;
+                  }
+
+                  const available = availableStock - inInvoice;
                   return (
                     <button
                       key={p.id}
@@ -194,8 +210,13 @@ export function ProductFilterBar({
                           {p.name}
                         </p>
                         <p className="text-[11px] text-slate-400">
-                          {[p.brand, p.model].filter(Boolean).join(" ")} &bull; SKU:{" "}
-                          {p.sku}
+                          {[
+                            typeof p.brand === "object" && p.brand ? (p.brand as any).name : p.brand,
+                            typeof p.model === "object" && p.model ? (p.model as any).name : p.model,
+                          ]
+                            .filter(Boolean)
+                            .join(" ")}{" "}
+                          &bull; SKU: {p.sku}
                         </p>
                       </div>
                       <div className="text-right shrink-0 ml-3">

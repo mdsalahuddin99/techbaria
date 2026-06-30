@@ -56,7 +56,7 @@ export async function list(
   const noSearch = !filter?.search && !filter?.categoryId && filter?.isPublished === undefined && !filter?.lowStock;
   const firstPage = !params?.cursor;
   if (noSearch && firstPage && !opts?.skipCache) {
-    return cache.fetch(cacheKeys.products.list("default"), TTL.PRODUCT_LIST, async () => {
+    return cache.fetch(cacheKeys.products.list(), TTL.PRODUCT_LIST, async () => {
       return runListQuery(ctx, params, filter);
     });
   }
@@ -129,14 +129,22 @@ export async function publicStorefrontList(
   filter?: {
     category?: string;   // category NAME (not ID)
     search?: string;
-    excludeId?: string;  // exclude a product from results (related queries)
+    excludeId?: string;
     limit?: number;
+    page?: number;
+    minPrice?: number;
+    maxPrice?: number;
+    brands?: string[];
+    sort?: "popular" | "newest" | "price_low" | "price_high";
+    inStockOnly?: boolean;
+    onSaleOnly?: boolean;
   }
 ) {
-  const isUnfiltered = !filter?.category && !filter?.search && !filter?.excludeId;
+  const isUnfiltered = !filter?.category && !filter?.search && !filter?.excludeId && !filter?.page && !filter?.minPrice && !filter?.maxPrice && !filter?.brands?.length && !filter?.inStockOnly && !filter?.onSaleOnly;
 
-  if (isUnfiltered) {
-    const cacheKey = `products:storefront:v2:unfiltered`;
+  if (isUnfiltered && filter?.limit === 50) {
+    // Only cache the homepage default query
+    const cacheKey = `products:storefront:v2:unfiltered:50`;
     return cache.fetch(cacheKey, TTL.CATALOG, () => runPublicStorefrontQuery(filter));
   }
 
@@ -150,7 +158,19 @@ export async function publicStorefrontList(
 }
 
 async function runPublicStorefrontQuery(
-  filter?: { category?: string; search?: string; excludeId?: string; limit?: number }
+  filter?: {
+    category?: string;
+    search?: string;
+    excludeId?: string;
+    limit?: number;
+    page?: number;
+    minPrice?: number;
+    maxPrice?: number;
+    brands?: string[];
+    sort?: "popular" | "newest" | "price_low" | "price_high";
+    inStockOnly?: boolean;
+    onSaleOnly?: boolean;
+  }
 ) {
   let categoryId: string | undefined = undefined;
   
@@ -162,54 +182,87 @@ async function runPublicStorefrontQuery(
     if (cat) categoryId = cat.id;
   }
 
-  const rows = await prisma.product.findMany({
-    where: {
-      isPublished: true,
-      ...(categoryId && { categoryId }),
-      // Search filter
-      ...(filter?.search && {
-        OR: [
-          { name: { contains: filter.search, mode: "insensitive" as const } },
-          { sku: { contains: filter.search, mode: "insensitive" as const } },
-          { brand: { name: { contains: filter.search, mode: "insensitive" as const } } },
-        ],
-      }),
-      // Exclude specific product (for "related" queries on PDP)
-      ...(filter?.excludeId && { id: { not: filter.excludeId } }),
-    },
-    select: {
-      id: true,
-      slug: true,
-      name: true,
-      price: true,
-      stock: true,
-      emoji: true,
-      subcategory: true,
-      color: true,
-      storage: true,
-      ram: true,
-      isPublished: true,
-      sku: true,
-      description: true,
-      condition: true,
-      warrantyMonths: true,
-      isTrending: true,
-      category: { select: { name: true } } as any,
-      images: { orderBy: { position: "asc" as const }, take: 1, select: { url: true } } as any,
-      brand: { select: { name: true } } as any,
-      model: { select: { name: true } } as any,
-    },
-    orderBy: { name: "asc" as const },
-    ...(filter?.limit ? { take: filter.limit } : {}),
-  });
+  let orderBy: any = { name: "asc" };
+  if (filter?.sort === "price_low") orderBy = { price: "asc" };
+  else if (filter?.sort === "price_high") orderBy = { price: "desc" };
+  else if (filter?.sort === "newest") orderBy = { id: "desc" };
 
-  return serialiseStorefront(rows);
+  const limit = filter?.limit ?? 24;
+  const page = filter?.page ?? 1;
+  const skip = (page - 1) * limit;
+
+  const whereClause: any = {
+    isPublished: true,
+    ...(categoryId && { categoryId }),
+    ...(filter?.search && {
+      OR: [
+        { name: { contains: filter.search, mode: "insensitive" as const } },
+        { sku: { contains: filter.search, mode: "insensitive" as const } },
+        { brand: { name: { contains: filter.search, mode: "insensitive" as const } } },
+      ],
+    }),
+    ...(filter?.excludeId && { id: { not: filter.excludeId } }),
+  };
+
+  if (filter?.minPrice !== undefined || filter?.maxPrice !== undefined) {
+    whereClause.price = {};
+    if (filter.minPrice !== undefined) whereClause.price.gte = filter.minPrice;
+    if (filter.maxPrice !== undefined) whereClause.price.lte = filter.maxPrice;
+  }
+
+  if (filter?.brands && filter.brands.length > 0) {
+    whereClause.brand = { name: { in: filter.brands, mode: "insensitive" } };
+  }
+
+  if (filter?.inStockOnly) {
+    whereClause.stock = { gt: 0 };
+  }
+
+  const [rows, totalCount] = await Promise.all([
+    prisma.product.findMany({
+      where: whereClause,
+      select: {
+        id: true,
+        slug: true,
+        name: true,
+        price: true,
+        stock: true,
+        emoji: true,
+        subcategory: true,
+        color: true,
+        storage: true,
+        ram: true,
+        isPublished: true,
+        sku: true,
+        description: true,
+        condition: true,
+        warrantyMonths: true,
+        isTrending: true,
+        category: { select: { name: true } } as any,
+        images: { orderBy: { position: "asc" as const }, take: 1, select: { url: true } } as any,
+        brand: { select: { name: true } } as any,
+        model: { select: { name: true } } as any,
+      },
+      orderBy,
+      take: limit,
+      skip,
+    }),
+    // Only count if it's a paginated request (not a limit-only request like homepage)
+    filter?.page ? prisma.product.count({ where: whereClause }) : Promise.resolve(0)
+  ]);
+
+  return {
+    items: serialiseStorefront(rows),
+    total: totalCount
+  };
+
+
 }
 
 /** Products where stock ≤ reorderLevel. */
 export async function lowStock(ctx: Ctx) {
   return prisma.$queryRawUnsafe<any[]>(
-    `SELECT * FROM "Product" WHERE "stock" <= "reorderLevel" ORDER BY ("reorderLevel" - "stock") DESC`
+    `SELECT * FROM "Product" WHERE "stock" <= "reorderLevel" ORDER BY ("reorderLevel" - "stock") DESC LIMIT 100`
   );
 }
 
@@ -218,6 +271,7 @@ export async function outOfStock(ctx: Ctx) {
   return prisma.product.findMany({
     where: { stock: { lte: 0 } },
     orderBy: { name: "asc" },
+    take: 100,
   });
 }
 

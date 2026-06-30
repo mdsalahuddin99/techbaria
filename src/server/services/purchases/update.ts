@@ -230,9 +230,9 @@ export async function update(ctx: Ctx, id: string, input: PurchaseUpdateInput) {
     diff: { total, items: input.items.length },
   });
 
-  await cache.invalidatePurchases("default");
+  await cache.invalidatePurchases();
   const productIds = [...new Set(input.items.map(item => item.productId))];
-  await cache.invalidateSpecificProducts("default", productIds);
+  await cache.invalidateSpecificProducts(productIds);
 
   return serializePurchase(raw);
 }

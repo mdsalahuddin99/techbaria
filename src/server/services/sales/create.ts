@@ -88,8 +88,8 @@ async function __postProcess(ctx: Ctx, raw: any, productIds: string[]) {
       action: "CREATE",
       diff: { items: raw.items?.length ?? 0, total: Number(raw.total), tenders: raw.tenders?.length ?? 0 },
     }),
-    cache.invalidateSales("default"),
-    cache.invalidateSpecificProducts("default", productIds),
+    cache.invalidateSales(),
+    cache.invalidateSpecificProducts(productIds),
   ]);
 }
 

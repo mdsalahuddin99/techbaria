@@ -79,7 +79,7 @@ export async function voidSale(ctx: Ctx, id: string, reason: string) {
     return { updatedSale, productIds };
   }, { timeout: 30000 });
 
-  await cache.invalidateSales("default");
-  await cache.invalidateSpecificProducts("default", productIds);
+  await cache.invalidateSales();
+  await cache.invalidateSpecificProducts(productIds);
   return updatedSale;
 }

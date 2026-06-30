@@ -1,5 +1,10 @@
+import { useState } from "react";
 import { UseFormReturn } from "react-hook-form";
 import { ProductFormValues } from "../../schemas";
+import { Button } from "@/shared/ui/button";
+import { Loader2, Sparkles } from "lucide-react";
+import { toast } from "sonner";
+import { generateProductDescriptionAction } from "@/server/actions/ai";
 import {
   FormField, FormItem, FormLabel, FormControl, FormMessage,
 } from "@/shared/ui/form";
@@ -15,6 +20,26 @@ interface Props {
 
 export function ProductFormBasicFields({ form }: Props) {
   const { control } = form;
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const handleGenerateAI = async () => {
+    const name = form.getValues("name");
+    if (!name || name.trim() === "") {
+      toast.error("Please enter a product name first");
+      return;
+    }
+    
+    setIsGenerating(true);
+    try {
+      const description = await generateProductDescriptionAction(name);
+      form.setValue("description", description, { shouldValidate: true, shouldDirty: true });
+      toast.success("Description generated successfully!");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to generate description");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   return (
     <>
@@ -53,7 +78,24 @@ export function ProductFormBasicFields({ form }: Props) {
 
       <FormField control={control} name="description" render={({ field }) => (
         <FormItem className="sm:col-span-2">
-          <FormLabel>Description</FormLabel>
+          <div className="flex items-center justify-between">
+            <FormLabel>Description</FormLabel>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs flex items-center gap-1"
+              onClick={handleGenerateAI}
+              disabled={isGenerating}
+            >
+              {isGenerating ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <Sparkles className="w-3 h-3 text-purple-500" />
+              )}
+              Generate with AI
+            </Button>
+          </div>
           <FormControl>
             <Textarea
               placeholder="Enter long product description here..."

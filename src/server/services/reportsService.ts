@@ -1,21 +1,16 @@
 import "server-only";
 import { prisma } from "@/server/db/client";
 import type { Ctx } from "@/server/lib/ctx";
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 
 export const reportsService = {
   async getMetrics(ctx: Ctx, from: string, to: string, paymentMethod: string) {
-    // Parse dates
     const fromDate = new Date(from);
     const toDate = new Date(to);
     toDate.setHours(23, 59, 59, 999);
 
-    // Sales filters
     const saleWhere: Prisma.SaleWhereInput = {
-      createdAt: {
-        gte: fromDate,
-        lte: toDate,
-      },
+      createdAt: { gte: fromDate, lte: toDate },
       status: { notIn: ["HELD", "VOIDED"] },
     };
 
@@ -24,13 +19,11 @@ export const reportsService = {
         some: {
           type: paymentMethod === "Cash" ? "CASH" 
               : paymentMethod === "Card" ? "CARD" 
-              : paymentMethod === "Mobile Banking" ? "BKASH" // or NAGAD, ROCKET but let's stick to BKASH for now as per schema logic
-              : undefined
+              : "BKASH"
         }
       };
     }
 
-    // P&L metrics
     const salesAgg = await prisma.sale.aggregate({
       where: saleWhere,
       _sum: { total: true },
@@ -41,20 +34,22 @@ export const reportsService = {
     const txnCount = salesAgg._count.id;
     const aov = txnCount > 0 ? totalRevenue / txnCount : 0;
 
-    // COGS calculation
-    // Since prisma doesn't support complex joins in sum, we need to query SaleItems with their costs.
-    const saleItems = await prisma.saleItem.findMany({
-      where: { sale: saleWhere },
-      select: { qty: true, cost: true, price: true, productId: true, name: true, sale: { select: { createdAt: true } } },
-    });
+    const pmSql = paymentMethod !== "All" 
+      ? Prisma.sql`AND EXISTS(SELECT 1 FROM "SaleTender" st WHERE st."saleId" = s.id AND st.type = ${paymentMethod === "Cash" ? "CASH" : paymentMethod === "Card" ? "CARD" : "BKASH"})` 
+      : Prisma.empty;
 
-    const cogs = saleItems.reduce((sum, item) => sum + (Number(item.cost || 0) * item.qty), 0);
+    const rawCogs = await prisma.$queryRaw<Array<{ cogs: number }>>`
+      SELECT SUM(si.qty * COALESCE(si.cost, 0)) as cogs
+      FROM "SaleItem" si
+      JOIN "Sale" s ON si."saleId" = s.id
+      WHERE s."createdAt" >= ${fromDate} AND s."createdAt" <= ${toDate}
+      AND s.status NOT IN ('HELD', 'VOIDED')
+      ${pmSql}
+    `;
+    const cogs = Number(rawCogs[0]?.cogs || 0);
 
-    // Expenses
     const expensesAgg = await prisma.expense.aggregate({
-      where: {
-        date: { gte: fromDate, lte: toDate }
-      },
+      where: { date: { gte: fromDate, lte: toDate } },
       _sum: { amount: true },
     });
     const expenseTotal = Number(expensesAgg._sum.amount || 0);
@@ -62,19 +57,34 @@ export const reportsService = {
     const grossProfit = totalRevenue - cogs;
     const netProfit = grossProfit - expenseTotal;
 
-    // Daily Trend
-    const trendMap: Record<string, number> = {};
-    for (let d = new Date(fromDate); d <= toDate; d.setDate(d.getDate() + 1)) {
-      trendMap[d.toLocaleDateString("en-GB", { day: "2-digit", month: "short" })] = 0;
-    }
+    const rawTopProducts = await prisma.$queryRaw<Array<{ name: string, qty: number, revenue: number }>>`
+      SELECT si.name, SUM(si.qty) as qty, SUM(si.qty * si.price) as revenue
+      FROM "SaleItem" si
+      JOIN "Sale" s ON si."saleId" = s.id
+      WHERE s."createdAt" >= ${fromDate} AND s."createdAt" <= ${toDate}
+      AND s.status NOT IN ('HELD', 'VOIDED')
+      ${pmSql}
+      GROUP BY si.name
+      ORDER BY qty DESC
+      LIMIT 10
+    `;
+    const topProducts = rawTopProducts.map(p => ({
+      name: p.name,
+      qty: Number(p.qty),
+      revenue: Number(p.revenue),
+    }));
 
     const salesList = await prisma.sale.findMany({
       where: saleWhere,
       select: { createdAt: true, total: true, tenders: true },
     });
 
-    const byMethodMap: Record<string, number> = {};
+    const trendMap: Record<string, number> = {};
+    for (let d = new Date(fromDate); d <= toDate; d.setDate(d.getDate() + 1)) {
+      trendMap[d.toLocaleDateString("en-GB", { day: "2-digit", month: "short" })] = 0;
+    }
 
+    const byMethodMap: Record<string, number> = {};
     salesList.forEach(sale => {
       const dateKey = sale.createdAt.toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
       if (dateKey in trendMap) {
@@ -91,21 +101,6 @@ export const reportsService = {
     const trend = Object.entries(trendMap).map(([date, total]) => ({ date, total }));
     const byMethod = Object.entries(byMethodMap).map(([name, value]) => ({ name, value }));
 
-    // Top Products
-    const productSalesMap: Record<string, { name: string; qty: number; revenue: number }> = {};
-    saleItems.forEach(item => {
-      if (!productSalesMap[item.productId]) {
-        productSalesMap[item.productId] = { name: item.name, qty: 0, revenue: 0 };
-      }
-      productSalesMap[item.productId].qty += item.qty;
-      productSalesMap[item.productId].revenue += (item.qty * Number(item.price));
-    });
-
-    const topProducts = Object.values(productSalesMap)
-      .sort((a, b) => b.qty - a.qty)
-      .slice(0, 10);
-
-    // Expenses by category
     const expensesByCategory = await prisma.expense.groupBy({
       by: ['category'],
       where: { date: { gte: fromDate, lte: toDate } },
@@ -135,41 +130,52 @@ export const reportsService = {
   },
 
   async getInventoryMetrics(ctx: Ctx) {
-    const products = await prisma.product.findMany({
-      where: { isPublished: true },
-      select: { id: true, name: true, stock: true, cost: true, price: true, reorderLevel: true, category: { select: { name: true } }, unit: true }
-    });
+    const rawStockVal = await prisma.$queryRaw<Array<{ total: number }>>`
+      SELECT SUM(stock * COALESCE(cost, 0)) as total 
+      FROM "Product" 
+      WHERE "isPublished" = true AND stock > 0
+    `;
+    const stockValue = Number(rawStockVal[0]?.total || 0);
 
-    const stockValue = products.reduce((sum, p) => sum + (p.stock * Number(p.cost || 0)), 0);
-    const lowStock = products.filter(p => p.stock > 0 && p.stock <= p.reorderLevel).map(p => ({
+    const rawLowStock = await prisma.$queryRaw<Array<{ id: string, name: string, stock: number, minStock: number }>>`
+      SELECT id, name, stock, "reorderLevel" as "minStock"
+      FROM "Product"
+      WHERE "isPublished" = true AND stock > 0 AND stock <= "reorderLevel"
+      ORDER BY stock ASC
+      LIMIT 100
+    `;
+    const lowStock = rawLowStock.map(p => ({
       id: p.id,
       name: p.name,
-      stock: p.stock,
-      minStock: p.reorderLevel
+      stock: Number(p.stock),
+      minStock: Number(p.minStock),
     }));
 
-    // Dead stock - no sales in 90 days
     const ninetyDaysAgo = new Date();
     ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
 
-    const recentSaleItems = await prisma.saleItem.findMany({
-      where: { sale: { createdAt: { gte: ninetyDaysAgo } } },
-      select: { productId: true },
-      distinct: ['productId']
-    });
-
-    const soldProductIds = new Set(recentSaleItems.map(i => i.productId));
+    const rawDeadStock = await prisma.$queryRaw<Array<{ id: string, name: string, category: string, stock: number, unit: string, value: number }>>`
+      SELECT p.id, p.name, c.name as category, p.stock, p.unit, (p.stock * COALESCE(p.cost, 0)) as value
+      FROM "Product" p
+      LEFT JOIN "Category" c ON p."categoryId" = c.id
+      WHERE p."isPublished" = true AND p.stock > 0
+      AND p.id NOT IN (
+        SELECT "productId" FROM "SaleItem" si
+        JOIN "Sale" s ON si."saleId" = s.id
+        WHERE s."createdAt" >= ${ninetyDaysAgo}
+      )
+      ORDER BY value DESC
+      LIMIT 100
+    `;
     
-    const deadStock = products
-      .filter(p => !soldProductIds.has(p.id) && p.stock > 0)
-      .map(p => ({
-        id: p.id,
-        name: p.name,
-        category: p.category?.name || "Uncategorized",
-        stock: p.stock,
-        unit: p.unit,
-        value: p.stock * Number(p.cost || 0)
-      }));
+    const deadStock = rawDeadStock.map(p => ({
+      id: p.id,
+      name: p.name,
+      category: p.category || "Uncategorized",
+      stock: Number(p.stock),
+      unit: p.unit || "",
+      value: Number(p.value),
+    }));
 
     return {
       stockValue,
@@ -178,3 +184,4 @@ export const reportsService = {
     };
   }
 };
+

@@ -56,7 +56,7 @@ export async function list(ctx: Ctx, params?: PaginationParams, filter?: Purchas
   requireRole(ctx, "ADMIN");
   const firstPage = !params?.cursor;
   if (firstPage) {
-    return cache.fetch(cacheKeys.purchases.list("default"), TTL.PURCHASES_LIST, async () => {
+    return cache.fetch(cacheKeys.purchases.list(), TTL.PURCHASES_LIST, async () => {
       return runPurchaseListQuery(ctx, params, filter);
     });
   }

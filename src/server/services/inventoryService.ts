@@ -25,7 +25,7 @@ export interface AdjustmentInput {
 export const inventoryService = {
   /** Snapshot of current stock levels for all products. */
   async snapshot(ctx: Ctx) {
-    return cache.fetch(cacheKeys.inventory.snapshot("default"), TTL.INVENTORY_SNAPSHOT, async () => {
+    return cache.fetch(cacheKeys.inventory.snapshot(), TTL.INVENTORY_SNAPSHOT, async () => {
       return prisma.product.findMany({
         select: {
           id: true,
@@ -120,8 +120,8 @@ export const inventoryService = {
       return adjustment;
     });
 
-    await cache.invalidateInventory("default");
-    await cache.invalidateSpecificProducts("default", [input.productId]);
+    await cache.invalidateInventory();
+    await cache.invalidateSpecificProducts([input.productId]);
 
     return adjustment;
   },
@@ -129,7 +129,7 @@ export const inventoryService = {
   /** Products where stock ≤ reorderLevel. */
   async lowStock(ctx: Ctx) {
     return prisma.$queryRawUnsafe<any[]>(
-      `SELECT * FROM "Product" WHERE "stock" <= "reorderLevel" ORDER BY ("reorderLevel" - "stock") DESC`
+      `SELECT * FROM "Product" WHERE "stock" <= "reorderLevel" ORDER BY ("reorderLevel" - "stock") DESC LIMIT 100`
     );
   },
 
@@ -138,6 +138,7 @@ export const inventoryService = {
     return prisma.product.findMany({
       where: { stock: { lte: 0 } },
       orderBy: { name: "asc" },
+      take: 100,
     });
   },
 
@@ -146,6 +147,7 @@ export const inventoryService = {
     return prisma.warehouseStock.findMany({
       where: { warehouseId },
       include: { product: { select: { name: true, sku: true, unit: true } } },
+      take: 500, // Limit to prevent massive payload
     });
   },
 

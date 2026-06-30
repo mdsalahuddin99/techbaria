@@ -170,11 +170,11 @@ export const customersService = {
     });
   },
 
-  /** Get customers with outstanding dues. */
   async withDues(ctx: Ctx) {
     const customers = await prisma.customer.findMany({
       where: { due: { gt: 0 } },
       orderBy: { due: "desc" },
+      take: 100, // Prevent massive memory spike
     });
     return customers.map(serializeCustomer);
   },

@@ -19,64 +19,74 @@ const PAGE_SIZE = 12;
 
 interface Props {
   initialProducts: StorefrontProduct[];
+  totalCount: number;
 }
 
-export function ShopClient({ initialProducts }: Props) {
+export function ShopClient({ initialProducts, totalCount }: Props) {
   const params = useParams();
+  const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
   const categoryParam = params.category 
     ? (Array.isArray(params.category) ? params.category[0] : params.category) 
     : undefined;
   const decoded = categoryParam ? decodeURIComponent(categoryParam) : null;
   const router = useRouter();
 
-  const { all: allRaw } = useStorefrontProducts({ initialData: initialProducts });
+  // Remove useStorefrontProducts client fetching and filtering
+  const products = initialProducts;
 
-  const bounds = useMemo(() => {
-    const prices = allRaw.filter((p) => p.active !== false).map((p) => p.price);
-    if (prices.length === 0) return { min: 0, max: 100000 };
-    return { min: Math.floor(Math.min(...prices)), max: Math.ceil(Math.max(...prices)) };
-  }, [allRaw]);
+  // We can't easily calculate dynamic bounds from 24 items, so we should rely on server limits or hardcode max
+  const bounds = { min: 0, max: 200000 };
 
   const initialState = (): ShopFilterState => ({
     category: decoded,
-    brands: [],
-    priceMin: bounds.min,
-    priceMax: bounds.max,
-    inStockOnly: false,
-    onSaleOnly: false,
+    brands: searchParams?.get("brands")?.split(",") || [],
+    priceMin: searchParams?.has("minPrice") ? Number(searchParams.get("minPrice")) : bounds.min,
+    priceMax: searchParams?.has("maxPrice") ? Number(searchParams.get("maxPrice")) : bounds.max,
+    inStockOnly: searchParams?.get("inStock") === "true",
+    onSaleOnly: searchParams?.get("onSale") === "true",
   });
 
   const [filters, setFilters] = useState<ShopFilterState>(initialState);
-  const [sort, setSort] = useState<SortKey>("popular");
+  const [sort, setSort] = useState<SortKey>((searchParams?.get("sort") as SortKey) || "popular");
   const [view, setView] = useState<"grid" | "list">("grid");
-  const [page, setPage] = useState(1);
+  const page = searchParams?.has("page") ? Number(searchParams.get("page")) : 1;
+
+  // Sync state to URL
+  const updateUrl = (newFilters: ShopFilterState, newSort: SortKey, newPage: number) => {
+    const sp = new URLSearchParams();
+    if (newFilters.brands.length) sp.set("brands", newFilters.brands.join(","));
+    if (newFilters.priceMin > bounds.min) sp.set("minPrice", newFilters.priceMin.toString());
+    if (newFilters.priceMax < bounds.max) sp.set("maxPrice", newFilters.priceMax.toString());
+    if (newFilters.inStockOnly) sp.set("inStock", "true");
+    if (newFilters.onSaleOnly) sp.set("onSale", "true");
+    if (newSort !== "popular") sp.set("sort", newSort);
+    if (newPage > 1) sp.set("page", newPage.toString());
+
+    const queryString = sp.toString();
+    const url = `/storefront/shop${decoded ? `/${encodeURIComponent(decoded)}` : ""}${queryString ? `?${queryString}` : ""}`;
+    router.push(url);
+  };
+
+  const handleFilterChange = (v: ShopFilterState) => {
+    setFilters(v);
+    updateUrl(v, sort, 1);
+  };
+
+  const handleSortChange = (s: SortKey) => {
+    setSort(s);
+    updateUrl(filters, s, 1);
+  };
+
+  const handlePageChange = (p: number) => {
+    updateUrl(filters, sort, p);
+  };
 
   useEffect(() => {
     setFilters((f) => ({ ...f, category: decoded }));
-    setPage(1);
   }, [decoded]);
 
-  useEffect(() => {
-    setFilters((f) => ({
-      ...f,
-      priceMin: f.priceMin === 0 && f.priceMax === 100000 ? bounds.min : f.priceMin,
-      priceMax: f.priceMax === 100000 ? bounds.max : f.priceMax,
-    }));
-  }, [bounds.min, bounds.max]);
-
-  const { products, all, isLoading } = useStorefrontProducts({
-    initialData: initialProducts,
-    category: filters.category,
-    brands: filters.brands,
-    minPrice: filters.priceMin,
-    maxPrice: filters.priceMax,
-    inStockOnly: filters.inStockOnly,
-    onSaleOnly: filters.onSaleOnly,
-    sort,
-  });
-
-  const visible = products.slice(0, page * PAGE_SIZE);
-  const hasMore = visible.length < products.length;
+  const visible = products;
+  const hasMore = page * 24 < totalCount;
 
   const onCategoryNav = (cat: string | null) => {
     if (cat) router.push(`/storefront/shop/${encodeURIComponent(cat)}`);
@@ -84,9 +94,15 @@ export function ShopClient({ initialProducts }: Props) {
   };
 
   const reset = () => {
-    setFilters(initialState());
+    const initial = initialState();
+    initial.brands = [];
+    initial.priceMin = bounds.min;
+    initial.priceMax = bounds.max;
+    initial.inStockOnly = false;
+    initial.onSaleOnly = false;
+    setFilters(initial);
     setSort("popular");
-    setPage(1);
+    updateUrl(initial, "popular", 1);
   };
 
   useSeo({
@@ -136,10 +152,7 @@ export function ShopClient({ initialProducts }: Props) {
             <ShopFilters
               value={filters}
               bounds={bounds}
-              onChange={(v) => {
-                setFilters(v);
-                setPage(1);
-              }}
+              onChange={handleFilterChange}
               onReset={reset}
               onCategoryNav={onCategoryNav}
               initialProducts={initialProducts}
@@ -162,10 +175,7 @@ export function ShopClient({ initialProducts }: Props) {
                     <ShopFilters
                       value={filters}
                       bounds={bounds}
-                      onChange={(v) => {
-                        setFilters(v);
-                        setPage(1);
-                      }}
+                      onChange={handleFilterChange}
                       onReset={reset}
                       onCategoryNav={onCategoryNav}
                       initialProducts={initialProducts}
@@ -198,7 +208,7 @@ export function ShopClient({ initialProducts }: Props) {
                 </button>
               </div>
 
-              <SortMenu value={sort} onChange={setSort} />
+              <SortMenu value={sort} onChange={handleSortChange} />
             </div>
           </div>
 
@@ -208,10 +218,7 @@ export function ShopClient({ initialProducts }: Props) {
             <ActiveFilterChips
               value={filters}
               bounds={bounds}
-              onChange={(v) => {
-                setFilters(v);
-                setPage(1);
-              }}
+              onChange={handleFilterChange}
             />
           </div>
 
@@ -219,16 +226,16 @@ export function ShopClient({ initialProducts }: Props) {
           {view === "grid" ? (
             <ProductGrid
               products={visible}
-              allProducts={all}
-              loading={isLoading && all.length === 0}
+              allProducts={visible}
+              loading={false}
               emptyHint="এই filter-এ কোনো পণ্য নেই — পরিবর্তন করে দেখুন।"
             />
-          ) : visible.length === 0 && !isLoading ? (
+          ) : visible.length === 0 ? (
             <div className="text-center py-16 text-slate-500 text-sm">এই filter-এ কোনো পণ্য নেই।</div>
           ) : (
             <div className="space-y-3">
               {visible.map((p) => (
-                <ProductListItem key={p.id} product={p} allProducts={all} />
+                <ProductListItem key={p.id} product={p} allProducts={visible} />
               ))}
             </div>
           )}
@@ -236,17 +243,17 @@ export function ShopClient({ initialProducts }: Props) {
           {hasMore && (
             <div className="mt-8 flex justify-center">
               <button
-                onClick={() => setPage((p) => p + 1)}
+                onClick={() => handlePageChange(page + 1)}
                 className="h-11 px-8 rounded-full bg-[#16A34A] text-white text-sm font-extrabold hover:bg-[#15803D] transition shadow-md shadow-green-500/20"
               >
-                Load more ({products.length - visible.length} বাকি)
+                Load more ({totalCount - (page * 24)} বাকি)
               </button>
             </div>
           )}
 
           {!hasMore && visible.length > 0 && (
             <div className="mt-8 text-center text-xs text-slate-500">
-              সব {products.length} টি পণ্য দেখানো হয়েছে
+              সব {totalCount} টি পণ্য দেখানো হয়েছে
             </div>
           )}
 

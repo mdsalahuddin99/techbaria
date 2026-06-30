@@ -89,7 +89,7 @@ export async function refund(ctx: Ctx, id: string, input: RefundInput) {
   }, { timeout: 30000 });
 
   const productIds = [...new Set(input.items.map(item => item.productId))];
-  await cache.invalidateSales("default");
-  await cache.invalidateSpecificProducts("default", productIds);
+  await cache.invalidateSales();
+  await cache.invalidateSpecificProducts(productIds);
   return raw;
 }

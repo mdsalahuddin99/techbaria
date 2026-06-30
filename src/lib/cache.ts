@@ -62,7 +62,7 @@ function getRedis(): Redis | null {
       }
       
       const controller = new AbortController();
-      const id = setTimeout(() => controller.abort(), 2000);
+      const id = setTimeout(() => controller.abort(), 800);
       return fetch(input, { 
         ...init, 
         cache: "no-store", // Force no-store at runtime so Redis is always fresh
@@ -102,28 +102,28 @@ export const TTL = {
 
 export const cacheKeys = {
   products: {
-    list: (shopId: string) => `shop:${shopId}:products:list`,
-    byId: (shopId: string, id: string) => `shop:${shopId}:products:${id}`,
-    bySlug: (shopId: string, slug: string) => `shop:${shopId}:products:slug:${slug}`,
+    list: () => `app:products:list`,
+    byId: (id: string) => `app:products:${id}`,
+    bySlug: (slug: string) => `app:products:slug:${slug}`,
   },
   categories: {
-    tree: (shopId: string) => `shop:${shopId}:categories:tree`,
-    list: (shopId: string) => `shop:${shopId}:categories:list`,
+    tree: () => `app:categories:tree`,
+    list: () => `app:categories:list`,
   },
   sales: {
-    list: (shopId: string) => `shop:${shopId}:sales:list`,
+    list: () => `app:sales:list`,
   },
   purchases: {
-    list: (shopId: string) => `shop:${shopId}:purchases:list`,
+    list: () => `app:purchases:list`,
   },
   inventory: {
-    snapshot: (shopId: string) => `shop:${shopId}:inventory:snapshot`,
+    snapshot: () => `app:inventory:snapshot`,
   },
   shop: {
-    config: (shopId: string) => `shop:${shopId}:config`,
+    config: () => `app:config`,
   },
   notifications: {
-    unreadCount: (shopId: string) => `shop:${shopId}:notifications:unreadCount`,
+    unreadCount: () => `app:notifications:unreadCount`,
   },
 } as const;
 
@@ -227,24 +227,25 @@ export const cache = {
       return cached;
     }
     const value = await fn();
-    await cache.set(key, value, ttl);
+    // Fire and forget cache set so we don't block the request if Redis is slow
+    cache.set(key, value, ttl).catch(err => console.error("[cache] background set error:", err));
     return value;
   },
 
   /** Helper: invalidate all product caches for a shop. */
-  async invalidateProducts(shopId: string) {
-    await cache.invalidate(`shop:${shopId}:products:*`);
+  async invalidateProducts() {
+    await cache.invalidate(`app:products:*`);
     await cache.invalidate(`products:storefront:*`);
   },
 
   /** Helper: invalidate specific product caches (by ID) and product list. */
-  async invalidateSpecificProducts(shopId: string, productIds: string[]) {
-    if (productIds.length === 0) return;
-
+  async invalidateSpecificProducts(productIds: string[]) {
+    if (!productIds.length) return;
+    
     const keys = [
-      cacheKeys.products.list(shopId),
+      cacheKeys.products.list(),
       `products:storefront:v2:unfiltered`,
-      ...productIds.map(productId => cacheKeys.products.byId(shopId, productId)),
+      ...productIds.map(productId => cacheKeys.products.byId(productId)),
       ...productIds.map(productId => `products:storefront:slug:${productId}`)
     ];
     await cache.del(...keys);
@@ -254,30 +255,30 @@ export const cache = {
   },
 
   /** Helper: invalidate all category caches for a shop. */
-  invalidateCategories(shopId: string) {
+  invalidateCategories() {
     return cache.del(
-      cacheKeys.categories.list(shopId),
-      cacheKeys.categories.tree(shopId)
+      cacheKeys.categories.list(),
+      cacheKeys.categories.tree()
     );
   },
 
   /** Helper: invalidate all sales caches for a shop. */
-  invalidateSales(shopId: string) {
-    return cache.del(cacheKeys.sales.list(shopId));
+  invalidateSales() {
+    return cache.del(cacheKeys.sales.list());
   },
 
   /** Helper: invalidate all purchases caches for a shop. */
-  invalidatePurchases(shopId: string) {
-    return cache.del(cacheKeys.purchases.list(shopId));
+  invalidatePurchases() {
+    return cache.del(cacheKeys.purchases.list());
   },
 
   /** Helper: invalidate inventory caches for a shop. */
-  invalidateInventory(shopId: string) {
-    return cache.del(cacheKeys.inventory.snapshot(shopId));
+  invalidateInventory() {
+    return cache.del(cacheKeys.inventory.snapshot());
   },
 
   /** Helper: invalidate shop config cache. */
-  invalidateShopConfig(shopId: string) {
-    return cache.del(cacheKeys.shop.config(shopId));
+  invalidateShopConfig() {
+    return cache.del(cacheKeys.shop.config());
   },
 };

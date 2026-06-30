@@ -15,37 +15,55 @@ export const dashboardService = {
 
     const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
 
-    // Execute all independent Prisma queries concurrently
     const [
       totalSalesAgg,
       todaySalesAgg,
       yestSalesAgg,
       totalCustomers,
       vipCount,
-      allProducts,
-      monthlySales,
-      recentSaleItems
+      recentSaleItems,
+      rawStockStats,
+      rawMonthlySales,
+      totalProductsCount
     ] = await Promise.all([
       prisma.sale.aggregate({ _sum: { total: true }, _count: { id: true } }),
       prisma.sale.aggregate({ _sum: { total: true }, _count: { id: true }, where: { createdAt: { gte: todayStart } } }),
       prisma.sale.aggregate({ _sum: { total: true }, where: { createdAt: { gte: yesterdayStart, lt: todayStart } } }),
       prisma.customer.count(),
       prisma.customer.count({ where: { group: "VIP" } }),
-      prisma.product.findMany({
-        where: { isPublished: true },
-        select: { id: true, stock: true, reorderLevel: true, isPublished: true },
-      }),
-      prisma.sale.findMany({
-        where: { createdAt: { gte: sixMonthsAgo } },
-        select: { total: true, createdAt: true }
-      }),
       prisma.saleItem.groupBy({
         by: ['productId', 'name'],
         where: { sale: { createdAt: { gte: thirtyDaysAgo } } },
         _sum: { qty: true },
         orderBy: { _sum: { qty: 'desc' } },
         take: 5
-      })
+      }),
+      prisma.$queryRaw<Array<{ status: string, count: number }>>`
+        SELECT 
+          CASE 
+            WHEN stock = 0 THEN 'outOfStock'
+            WHEN stock > 0 AND stock <= "reorderLevel" THEN 'low'
+            ELSE 'healthy'
+          END as status,
+          COUNT(*)::int as count
+        FROM "Product"
+        WHERE "isPublished" = true
+        GROUP BY 
+          CASE 
+            WHEN stock = 0 THEN 'outOfStock'
+            WHEN stock > 0 AND stock <= "reorderLevel" THEN 'low'
+            ELSE 'healthy'
+          END
+      `,
+      prisma.$queryRaw<Array<{ month_date: Date, total: number }>>`
+        SELECT 
+          date_trunc('month', "createdAt") as month_date,
+          SUM(total) as total
+        FROM "Sale"
+        WHERE "createdAt" >= ${sixMonthsAgo}
+        GROUP BY date_trunc('month', "createdAt")
+      `,
+      prisma.product.count({ where: { isPublished: true } })
     ]);
 
     const totalRevenue = Number(totalSalesAgg._sum.total || 0);
@@ -55,9 +73,12 @@ export const dashboardService = {
     const yestTotal = Number(yestSalesAgg._sum.total || 0);
     const todayDelta = yestTotal ? ((todayTotal - yestTotal) / yestTotal) * 100 : 0;
 
-    const healthy = allProducts.filter(p => p.stock > (p.reorderLevel ?? 0)).length;
-    const low = allProducts.filter(p => p.stock > 0 && p.stock <= (p.reorderLevel ?? 0)).length;
-    const outOfStock = allProducts.filter(p => p.stock === 0).length;
+    let healthy = 0, low = 0, outOfStock = 0;
+    rawStockStats.forEach(s => {
+      if (s.status === 'healthy') healthy = Number(s.count);
+      if (s.status === 'low') low = Number(s.count);
+      if (s.status === 'outOfStock') outOfStock = Number(s.count);
+    });
 
     const monthsData: Record<string, number> = {};
     for (let i = 5; i >= 0; i--) {
@@ -68,10 +89,10 @@ export const dashboardService = {
       monthsData[key] = 0;
     }
 
-    for (const sale of monthlySales) {
-      const key = sale.createdAt.toLocaleDateString("en-GB", { month: "short", year: "2-digit" });
+    for (const row of rawMonthlySales) {
+      const key = new Date(row.month_date).toLocaleDateString("en-GB", { month: "short", year: "2-digit" });
       if (key in monthsData) {
-        monthsData[key] += Number(sale.total);
+        monthsData[key] += Number(row.total);
       }
     }
 
@@ -82,7 +103,7 @@ export const dashboardService = {
       qty: item._sum.qty || 0
     }));
 
-    const rest = Math.max(0, allProducts.length - healthy - low - outOfStock);
+    const rest = Math.max(0, totalProductsCount - healthy - low - outOfStock);
     const stockDonut = [
       { name: "Healthy", value: healthy, color: "#0f766e" },
       { name: "Low Stock", value: low, color: "#f59e0b" },
@@ -94,10 +115,11 @@ export const dashboardService = {
       revenue: { total: totalRevenue, today: todayTotal, delta: todayDelta },
       orders: { total: totalOrders, today: todayOrders },
       customers: { total: totalCustomers, vip: vipCount },
-      stock: { healthy, low, outOfStock, total: allProducts.length },
+      stock: { healthy, low, outOfStock, total: totalProductsCount },
       monthlyChart,
       stockDonut,
       topProducts,
     };
   }
 };
+

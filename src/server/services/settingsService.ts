@@ -29,7 +29,7 @@ export const settingsService = {
   /** Get settings for the current shop. Returns defaults merged with stored values. */
   async get(ctx: Ctx): Promise<ShopSettings> {
     return cache.fetch(
-      cacheKeys.shop.config("default"),
+      cacheKeys.shop.config(),
       TTL.SHOP_CONFIG,
       async () => {
         const shop = await prisma.shop.findFirst({
@@ -126,7 +126,7 @@ export const settingsService = {
     });
 
     // Invalidate cache so next read is fresh
-    await cache.invalidateShopConfig("default");
+    await cache.invalidateShopConfig();
 
     // Return the merged result
     return this.get(ctx);

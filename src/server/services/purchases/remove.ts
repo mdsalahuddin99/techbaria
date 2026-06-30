@@ -35,7 +35,7 @@ export async function remove(ctx: Ctx, id: string) {
     where: { id },
   });
 
-  await cache.invalidatePurchases("default");
+  await cache.invalidatePurchases();
 
   await auditLogService.log(ctx, {
     entity: "Purchase",

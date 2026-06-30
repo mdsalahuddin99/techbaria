@@ -25,15 +25,9 @@ export const metadata: Metadata = {
   },
   description: "Modern POS terminal and inventory management for retail shops. Sales, products, customers, and reports in one place.",
   authors: [{ name: "ShopFlow" }],
-  manifest: "/manifest.webmanifest",
   icons: {
     icon: "/icon-192.svg",
     apple: "/icon-192.svg",
-  },
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "black-translucent",
-    title: "ShopFlow",
   },
   formatDetection: {
     telephone: false,

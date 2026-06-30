@@ -45,7 +45,7 @@ export const notificationsService = {
   /** Get unread count (cached 30 s). */
   async unreadCount(ctx: Ctx) {
     return cache.fetch(
-      cacheKeys.notifications.unreadCount("default"),
+      cacheKeys.notifications.unreadCount(),
       TTL.UNREAD_COUNT,
       () => prisma.notification.count({ where: { read: false } }),
     );
@@ -63,7 +63,7 @@ export const notificationsService = {
       },
     });
 
-    await cache.del(cacheKeys.notifications.unreadCount("default"));
+    await cache.del(cacheKeys.notifications.unreadCount());
 
     return {
       id: n.id,
@@ -87,7 +87,7 @@ export const notificationsService = {
       throw new ServiceError("NOT_FOUND", "Notification not found", 404);
     }
 
-    await cache.del(cacheKeys.notifications.unreadCount("default"));
+    await cache.del(cacheKeys.notifications.unreadCount());
   },
 
   /** Mark all notifications for the shop as read. */
@@ -97,13 +97,13 @@ export const notificationsService = {
       data: { read: true },
     });
 
-    await cache.del(cacheKeys.notifications.unreadCount("default"));
+    await cache.del(cacheKeys.notifications.unreadCount());
   },
 
   /** Clear all notifications for the shop. */
   async clear(ctx: Ctx) {
     await prisma.notification.deleteMany({});
-    await cache.del(cacheKeys.notifications.unreadCount("default"));
+    await cache.del(cacheKeys.notifications.unreadCount());
   },
 
   /** Adapter compatibility methods. */

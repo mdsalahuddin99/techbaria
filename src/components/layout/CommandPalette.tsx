@@ -77,12 +77,15 @@ export function CommandPalette() {
     const q = searchQuery.toLowerCase().trim();
     return products
       .filter((p) => {
+        const brand = typeof p.brand === "object" && p.brand ? (p.brand as any).name : p.brand;
+        const model = typeof p.model === "object" && p.model ? (p.model as any).name : p.model;
+
         return (
           p.name.toLowerCase().includes(q) ||
           p.sku.toLowerCase().includes(q) ||
           (p.barcode && p.barcode.toLowerCase().includes(q)) ||
-          (p.brand && p.brand.toLowerCase().includes(q)) ||
-          (p.model && p.model.toLowerCase().includes(q))
+          (brand && brand.toLowerCase().includes(q)) ||
+          (model && model.toLowerCase().includes(q))
         );
       })
       .slice(0, 5);
@@ -178,10 +181,13 @@ export function CommandPalette() {
           <>
             {filteredProducts.length > 0 && (
               <CommandGroup heading="Products">
-                {filteredProducts.map((p) => (
+                {filteredProducts.map((p) => {
+                  const brand = typeof p.brand === "object" && p.brand ? (p.brand as any).name : p.brand;
+                  const model = typeof p.model === "object" && p.model ? (p.model as any).name : p.model;
+                  return (
                   <CommandItem
                     key={p.id}
-                    value={`product-${p.id}-${p.name}-${p.sku}-${p.barcode || ""}-${p.brand || ""}-${p.model || ""}`.toLowerCase()}
+                    value={`product-${p.id}-${p.name}-${p.sku}-${p.barcode || ""}-${brand || ""}-${model || ""}`.toLowerCase()}
                     onSelect={() => handleSelectProduct(p)}
                   >
                     <span className="mr-2 text-lg">{p.emoji || "📦"}</span>
@@ -195,7 +201,8 @@ export function CommandPalette() {
                       ৳{p.price}
                     </span>
                   </CommandItem>
-                ))}
+                  );
+                })}
               </CommandGroup>
             )}
 

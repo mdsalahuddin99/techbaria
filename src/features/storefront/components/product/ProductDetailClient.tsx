@@ -30,7 +30,7 @@ import {
 import { Button } from "@/shared/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 import { Progress } from "@/shared/ui/progress";
-import { useCartStore, formatPrice, useSeo } from "@/features/storefront";
+import { useCartStore, formatPrice } from "@/features/storefront";
 import { ProductGrid } from "@/features/storefront/components/product/ProductGrid";
 import { useWishlistStore } from "@/features/storefront/store/useWishlistStore";
 import { useCompareStore } from "@/features/storefront/store/useCompareStore";
@@ -78,10 +78,6 @@ export function ProductDetailClient({ product, related = [], children }: Props) 
   const compared = useCompareStore((s) => s.ids.includes(product.id));
   const toggleCompare = useCompareStore((s) => s.toggle);
 
-  useSeo({
-    title: `${product.name} — AmarShop`,
-    description: `${product.name}${product.brand ? ` by ${product.brand}` : ""} — ${formatPrice(product.price)}.`,
-  });
 
   // Real gallery from product.images array
   const gallery = useMemo(() => {

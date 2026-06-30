@@ -80,8 +80,10 @@ export default function ImageUpload({
   }
 
   const handleFile = async (file: File) => {
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Image must be under 5 MB");
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Image size must be under 2 MB", {
+        description: "Please reduce the image size and try again.",
+      });
       return;
     }
     setUploading(true);

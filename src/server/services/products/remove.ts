@@ -45,7 +45,7 @@ export async function remove(ctx: Ctx, id: string) {
     where: { id },
   });
 
-  await cache.invalidateSpecificProducts("default", [id]);
+  await cache.invalidateSpecificProducts([id]);
 
   await auditLogService.log(ctx, {
     entity: "Product",

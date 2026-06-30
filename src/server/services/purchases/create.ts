@@ -241,9 +241,9 @@ export async function create(ctx: Ctx, input: PurchaseCreateInput) {
     diff: { total, items: input.items.length, supplierId: input.supplierId },
   });
 
-  await cache.invalidatePurchases("default");
+  await cache.invalidatePurchases();
   const productIds = [...new Set(input.items.map(item => item.productId))];
-  await cache.invalidateSpecificProducts("default", productIds);
+  await cache.invalidateSpecificProducts(productIds);
 
   return serializePurchase(raw);
 }

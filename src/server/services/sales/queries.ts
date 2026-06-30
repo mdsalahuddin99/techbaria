@@ -73,7 +73,7 @@ export async function list(ctx: Ctx, params?: PaginationParams, filter?: SaleLis
   const noFilter = !filter?.channel && !filter?.customerId && !filter?.from && !filter?.to;
   const firstPage = !params?.cursor;
   if (noFilter && firstPage) {
-    return cache.fetch(cacheKeys.sales.list("default"), TTL.SALES_LIST, async () => {
+    return cache.fetch(cacheKeys.sales.list(), TTL.SALES_LIST, async () => {
       return runSaleListQuery(ctx, params, filter);
     });
   }

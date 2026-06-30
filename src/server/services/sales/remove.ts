@@ -77,6 +77,6 @@ export async function remove(ctx: Ctx, id: string) {
     return productIds;
   }, { timeout: 30000 });
 
-  await cache.invalidateSales("default");
-  await cache.invalidateSpecificProducts("default", productIds);
+  await cache.invalidateSales();
+  await cache.invalidateSpecificProducts(productIds);
 }

@@ -13,8 +13,8 @@ import { storefrontService } from "@/server/services/storefrontService";
 export const revalidate = 300; // 5 minutes ISR
 
 export default async function StorefrontHome() {
-  // Fetch data server-side
-  const products = await productsService.publicStorefrontList();
+  // Fetch data server-side (limit products to 50 for the homepage to prevent massive over-fetching)
+  const { items: products } = await productsService.publicStorefrontList({ limit: 50 });
   const categories = await categoriesService.listFlat({} as any);
   const heroSlides = await storefrontService.listHeroSlides({} as any);
   const activeSlides = heroSlides.filter(s => s.isActive);

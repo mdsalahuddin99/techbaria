@@ -163,8 +163,8 @@ export async function update(ctx: Ctx, id: string, input: SaleUpdateInput) {
   }, { timeout: 30000 });
 
   const productIds = [...new Set(input.items.map(item => item.productId))];
-  await cache.invalidateSales("default");
-  await cache.invalidateSpecificProducts("default", productIds);
+  await cache.invalidateSales();
+  await cache.invalidateSpecificProducts(productIds);
 
   const raw = await prisma.sale.findFirst({
     where: { id },

@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import { Button } from "@/shared/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/shared/ui/dialog";
 import { Printer, Download, X } from "lucide-react";
+import { ScaledIframe } from "@/components/ScaledIframe";
 import { canPrint, printHtml, downloadHtml } from "@/shared/lib/print";
 import { toast } from "sonner";
 import type { ShopSettings } from "@/features/settings/types";
@@ -90,6 +91,28 @@ export function DraftInvoicePreview({
     host.innerHTML = html;
     document.body.appendChild(host);
     const node = host.querySelector(".page") as HTMLElement | null;
+    
+    // Ensure all images are loaded before capturing
+    const images = Array.from(host.querySelectorAll("img"));
+    await Promise.all(images.map((img) => {
+      if (img.complete) return Promise.resolve();
+      return new Promise((resolve) => {
+        img.onload = resolve;
+        img.onerror = resolve;
+      });
+    }));
+
+    // Fix dimensions and styles to prevent second blank page spill
+    if (node) {
+      node.style.margin = "0";
+      node.style.boxShadow = "none";
+      node.style.height = "29.6cm";
+      node.style.minHeight = "29.6cm";
+      node.style.overflow = "hidden";
+      node.style.transform = "none";
+      node.setAttribute('data-pdf-mode', 'true');
+    }
+
     try {
       const mod = await import("html2pdf.js");
       const html2pdf = (mod as { default: unknown }).default as (
@@ -140,13 +163,8 @@ export function DraftInvoicePreview({
         </div>
 
         {/* Preview */}
-        <div className="max-h-[85vh] overflow-y-auto bg-muted/30">
-          <iframe
-            title="Quotation Preview"
-            srcDoc={html}
-            className="w-full bg-card"
-            style={{ height: "80vh", border: 0 }}
-          />
+        <div className="max-h-[85vh] overflow-y-auto bg-muted/30 p-2 sm:p-4">
+          <ScaledIframe html={html} title="Quotation Preview" />
         </div>
       </DialogContent>
     </Dialog>
@@ -259,20 +277,20 @@ function buildDraftInvoiceHtml(
   // Footer brand logos
   const footerLogos = settings.invoiceFooterBrandLogos?.length
     ? `<div style="display:flex;justify-content:center;align-items:center;gap:20px;flex-wrap:wrap;margin-bottom:9px;">
-        ${settings.invoiceFooterBrandLogos.map(url => `<img src="${url}" style="height:26px;object-fit:contain;" />`).join("")}
+        ${settings.invoiceFooterBrandLogos.map(url => `<img src="${url}" style="height:26px;" />`).join("")}
        </div>`
     : "";
 
   // Header
   const headerHtml = settings.invoiceFullHeaderUrl
     ? `<div style="width:100%;text-align:center;margin-bottom:14px;">
-         <img src="${settings.invoiceFullHeaderUrl}" style="max-width:100%;object-fit:contain;" />
+         <img src="${settings.invoiceFullHeaderUrl}" style="max-width:100%;" />
        </div>`
     : `<table style="width:100%;border-collapse:collapse;">
         <tr>
           <td style="width:125px;vertical-align:middle;text-align:left;padding-right:8px;">
             ${settings.logoUrl
-              ? `<img src="${settings.logoUrl}" style="max-width:115px;max-height:80px;object-fit:contain;" />`
+              ? `<img src="${settings.logoUrl}" style="max-width:115px;max-height:80px;" />`
               : `<div style="width:90px;height:70px;background:#f0f0f0;border:1px solid #ccc;display:flex;align-items:center;justify-content:center;font-size:9px;color:#999;text-align:center;">LOGO</div>`}
           </td>
           <td style="vertical-align:middle;text-align:center;padding:0 6px;">
@@ -290,7 +308,7 @@ function buildDraftInvoiceHtml(
           </td>
           <td style="width:125px;vertical-align:middle;text-align:right;padding-left:8px;">
             ${settings.invoiceHeaderRightLogoUrl
-              ? `<img src="${settings.invoiceHeaderRightLogoUrl}" style="max-width:115px;max-height:80px;object-fit:contain;" />`
+              ? `<img src="${settings.invoiceHeaderRightLogoUrl}" style="max-width:115px;max-height:80px;" />`
               : ""}
           </td>
         </tr>
@@ -298,7 +316,7 @@ function buildDraftInvoiceHtml(
       <div style="border-top:2.5px solid #111;margin:10px 0 12px;"></div>`;
 
   const footerHtml = settings.invoiceFullFooterUrl
-    ? `<div style="width:100%;text-align:center;margin-bottom:8px;"><img src="${settings.invoiceFullFooterUrl}" style="max-width:100%;object-fit:contain;" /></div>`
+    ? `<div style="width:100%;text-align:center;margin-bottom:8px;"><img src="${settings.invoiceFullFooterUrl}" style="max-width:100%;" /></div>`
     : footerLogos + (settings.invoiceShowComputerGenerated === false ? "" : `<div style="text-align:center;font-size:10.5px;font-weight:700;letter-spacing:1px;margin-bottom:9px;color:#333;">Computer Generated Quotation, No Sign Required</div>`);
 
   return `<!doctype html>
@@ -449,7 +467,6 @@ function buildDraftInvoiceHtml(
       <span>Page 1 of 1</span>
     </div>
   </div>
-
 </div>
 </body>
 </html>`;

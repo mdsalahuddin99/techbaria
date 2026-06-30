@@ -84,6 +84,6 @@ export async function create(ctx: Ctx, input: ProductCreateInput) {
     diff: { name: input.name, sku: input.sku, price: input.price },
   });
   // Invalidate product caches so storefront picks up the new product
-  await cache.invalidateProducts("default");
+  await cache.invalidateProducts();
   return serialise(product);
 }

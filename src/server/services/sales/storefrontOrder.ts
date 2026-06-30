@@ -135,7 +135,8 @@ export const storefrontOrder = {
       return serializeStorefrontOrder(sale);
     });
 
-    await cache.invalidateProducts("default");
+    await cache.invalidateInventory();
+    await cache.invalidateProducts();
 
     return result;
   },

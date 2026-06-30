@@ -295,18 +295,18 @@ export function PurchaseFormDialog({
         }
         onOpenChange(val);
       }}>
-        <DialogContent className="sm:max-w-[95vw] lg:max-w-5xl max-h-[92vh] flex flex-col p-0" onInteractOutside={(e) => e.preventDefault()}>
-          <DialogHeader className="p-6 pb-2 shrink-0">
+        <DialogContent className="w-full h-[100dvh] max-h-[100dvh] sm:h-auto sm:max-h-[92vh] sm:max-w-[95vw] lg:max-w-5xl flex flex-col p-0 rounded-none sm:rounded-lg" onInteractOutside={(e) => e.preventDefault()}>
+          <DialogHeader className="p-4 sm:p-6 pb-2 shrink-0">
             <DialogTitle>{editId ? "Edit Purchase Order" : "New Purchase Order"}</DialogTitle>
             <DialogDescription>
               একই Supplier থেকে একাধিক প্রোডাক্ট একসাথে পারচেজ করুন। প্রতিটি প্রোডাক্টের জন্য আলাদা কস্ট, সিরিয়াল এবং ওয়ারেন্টি সেট করতে পারবেন।
             </DialogDescription>
           </DialogHeader>
-          <div className="flex-1 overflow-y-auto px-6 pb-6 space-y-4 min-h-0">
+          <div className="flex-1 overflow-y-auto px-3 sm:px-6 pb-4 sm:pb-6 space-y-4 min-h-0">
             <div className="flex flex-col lg:flex-row gap-6 items-start">
             {/* Supplier Profile Panel */}
             {form.supplierId && (
-              <div className="w-full lg:w-72 shrink-0 border border-slate-250 bg-slate-50/40 rounded-lg p-4 max-h-[72vh] overflow-y-auto sticky top-0">
+              <div className="w-full lg:w-72 shrink-0 border border-slate-250 bg-slate-50/40 rounded-lg p-3 sm:p-4 lg:max-h-[72vh] overflow-y-auto lg:sticky lg:top-0">
                 <SupplierSidebar supplierId={form.supplierId} />
               </div>
             )}
@@ -617,7 +617,7 @@ export function PurchaseFormDialog({
             </div>
           </div>
         </div>
-          <DialogFooter className="p-6 py-4 border-t border-border bg-secondary/15 flex flex-col gap-4 shrink-0 w-full">
+          <DialogFooter className="p-4 sm:p-6 py-3 sm:py-4 border-t border-border bg-secondary/15 flex flex-col gap-3 sm:gap-4 shrink-0 w-full">
             {(() => {
               const totalProducts = form.lines.length;
               const totalUnits = form.lines.reduce((s, l) => s + form.lineUnits(l), 0);

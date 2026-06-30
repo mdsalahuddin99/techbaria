@@ -100,12 +100,12 @@ async function buildTree(): Promise<CategoryOutput[]> {
 export const categoriesService = {
   /** List all categories as a tree. */
   async list(ctx: Ctx): Promise<CategoryOutput[]> {
-    return cache.fetch(cacheKeys.categories.tree("default"), TTL.CATEGORY_TREE, buildTree);
+    return cache.fetch(cacheKeys.categories.tree(), TTL.CATEGORY_TREE, buildTree);
   },
 
   /** Get flat list (no nesting) for dropdowns. */
   async listFlat(ctx: Ctx) {
-    return cache.fetch(cacheKeys.categories.list("default"), TTL.CATEGORY_TREE, async () => {
+    return cache.fetch(cacheKeys.categories.list(), TTL.CATEGORY_TREE, async () => {
       const categories = await prisma.category.findMany({
         include: { _count: { select: { products: true } } },
         orderBy: { name: "asc" },
@@ -177,7 +177,7 @@ export const categoriesService = {
       },
     });
 
-    await cache.invalidateCategories("default");
+    await cache.invalidateCategories();
 
     return {
       id: c.id,
@@ -235,7 +235,7 @@ export const categoriesService = {
       include: { _count: { select: { products: true } } },
     });
 
-    await cache.invalidateCategories("default");
+    await cache.invalidateCategories();
 
     const cat = udpated as any;
     return {
@@ -277,6 +277,6 @@ export const categoriesService = {
       allIds.map((cid) => prisma.category.delete({ where: { id: cid } })),
     );
 
-    await cache.invalidateCategories("default");
+    await cache.invalidateCategories();
   },
 };
