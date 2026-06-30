@@ -20,14 +20,14 @@ import {
 import { formatCurrency, formatDate, formatDateTime } from "@/shared/lib/format";
 import { Plus, Sparkles, Trash2, X, CheckCircle2, AlertTriangle, Printer } from "lucide-react";
 import { toast } from "sonner";
-import { RestockOrder } from "@/shared/lib/types";
+import { RestockOrder, Product } from "@/shared/lib/types";
 import { PageHeader } from "@/shared/components";
 import { AutoSuggest } from "@/shared/ui/auto-suggest";
 import { useRestocks, useRestockActions } from "@/features/purchases/hooks";
 import { useProductsQuery } from "@/features/products/hooks";
 
 export function RestockClient() {
-  const products = ((useProductsQuery().data as any)?.items ?? []) as any[];
+  const products = (useProductsQuery().data?.items ?? []) as Product[];
   const { data: suppliers } = useSuppliers();
   const restocks = useRestocks();
   const {

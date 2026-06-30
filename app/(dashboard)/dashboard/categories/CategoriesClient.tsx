@@ -179,10 +179,10 @@ export function CategoriesClient({
   const isParent = (c: CategoryItem) => !c.parentId || c.parentId === c.id;
   const parents = categories.filter(isParent);
   const subcategories = useMemo(() => categories.filter((c) => !!c.parentId && c.parentId !== c.id), [categories]);
-  const categoryById = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
-  const brandById = useMemo(() => new Map(allBrands.map((b: any) => [b.id, b])), [allBrands]);
-  const productNameById = useMemo(() => new Map(allProducts.map((p: any) => [p.id, p])), [allProducts]);
-  const modelById = useMemo(() => new Map(allModels.map((m: any) => [m.id, m])), [allModels]);
+  const categoryById = useMemo(() => new Map<string, CategoryItem>(categories.map((c) => [c.id, c])), [categories]);
+  const brandById = useMemo(() => new Map<string, any>(allBrands.map((b: any) => [b.id, b])), [allBrands]);
+  const productNameById = useMemo(() => new Map<string, any>(allProducts.map((p: any) => [p.id, p])), [allProducts]);
+  const modelById = useMemo(() => new Map<string, any>(allModels.map((m: any) => [m.id, m])), [allModels]);
 
   const childrenOf = (pid: string) =>
     categories.filter((c) => c.parentId === pid && c.id !== pid);
@@ -488,7 +488,7 @@ export function CategoriesClient({
                       <>
                         <div className="flex-1 min-w-0">
                           <p className="font-medium truncate">{product.name}</p>
-                          <p className="text-xs text-muted-foreground truncate">{(b as any)?.name ?? "—"}</p>
+                          <p className="text-xs text-muted-foreground truncate">{b?.name ?? "—"}</p>
                         </div>
                         <Badge variant="secondary" className="hidden md:inline-flex shrink-0">{modelsCount} models</Badge>
                         <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleEditItem("products", product.id, product.name)}>
@@ -563,7 +563,7 @@ export function CategoriesClient({
                       <>
                         <div className="flex-1 min-w-0">
                           <p className="font-medium truncate">{model.name}</p>
-                          <p className="text-xs text-muted-foreground truncate">{(product as any)?.name ?? "—"}</p>
+                          <p className="text-xs text-muted-foreground truncate">{product?.name ?? "—"}</p>
                         </div>
                         <Badge variant="secondary" className="hidden md:inline-flex shrink-0">{seriesCount} series</Badge>
                         <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleEditItem("models", model.id, model.name)}>
@@ -637,7 +637,7 @@ export function CategoriesClient({
                       <>
                         <div className="flex-1 min-w-0">
                           <p className="font-medium truncate">{series.name}</p>
-                          <p className="text-xs text-muted-foreground truncate">{(m as any)?.name ?? "—"}</p>
+                          <p className="text-xs text-muted-foreground truncate">{m?.name ?? "—"}</p>
                         </div>
                         <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleEditItem("series", series.id, series.name)}>
                           <Pencil className="h-4 w-4" />

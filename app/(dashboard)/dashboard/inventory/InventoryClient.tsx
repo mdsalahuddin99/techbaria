@@ -26,7 +26,7 @@ import { formatCurrency, formatDateTime } from "@/shared/lib/format";
 import { Search, Plus, History, Pencil, Trash2, PackagePlus, Tag, Check, X, ScanLine, Printer, ChevronRight, CornerDownRight, Boxes } from "lucide-react";
 import { Switch } from "@/shared/ui/switch";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/shared/ui/collapsible";
-import { AdjustmentType, Product, Category, ProductCondition } from "@/shared/lib/types";
+import { AdjustmentType, Product, Category, ProductCondition, StockAdjustment } from "@/shared/lib/types";
 import { toast } from "sonner";
 import ImageUpload from "@/components/ImageUpload";
 import CameraScanner from "@/components/CameraScanner";
@@ -54,13 +54,13 @@ export function InventoryClient({
   initialAdjustments,
   initialCategories,
 }: {
-  initialProducts: any[];
-  initialAdjustments: any[];
-  initialCategories: any[];
+  initialProducts: Product[];
+  initialAdjustments: StockAdjustment[];
+  initialCategories: CategoryItem[];
 }) {
   usePageTitle("Inventory");
-  const { data: products = [] } = useProducts(initialProducts as any);
-  const adjustments = useAdjustments(initialAdjustments as any);
+  const { data: products = [] } = useProducts(initialProducts);
+  const adjustments = useAdjustments(initialAdjustments);
   const { adjust } = useInventoryActions();
   const createProduct = useCreateProduct();
   const updateProduct = useUpdateProduct();

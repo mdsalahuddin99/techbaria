@@ -9,7 +9,7 @@ import { useDashboardMetricsQuery } from "@/features/dashboard/hooks";
 import { Button } from "@/shared/ui/button";
 import { formatCurrency, formatDateTime, productDisplayName } from "@/shared/lib/format";
 import { cn } from "@/shared/lib/utils";
-import type { Sale } from "@/shared/lib/types";
+import type { Sale, Product } from "@/shared/lib/types";
 import {
   BarChart,
   Bar,
@@ -144,9 +144,9 @@ export default function DashboardClient() {
   // We still need products to find low stock items (or we can just show the metric)
   // For the reorder queue, we use the prefetched products list
   const { data: productsData } = useProductsQuery();
-  const products = (productsData?.items ?? []) as any[];
+  const products = (productsData?.items ?? []) as Product[];
   const lowStockProducts = products.filter(
-    (p) => p.isPublished && p.type !== "bundle" && p.stock <= effectiveReorderPoint(p)
+    (p) => p.active && p.type !== "bundle" && p.stock <= effectiveReorderPoint(p)
   ).slice(0, 5);
 
   const hour = new Date().getHours();

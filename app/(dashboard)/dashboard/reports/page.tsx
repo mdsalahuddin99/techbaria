@@ -8,7 +8,7 @@ import { ReportsClient } from "./ReportsClient";
 
 export default async function ReportsPage() {
   const session = await auth();
-  const ctx = buildCtx(session?.user as any);
+  const ctx = buildCtx(session?.user);
   
   const [
     salesRes,
@@ -17,7 +17,7 @@ export default async function ReportsPage() {
     purchasesRes,
   ] = await Promise.all([
     listSalesAction(),
-    listProductsAction(),
+    listProductsAction(undefined, { limit: 2000 }),
     expensesService.list(ctx, { limit: 1000 }),
     purchasesService.list(ctx, { limit: 1000 }),
   ]);

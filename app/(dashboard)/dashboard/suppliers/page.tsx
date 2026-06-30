@@ -7,7 +7,7 @@ import { SuppliersClient } from "./SuppliersClient";
 
 export default async function SuppliersPage() {
   const session = await auth();
-  const ctx = buildCtx(session?.user as any);
+  const ctx = buildCtx(session?.user);
   
   // We can fetch data concurrently
   const [suppliersRes, purchasesRes, accountsRes, ledgerRes] = await Promise.all([
@@ -19,9 +19,9 @@ export default async function SuppliersPage() {
 
   return (
     <SuppliersClient
-      initialSuppliers={suppliersRes.items}
-      initialPurchases={purchasesRes.items}
-      initialAccounts={accountsRes.items}
+      initialSuppliers={Array.isArray(suppliersRes) ? suppliersRes : suppliersRes?.items || []}
+      initialPurchases={Array.isArray(purchasesRes) ? purchasesRes : purchasesRes?.items || []}
+      initialAccounts={Array.isArray(accountsRes) ? accountsRes : accountsRes?.items || []}
       initialLedger={ledgerRes}
     />
   );

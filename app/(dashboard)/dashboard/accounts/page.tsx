@@ -7,7 +7,7 @@ import { AccountsClient } from "./AccountsClient";
 
 export default async function AccountsPage() {
   const session = await auth();
-  const ctx = buildCtx(session?.user as any);
+  const ctx = buildCtx(session?.user);
   
   const [
     customersRes,
@@ -23,10 +23,10 @@ export default async function AccountsPage() {
 
   return (
     <AccountsClient
-      initialCustomers={customersRes.items as any}
-      initialSuppliers={suppliersRes.items as any}
-      initialAccounts={accountsRes.items as any}
-      initialLedger={ledgerRes as any}
+      initialCustomers={customersRes.items}
+      initialSuppliers={suppliersRes.items}
+      initialAccounts={accountsRes.items}
+      initialLedger={ledgerRes}
     />
   );
 }

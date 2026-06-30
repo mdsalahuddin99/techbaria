@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useProductsQuery } from "@/features/products/hooks";
+import { Product } from "@/shared/lib/types";
 import { Card } from "@/shared/ui/card";
 import { Input } from "@/shared/ui/input";
 import { Button } from "@/shared/ui/button";
@@ -43,7 +44,7 @@ interface DraftLine {
 
 export function InventoryTransfersClient() {
   const warehouses = useWarehouses();
-  const products = ((useProductsQuery().data as any)?.items ?? []) as any[];
+  const products = (useProductsQuery().data?.items ?? []) as Product[];
   const allTransfers = useTransfers();
   const createMutation = useCreateTransfer();
   const dispatchMutation = useDispatchTransfer();

@@ -18,7 +18,7 @@ export function useProductsQuery(initialData?: any) {
   const { session, status } = useAuth();
   return useQuery({
     queryKey: productKeys.list(),
-    queryFn: () => productsService.list(),
+    queryFn: () => productsService.list(undefined, { limit: 2000 }),
     // Don't fire until we know the user is authenticated
     enabled: status !== "loading" && !!session,
     initialData,

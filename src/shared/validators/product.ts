@@ -42,6 +42,7 @@ export const productBaseSchema = z
     isTrending: z.boolean().optional(),
     emoji: z.string().max(8).default("📦"),
     imageUrl: z.string().url().max(2048).optional().or(z.literal("")).transform((v) => v || undefined),
+    galleryImages: z.array(z.string().url().or(z.literal(""))).optional().default([]),
     color: z.string().trim().max(40).optional(),
     storage: z.string().trim().max(40).optional(),
     ram: z.string().trim().max(40).optional(),
@@ -75,6 +76,7 @@ export const productCreateSchema = productBaseSchema.transform((input) => {
     shortDescription: input.shortDescription || undefined,
     categoryId: input.category || undefined,
     imageUrl: input.imageUrl || undefined,
+    galleryImages: input.galleryImages,
     price: input.price,
     cost: input.costPrice || 0,
     stock: input.stock || 0,
@@ -110,6 +112,7 @@ export const productUpdateSchema = productBaseSchema.partial().transform((input)
   if (input.shortDescription !== undefined) result.shortDescription = input.shortDescription;
   if (input.category !== undefined) result.categoryId = input.category || null;
   if (input.imageUrl !== undefined) result.imageUrl = input.imageUrl || null;
+  if (input.galleryImages !== undefined) result.galleryImages = input.galleryImages;
   if (input.price !== undefined) result.price = input.price;
   if (input.costPrice !== undefined) result.cost = input.costPrice;
   if (input.stock !== undefined) result.stock = input.stock;

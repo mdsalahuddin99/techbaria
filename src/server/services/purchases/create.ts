@@ -139,6 +139,10 @@ export async function create(ctx: Ctx, input: PurchaseCreateInput) {
           updateData.warrantyStartDate = new Date(item.warrantyStartDate);
         }
       }
+      
+      if (item.warrantyMonths !== undefined) {
+        updateData.warrantyMonths = item.warrantyMonths;
+      }
 
       await tx.product.update({
         where: { id: item.productId },

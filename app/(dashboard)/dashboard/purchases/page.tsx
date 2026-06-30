@@ -8,7 +8,7 @@ import { PurchasesClient } from "./PurchasesClient";
 
 export default async function PurchasesPage() {
   const session = await auth();
-  const ctx = buildCtx(session?.user as any);
+  const ctx = buildCtx(session?.user);
   
   const [
     suppliersRes,
@@ -18,7 +18,7 @@ export default async function PurchasesPage() {
     ledgerRes
   ] = await Promise.all([
     listSuppliersAction(),
-    listProductsAction(),
+    listProductsAction(undefined, { limit: 2000 }),
     purchasesService.list(ctx),
     accountsService.list(ctx),
     accountsService.listLedger(ctx),
@@ -27,10 +27,10 @@ export default async function PurchasesPage() {
   return (
     <PurchasesClient
       initialSuppliers={suppliersRes.items}
-      initialProducts={productsRes.items as any}
-      initialPurchases={purchasesRes.items as any}
-      initialAccounts={accountsRes.items as any}
-      initialLedger={ledgerRes as any}
+      initialProducts={productsRes.items}
+      initialPurchases={purchasesRes.items}
+      initialAccounts={accountsRes.items}
+      initialLedger={ledgerRes}
     />
   );
 }

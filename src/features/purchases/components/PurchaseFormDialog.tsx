@@ -21,7 +21,7 @@ import dynamic from "next/dynamic";
 const CameraScanner = dynamic(() => import("@/components/CameraScanner"), { ssr: false });
 import { SupplierFormDialog } from "@/features/suppliers/SupplierFormDialog";
 import { ProductFormDialog } from "@/features/products/ProductFormDialog";
-import { usePurchaseForm, lineCost, lineSale } from "../hooks/usePurchaseForm";
+import { usePurchaseForm, lineCost, lineSale, methodFromAccountType } from "../hooks/usePurchaseForm";
 import { ACCOUNT_TYPE_LABEL } from "@/features/accounts/types";
 
 interface PurchaseFormDialogProps {
@@ -114,6 +114,14 @@ function SupplierSidebar({ supplierId }: { supplierId: string }) {
             {formatCurrency(supplier.payableBalance)}
           </span>
         </div>
+        {(supplier.advanceBalance ?? 0) > 0 && (
+          <div className="flex justify-between items-end mt-1">
+            <span className="text-xs font-medium text-slate-500">Advance Balance</span>
+            <span className="text-xs font-bold text-emerald-600 tabular-nums">
+              {formatCurrency(supplier.advanceBalance!)}
+            </span>
+          </div>
+        )}
       </div>
 
       {supplier.notes && (
@@ -350,7 +358,6 @@ export function PurchaseFormDialog({
                   <div className="flex gap-2">
                     <div className="flex-1">
                       <AutoSuggest
-                        key={form.lines.length}
                         value={form.activeProductId}
                         onValueChange={form.setActiveProductId}
                         options={products
@@ -364,7 +371,7 @@ export function PurchaseFormDialog({
                         placeholder="Search product…"
                         emptyMessage="No product found"
                         allowClear
-                        autoFocus
+                        openOnFocus={false}
                       />
                     </div>
                     <Button type="button" variant="outline" size="icon" className="h-10 w-10 shrink-0 self-end" onClick={() => setAddProductOpen(true)}>
@@ -565,19 +572,49 @@ export function PurchaseFormDialog({
               ) : (
                 <div className="space-y-2">
                   {form.tenders.map((t, idx) => (
-                    <div key={t.id} className="grid grid-cols-1 sm:grid-cols-[1fr_140px_auto] gap-2 items-start">
+                    <div key={t.id} className="grid grid-cols-1 sm:grid-cols-[120px_1fr_140px_auto] gap-2 items-start">
+                      <Select
+                        value={t.method || "Cash"}
+                        onValueChange={(v) => {
+                          const matchingAccounts = accountsTree.filter((n: any) => methodFromAccountType(n.account.type) === v);
+                          const firstAcc = v === "WALLET" ? "WALLET" : (matchingAccounts[0]?.account?.id || "");
+                          let nextAmount = t.amount;
+                          let manual = t.manuallyEdited;
+                          if (v === "WALLET") {
+                            manual = true;
+                            if (Number(nextAmount) > supplierAdvance) {
+                              nextAmount = String(supplierAdvance);
+                              toast.warning(`Advance balance capped to ${formatCurrency(supplierAdvance)}`);
+                            }
+                          }
+                          form.updateTender(t.id, { method: v, accountId: firstAcc, amount: nextAmount, manuallyEdited: manual });
+                        }}
+                      >
+                        <SelectTrigger><SelectValue placeholder="Method" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Cash">Cash</SelectItem>
+                          <SelectItem value="Card">Bank</SelectItem>
+                          <SelectItem value="Mobile Banking">Mobile Banking</SelectItem>
+                          {supplierAdvance > 0 && (
+                            <SelectItem value="WALLET">Wallet</SelectItem>
+                          )}
+                        </SelectContent>
+                      </Select>
                       <Select value={t.accountId} onValueChange={(v) => form.updateTender(t.id, { accountId: v })}>
                         <SelectTrigger><SelectValue placeholder="Account select করুন" /></SelectTrigger>
                         <SelectContent>
-                          {accountsTree.map((n) => (
-                            <SelectItem key={n.account.id} value={n.account.id}>
-                              {n.depth > 0 ? "\u00A0\u00A0↳ " : ""}{n.account.name} · {ACCOUNT_TYPE_LABEL[n.account.type]} · {formatCurrency(balances[n.account.id] ?? 0)}
-                            </SelectItem>
-                          ))}
-                          {supplierAdvance > 0 && (
+                          {t.method === "WALLET" ? (
                             <SelectItem value="WALLET" className="font-semibold text-green-600 dark:text-green-400 bg-green-50/50 dark:bg-green-900/20">
                               Supplier Wallet Advance · {formatCurrency(supplierAdvance)}
                             </SelectItem>
+                          ) : (
+                            accountsTree
+                              .filter((n: any) => methodFromAccountType(n.account.type) === (t.method || "Cash"))
+                              .map((n) => (
+                                <SelectItem key={n.account.id} value={n.account.id}>
+                                  {n.depth > 0 ? "\u00A0\u00A0↳ " : ""}{n.account.name} · {formatCurrency(balances[n.account.id] ?? 0)}
+                                </SelectItem>
+                              ))
                           )}
                         </SelectContent>
                       </Select>

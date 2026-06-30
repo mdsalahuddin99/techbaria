@@ -21,7 +21,7 @@ import {
 } from "@/shared/ui/select";
 import { Search, Undo2, Plus, Trash2 } from "lucide-react";
 import { formatCurrency, formatDateTime } from "@/shared/lib/format";
-import { RefundMethod, Sale } from "@/shared/lib/types";
+import type { Sale, SaleReturn, RefundMethod } from "@/shared/lib/types";
 import { toast } from "sonner";
 import { PageHeader, EmptyState, ConfirmDialog } from "@/shared/components";
 import { useReturns, useReturnActions } from "@/features/sales/hooks";
@@ -34,14 +34,14 @@ export function ReturnsClient({
   initialAccounts,
   initialLedger,
 }: {
-  initialSales: any[];
-  initialReturns: any[];
+  initialSales: Sale[];
+  initialReturns: SaleReturn[];
   initialAccounts: any[];
   initialLedger: any[];
 }) {
-  usePageTitle("Returns");
-  const { data: sales } = useSales(initialSales as any);
-  const { data: returns } = useReturns(initialReturns as any);
+  usePageTitle("Returns & Refunds");
+  const { data: sales } = useSales(initialSales);
+  const { data: returns } = useReturns(initialReturns);
   const { createReturn, deleteReturn } = useReturnActions();
   const [search, setSearch] = useState("");
   const [openSale, setOpenSale] = useState<Sale | null>(null);

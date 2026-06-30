@@ -19,7 +19,8 @@ import {
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/shared/ui/sheet";
 import { formatCurrency, formatDate, formatDateTime } from "@/shared/lib/format";
 import { Plus, Search, Pencil, Trash2, Truck, Wallet, Receipt } from "lucide-react";
-import { Supplier, PaymentMethod } from "@/shared/lib/types";
+import { Supplier, PaymentMethod, PurchaseOrder } from "@/shared/lib/types";
+import { FinancialAccount, LedgerTransaction } from "@/features/accounts/types";
 import { toast } from "sonner";
 import { PageHeader, EmptyState, ConfirmDialog } from "@/shared/components";
 import {
@@ -42,13 +43,12 @@ export function SuppliersClient({
   initialAccounts,
   initialLedger,
 }: {
-  initialSuppliers: any[];
-  initialPurchases: any[];
-  initialAccounts: any[];
-  initialLedger: any[];
+  initialSuppliers: Supplier[];
+  initialPurchases: PurchaseOrder[];
+  initialAccounts: FinancialAccount[];
+  initialLedger: LedgerTransaction[];
 }) {
   usePageTitle("Suppliers");
-  const { data: initialSuppliersData } = initialSuppliers as any;
   const purchases = usePurchases(initialPurchases);
   const deleteMutation = useDeleteSupplier();
   const payMutation = useRecordSupplierPayment();

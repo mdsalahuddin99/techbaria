@@ -166,13 +166,19 @@ export async function update(ctx: Ctx, id: string, input: PurchaseUpdateInput) {
         }
       }
 
-      // 5c. Update product cost/price
+      // 5c. Update product cost/price and warranty
+      const updateData: any = {
+        cost: item.cost,
+        price: (item.salePrice !== undefined && item.salePrice > 0) ? item.salePrice : item.cost,
+      };
+      
+      if (item.warrantyMonths !== undefined) {
+        updateData.warrantyMonths = item.warrantyMonths;
+      }
+
       await tx.product.update({
         where: { id: item.productId },
-        data: {
-          cost: item.cost,
-          price: (item.salePrice !== undefined && item.salePrice > 0) ? item.salePrice : item.cost,
-        },
+        data: updateData,
       });
     }
 

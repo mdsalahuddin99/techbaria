@@ -18,6 +18,7 @@ import { PageHeader, EmptyState } from "@/shared/components";
 import {
   useNotifications, useNotificationActions, useUnreadCount,
 } from "@/features/notifications/hooks";
+import { Product } from "@/features/products/types";
 
 const iconFor = (t: AppNotification["type"]) => {
   switch (t) {
@@ -41,7 +42,7 @@ const toneFor = (t: AppNotification["type"]) => {
 
 export function NotificationsClient() {
   usePageTitle("Notifications");
-  const products = ((useProductsQuery().data as any)?.items ?? []) as any[];
+  const products = (useProductsQuery().data?.items ?? []) as Product[];
   const notifications = useNotifications();
   const { push: pushNotification, markRead: markNotificationRead, markAllRead: markAllNotificationsRead, clear: clearNotifications } = useNotificationActions();
   const unread = useUnreadCount();

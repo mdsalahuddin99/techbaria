@@ -11,13 +11,13 @@ export default async function ProductsPage() {
   
   // Create a minimal context since categories service doesn't require user auth for reading
   const session = await auth();
-  const ctx = buildCtx(session?.user as any);
+  const ctx = buildCtx(session?.user);
   const categories = await categoriesService.listFlat(ctx);
 
   return (
     <ProductsClient
       initialProducts={productsRes.items as Product[]}
-      initialCategories={categories as any}
+      initialCategories={categories}
     />
   );
 }

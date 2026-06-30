@@ -6,7 +6,7 @@ import { ReturnsClient } from "./ReturnsClient";
 
 export default async function ReturnsPage() {
   const session = await auth();
-  const ctx = buildCtx(session?.user as any);
+  const ctx = buildCtx(session?.user);
   
   const [
     salesRes,
@@ -18,8 +18,8 @@ export default async function ReturnsPage() {
 
   return (
     <ReturnsClient
-      initialSales={salesRes.items as any}
-      initialReturns={returnsRes.items as any}
+      initialSales={salesRes.items}
+      initialReturns={returnsRes.items}
       initialAccounts={[]}
       initialLedger={[]}
     />

@@ -41,6 +41,7 @@ interface AutoSuggestProps {
    * even if no suggestion was selected.
    */
   allowFreeText?: boolean;
+  openOnFocus?: boolean;
 }
 
 /**
@@ -70,6 +71,7 @@ export function AutoSuggest({
   autoFocus,
   debounceMs = 200,
   allowFreeText = false,
+  openOnFocus = true,
 }: AutoSuggestProps) {
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -123,7 +125,9 @@ export function AutoSuggest({
   // ── Handlers ─────────────────────────────────────────────────────────
   const handleFocus = () => {
     if (disabled || justSelectedRef.current) return;
-    setOpen(true);
+    if (openOnFocus) {
+      setOpen(true);
+    }
   };
 
   const handleBlur = () => {
@@ -220,7 +224,7 @@ export function AutoSuggest({
                 <CommandEmpty>{emptyMessage}</CommandEmpty>
               )}
               <CommandGroup>
-                {results.map((opt, idx) => (
+                {results.slice(0, 100).map((opt, idx) => (
                   <CommandItem
                     key={`${opt.value}-${idx}`}
                     value={opt.value}

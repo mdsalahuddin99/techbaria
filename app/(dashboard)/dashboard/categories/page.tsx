@@ -11,7 +11,7 @@ import { CategoriesClient } from "./CategoriesClient";
 
 export default async function CategoriesPage() {
   const session = await auth();
-  const ctx = buildCtx(session?.user as any);
+  const ctx = buildCtx(session?.user);
   
   // Fetch initial data concurrently
   const [
@@ -30,7 +30,7 @@ export default async function CategoriesPage() {
 
   return (
     <CategoriesClient
-      initialCategories={categories as any}
+      initialCategories={categories}
       initialBrands={brands}
       initialProducts={products}
       initialModels={models}

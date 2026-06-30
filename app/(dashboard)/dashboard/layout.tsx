@@ -8,7 +8,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const session = await auth();
 
   // VIEWER role (storefront users) cannot access dashboard
-  if ((session?.user as any)?.role === "VIEWER") {
+  if (session?.user?.role === "VIEWER") {
     const { redirect } = await import("next/navigation");
     redirect("/shop");
   }

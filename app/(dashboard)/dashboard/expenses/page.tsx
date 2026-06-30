@@ -6,7 +6,7 @@ import { ExpensesClient } from "./ExpensesClient";
 
 export default async function ExpensesPage() {
   const session = await auth();
-  const ctx = buildCtx(session?.user as any);
+  const ctx = buildCtx(session?.user);
   
   const [
     expensesRes,
@@ -17,7 +17,7 @@ export default async function ExpensesPage() {
   return (
     <Suspense fallback={<div className="p-4 text-muted-foreground">Loading expenses...</div>}>
       <ExpensesClient
-        initialExpenses={expensesRes.items as any}
+        initialExpenses={expensesRes.items}
       />
     </Suspense>
   );

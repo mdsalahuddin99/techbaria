@@ -23,6 +23,7 @@ export interface DraftLine {
 
 export type Tender = {
   id: string;
+  method?: string; // "Cash" | "Card" | "Mobile Banking" | "WALLET"
   accountId: string;
   amount: string;
   note?: string;
@@ -330,6 +331,14 @@ export function usePurchaseForm({
           notes: reference || undefined,
           expectedDate: lines[0]?.expectedDate,
           tenders: validTenders.map((t) => {
+            if (t.accountId === "WALLET" || t.method === "WALLET") {
+              return {
+                type: "WALLET",
+                amount: Number(t.amount),
+                accountId: undefined,
+                ref: t.note,
+              };
+            }
             const acc = accounts.find((a) => a.id === t.accountId);
             return {
               type: methodFromAccountType(acc?.type) === "Cash" ? "CASH" : "BANK",
@@ -355,6 +364,7 @@ export function usePurchaseForm({
           name: i.name,
           qty: i.qty,
           costPrice: i.cost,
+          extraCost: i.extraCost,
           salePrice: i.salePrice,
           serials: i.serials,
           warrantyStartDate: i.warrantyStartDate,

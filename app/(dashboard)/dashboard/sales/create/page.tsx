@@ -9,8 +9,8 @@ import { buildCtx } from "@/server/lib/ctx";
 export default async function NewSalePage() {
   const session = await auth();
   const ctx = buildCtx({
-    id: (session?.user as any)?.id,
-    role: (session?.user as any)?.role,
+    id: session?.user?.id,
+    role: session?.user?.role,
   });
 
   const queryClient = new QueryClient();

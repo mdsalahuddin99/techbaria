@@ -11,6 +11,7 @@ import { paginate, type PaginationParams } from "@/server/lib/paginate";
 import type { Ctx } from "@/server/lib/ctx";
 import { auditLogService } from "./auditLogService";
 import { cache, cacheKeys, TTL } from "@/lib/cache";
+import { type StockAdjustment } from "@prisma/client";
 
 export interface AdjustmentInput {
   productId: string;
@@ -42,12 +43,43 @@ export const inventoryService = {
 
   /** List all stock adjustments (paginated). */
   async listAdjustments(ctx: Ctx, params?: PaginationParams) {
-    return paginate(
+    const paginated = await paginate<any>(
       prisma.stockAdjustment,
       {},
       params,
       { orderBy: { createdAt: "desc" as const } },
     );
+
+    const productIds = [...new Set(paginated.items.map(a => a.productId))];
+    const products = await prisma.product.findMany({
+      where: { id: { in: productIds } },
+      select: { id: true, name: true }
+    });
+    const productMap = new Map(products.map(p => [p.id, p.name]));
+
+    const userIds = [...new Set(paginated.items.map(a => a.userId).filter(Boolean))];
+    const users = await prisma.user.findMany({
+      where: { id: { in: userIds as string[] } },
+      select: { id: true, name: true }
+    });
+    const userMap = new Map(users.map(u => [u.id, u.name]));
+
+    const items = paginated.items.map(adj => ({
+      id: adj.id,
+      productId: adj.productId,
+      productName: productMap.get(adj.productId) || "Unknown",
+      type: adj.qtyDelta > 0 ? "Add" : adj.qtyDelta < 0 ? "Remove" : "Set",
+      qty: Math.abs(adj.qtyDelta),
+      beforeStock: 0,
+      afterStock: 0,
+      reason: adj.reason,
+      reference: "",
+      note: adj.notes || "",
+      user: adj.userId ? userMap.get(adj.userId) || adj.userId : "System",
+      date: adj.createdAt.toISOString(),
+    }));
+
+    return { ...paginated, items };
   },
 
   /** Adjust stock for a product. Requires MANAGER+. Append-only. */

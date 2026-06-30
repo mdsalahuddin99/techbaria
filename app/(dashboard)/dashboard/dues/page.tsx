@@ -5,6 +5,6 @@ export default async function DuesPage() {
   const salesRes = await listSalesAction();
 
   return (
-    <DuesClient initialSales={salesRes.items as any} />
+    <DuesClient initialSales={salesRes.items} />
   );
 }

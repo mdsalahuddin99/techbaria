@@ -15,6 +15,7 @@ import { PageHeader } from "@/shared/components";
 import type { PurchaseOrder } from "@/features/purchases/types";
 import type { Supplier } from "@/features/suppliers/types";
 import type { FinancialAccount, LedgerTransaction } from "@/features/accounts/types";
+import type { Product } from "@/features/products/types";
 
 import {
   PurchaseList,
@@ -30,15 +31,15 @@ export function PurchasesClient({
   initialAccounts,
   initialLedger,
 }: {
-  initialSuppliers: any[];
-  initialProducts: any[];
-  initialPurchases: any[];
-  initialAccounts: any[];
-  initialLedger: any[];
+  initialSuppliers: Supplier[];
+  initialProducts: Product[];
+  initialPurchases: PurchaseOrder[];
+  initialAccounts: FinancialAccount[];
+  initialLedger: LedgerTransaction[];
 }) {
   usePageTitle("Purchases");
   const { data: suppliers } = useSuppliers(initialSuppliers);
-  const products = ((useProductsQuery(initialProducts).data as any)?.items ?? []) as any[];
+  const products = (useProductsQuery(initialProducts).data?.items ?? []);
   const { delete: deletePurchase } = usePurchaseActions();
   const settings = useSettings();
   const { session } = useAuth();
@@ -63,7 +64,7 @@ export function PurchasesClient({
     queryFn: async () => { const res = await fetch("/api/pos/init"); return res.json(); },
     staleTime: 5 * 60 * 1000,
   });
-  const warehouses = (initData?.warehouses || []) as any[];
+  const warehouses = (initData?.warehouses || []);
 
   const [selectedWarehouseId, setSelectedWarehouseId] = useState<string | null>(null);
 
@@ -96,7 +97,7 @@ export function PurchasesClient({
 
   const allPurchases = useMemo(() => {
     if (!data) return initialPurchases;
-    return data.pages.flatMap((page: any) => page.items) as PurchaseOrder[];
+    return data.pages.flatMap((page) => page.items);
   }, [data, initialPurchases]);
 
   const detail = useMemo(() => allPurchases.find((p) => p.id === detailId) ?? null, [allPurchases, detailId]);

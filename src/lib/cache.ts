@@ -244,6 +244,7 @@ export const cache = {
     
     const keys = [
       cacheKeys.products.list(),
+      `${cacheKeys.products.list()}:2000`,
       `products:storefront:v2:unfiltered`,
       ...productIds.map(productId => cacheKeys.products.byId(productId)),
       ...productIds.map(productId => `products:storefront:slug:${productId}`)

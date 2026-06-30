@@ -61,7 +61,7 @@ export function ProductsClient({
   });
   
   const CATEGORIES = useMemo<Category[]>(
-    () => storeCategories.map((c: any) => c.name as Category),
+    () => storeCategories.map((c) => c.name as Category),
     [storeCategories],
   );
 
@@ -501,7 +501,7 @@ export function ProductsClient({
                           )}
                         </TableCell>
                         <TableCell className="text-center">
-                          {(p as any).isTrending ? (
+                          {p.isTrending ? (
                             <Star className="h-5 w-5 fill-amber-500 text-amber-500 mx-auto" aria-label="Trending" />
                           ) : (
                             <span className="text-xs text-muted-foreground">—</span>
@@ -526,13 +526,13 @@ export function ProductsClient({
                                 <Pencil className="mr-2 h-4 w-4" /> Edit
                               </DropdownMenuItem>
                               <DropdownMenuItem
-                                onClick={() => updateMutation.mutate({ id: p.id, patch: { isTrending: !(p as any).isTrending } as any })}
+                                onClick={() => updateMutation.mutate({ id: p.id, patch: { isTrending: !p.isTrending } })}
                               >
                                 <Sparkles className="mr-2 h-4 w-4" />
-                                {(p as any).isTrending ? "Remove Trending" : "Mark as Trending"}
+                                {p.isTrending ? "Remove Trending" : "Mark as Trending"}
                               </DropdownMenuItem>
                               <DropdownMenuItem
-                                onClick={() => updateMutation.mutate({ id: p.id, patch: { active: !p.active } as any })}
+                                onClick={() => updateMutation.mutate({ id: p.id, patch: { active: !p.active } })}
                               >
                                 {p.active ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
                                 {p.active ? "Hide from E-commerce" : "Show on E-commerce"}

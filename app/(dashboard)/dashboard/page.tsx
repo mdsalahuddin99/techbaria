@@ -25,8 +25,8 @@ import DashboardClient from "./_components/DashboardClient";
 export default async function DashboardPage() {
   const session = await auth();
   const ctx = buildCtx({
-    id: (session?.user as any)?.id,
-    role: (session?.user as any)?.role,
+    id: session?.user?.id,
+    role: session?.user?.role,
   });
 
   const queryClient = new QueryClient();

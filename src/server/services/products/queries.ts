@@ -36,7 +36,7 @@ async function runListQuery(ctx: Ctx, params?: PaginationParams, filter?: Produc
       },
     },
     params,
-    { orderBy: { name: "asc" as const } },
+    { orderBy: [{ name: "asc" as const }, { id: "asc" as const }] },
   );
 
   return {
@@ -56,7 +56,8 @@ export async function list(
   const noSearch = !filter?.search && !filter?.categoryId && filter?.isPublished === undefined && !filter?.lowStock;
   const firstPage = !params?.cursor;
   if (noSearch && firstPage && !opts?.skipCache) {
-    return cache.fetch(cacheKeys.products.list(), TTL.PRODUCT_LIST, async () => {
+    const limitSuffix = params?.limit ? `:${params.limit}` : "";
+    return cache.fetch(`${cacheKeys.products.list()}${limitSuffix}`, TTL.PRODUCT_LIST, async () => {
       return runListQuery(ctx, params, filter);
     });
   }

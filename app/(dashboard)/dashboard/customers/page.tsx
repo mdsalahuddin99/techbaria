@@ -8,7 +8,7 @@ import type { Customer, Sale } from "@/shared/lib/types";
 
 export default async function CustomersPage() {
   const session = await auth();
-  const ctx = buildCtx(session?.user as any);
+  const ctx = buildCtx(session?.user);
   
   const [
     customersRes,
@@ -24,7 +24,7 @@ export default async function CustomersPage() {
     <CustomersClient
       initialCustomers={customersRes.items as unknown as Customer[]}
       initialSales={salesRes.items as Sale[]}
-      initialAccounts={accountsRes.items as any}
+      initialAccounts={accountsRes.items}
     />
   );
 }

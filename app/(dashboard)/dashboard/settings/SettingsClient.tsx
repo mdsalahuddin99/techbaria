@@ -476,7 +476,7 @@ export function SettingsClient() {
               <Button variant="outline" size="sm" onClick={async () => { const d = await suppliersApi.list(); downloadCsv(d.items, "suppliers.csv"); }}>
                 <Download className="h-3.5 w-3.5 mr-1.5" /> Suppliers
               </Button>
-              <Button variant="outline" size="sm" onClick={async () => { const d = await listCategories(true); downloadCsv(d as any[], "categories.csv"); }}>
+              <Button variant="outline" size="sm" onClick={async () => { const d = await listCategories(true); downloadCsv(d, "categories.csv"); }}>
                 <Download className="h-3.5 w-3.5 mr-1.5" /> Categories
               </Button>
               <Button variant="outline" size="sm" onClick={async () => { const d = await salesApi.list(); downloadCsv(d.items, "sales.csv"); }}>
