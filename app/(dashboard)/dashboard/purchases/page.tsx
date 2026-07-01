@@ -1,5 +1,5 @@
-import { listSuppliersAction } from "@/server/actions/suppliers";
-import { listProductsAction } from "@/server/actions/products";
+import { suppliersService } from "@/server/services/suppliersService";
+import { productsService } from "@/server/services/productsService";
 import { purchasesService } from "@/server/services/purchasesService";
 import { accountsService } from "@/server/services/accountsService";
 import { auth } from "@/server/auth/config";
@@ -17,8 +17,8 @@ export default async function PurchasesPage() {
     accountsRes,
     ledgerRes
   ] = await Promise.all([
-    listSuppliersAction(),
-    listProductsAction(undefined, { limit: 2000 }),
+    suppliersService.list(ctx),
+    productsService.list(ctx, { limit: 2000 }),
     purchasesService.list(ctx),
     accountsService.list(ctx),
     accountsService.listLedger(ctx),

@@ -65,7 +65,6 @@ function getRedis(): Redis | null {
       const id = setTimeout(() => controller.abort(), 800);
       return fetch(input, { 
         ...init, 
-        cache: "no-store", // Force no-store at runtime so Redis is always fresh
         signal: controller.signal 
       }).finally(() => clearTimeout(id));
     }
