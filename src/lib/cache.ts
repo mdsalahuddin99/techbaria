@@ -151,7 +151,10 @@ export const cache = {
         memoryCache.set(key, { value: val, expiresAt: Date.now() + 60 * 1000 });
       }
       return val;
-    } catch (err) {
+    } catch (err: any) {
+      if (err?.digest === "DYNAMIC_SERVER_USAGE" || err?.message?.includes("Dynamic server usage")) {
+        throw err;
+      }
       console.error("[cache] get error:", err);
       return null;
     }
@@ -166,7 +169,10 @@ export const cache = {
     if (!r) return;
     try {
       await r.set(key, value, { ex: ttl });
-    } catch (err) {
+    } catch (err: any) {
+      if (err?.digest === "DYNAMIC_SERVER_USAGE" || err?.message?.includes("Dynamic server usage")) {
+        throw err;
+      }
       console.error("[cache] set error:", err);
     }
   },
@@ -181,7 +187,10 @@ export const cache = {
     if (!r) return;
     try {
       await r.del(...keys);
-    } catch (err) {
+    } catch (err: any) {
+      if (err?.digest === "DYNAMIC_SERVER_USAGE" || err?.message?.includes("Dynamic server usage")) {
+        throw err;
+      }
       console.error("[cache] del error:", err);
     }
   },
@@ -211,7 +220,10 @@ export const cache = {
           await r.del(...keys);
         }
       } while (cursor !== 0);
-    } catch (err) {
+    } catch (err: any) {
+      if (err?.digest === "DYNAMIC_SERVER_USAGE" || err?.message?.includes("Dynamic server usage")) {
+        throw err;
+      }
       console.error("[cache] invalidate error:", err);
     }
   },

@@ -44,12 +44,15 @@ export interface InventoryMetrics {
   deadStock: Array<{ id: string; name: string; category: string; stock: number; unit: string; value: number }>;
 }
 
-export function useInventoryMetricsQuery() {
+export function useInventoryMetricsQuery({ from, to }: { from?: string; to?: string } = {}) {
   const { session, status } = useAuth();
   return useQuery({
-    queryKey: reportKeys.inventoryMetrics(),
+    queryKey: reportKeys.inventoryMetrics(from, to),
     queryFn: async (): Promise<InventoryMetrics> => {
-      const res = await fetch("/api/inventory/metrics");
+      const params = new URLSearchParams();
+      if (from) params.append("from", from);
+      if (to) params.append("to", to);
+      const res = await fetch(`/api/inventory/metrics?${params.toString()}`);
       if (!res.ok) throw new Error("Failed to fetch inventory metrics");
       return res.json();
     },

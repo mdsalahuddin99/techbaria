@@ -293,7 +293,7 @@ export const customerLedgerService = {
     reference?: string,
     notes?: string,
   ) {
-    authorize(ctx, ["ADMIN"]);
+    authorize(ctx, ["ADMIN", "CASHIER"]);
     const amt = Math.abs(amount);
 
     return prisma.$transaction(async (tx) => {
@@ -352,7 +352,7 @@ export const customerLedgerService = {
     reference?: string,
     notes?: string,
   ) {
-    authorize(ctx, ["ADMIN"]);
+    authorize(ctx, ["ADMIN", "CASHIER"]);
     const amt = Math.abs(amount);
 
     return prisma.$transaction(async (tx) => {
@@ -410,7 +410,7 @@ export const customerLedgerService = {
     reference?: string,
     notes?: string,
   ) {
-    authorize(ctx, ["ADMIN"]);
+    authorize(ctx, ["ADMIN", "CASHIER"]);
     const amt = Math.abs(amount);
 
     return prisma.$transaction(async (tx) => {

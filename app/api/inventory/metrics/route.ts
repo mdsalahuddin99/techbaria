@@ -10,12 +10,16 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { searchParams } = new URL(req.url);
+    const from = searchParams.get("from");
+    const to = searchParams.get("to");
+
     const ctx = buildCtx({
       id: (session.user as any).id,
       role: (session.user as any).role,
     });
 
-    const metrics = await reportsService.getInventoryMetrics(ctx);
+    const metrics = await reportsService.getInventoryMetrics(ctx, from || undefined, to || undefined);
     return NextResponse.json(metrics);
   } catch (error: any) {
     console.error("Inventory metrics error:", error);

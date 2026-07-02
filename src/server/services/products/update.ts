@@ -11,7 +11,7 @@ import type { ProductUpdateInput } from "./types";
 
 /** Update an existing product. Requires MANAGER+. */
 export async function update(ctx: Ctx, id: string, input: ProductUpdateInput) {
-  requireRole(ctx, "ADMIN");
+  requireRole(ctx, "CASHIER");
 
   const existingProduct = await prisma.product.findUnique({
     where: { id },

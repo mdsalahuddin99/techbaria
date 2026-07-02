@@ -18,7 +18,7 @@ import {
   Tooltip, CartesianGrid, ResponsiveContainer, Legend,
 } from "recharts";
 import { formatCurrency, formatDate } from "@/shared/lib/format";
-import { Download, BarChart3, Boxes, Receipt, Calculator, TrendingUp, TrendingDown, Layers, Box } from "lucide-react";
+import { Download, BarChart3, Boxes, Receipt, Calculator, TrendingUp, TrendingDown, Layers, Box, Printer } from "lucide-react";
 import { toast } from "sonner";
 import { useReportsMetricsQuery, useInventoryMetricsQuery } from "@/features/reports/hooks";
 import { cn } from "@/shared/lib/utils";
@@ -69,11 +69,56 @@ export function ReportsClient() {
   const [to, setTo] = useState(today);
   const [method, setMethod] = useState<string>("All");
 
-  const { data: metrics, isLoading: isMetricsLoading } = useReportsMetricsQuery({ from, to, paymentMethod: method });
-  const { data: inventory, isLoading: isInventoryLoading } = useInventoryMetricsQuery();
+  const [activeTab, setActiveTab] = useState("pl");
 
-  const exportSales = () => {
-    toast.info("Backend export not fully implemented for large datasets yet. Coming soon!");
+  const { data: metrics, isLoading: isMetricsLoading } = useReportsMetricsQuery({ from, to, paymentMethod: method });
+  const { data: inventory, isLoading: isInventoryLoading } = useInventoryMetricsQuery({ from, to });
+
+  const exportData = () => {
+    if (activeTab === "inventory") {
+      if (!inventory) return;
+      // Combine Low Stock and Dead Stock into one CSV, or export them separately
+      const rows: (string | number)[][] = [
+        ["Inventory Report"],
+        [`Date Range: ${from} to ${to}`],
+        [""],
+        ["-- LOW STOCK --"],
+        ["Product Name", "Current Stock", "Reorder Level"],
+        ...inventory.lowStock.map(p => [p.name, p.stock, p.minStock]),
+        [""],
+        ["-- DEAD STOCK --"],
+        ["Product Name", "Category", "Current Stock", "Value"],
+        ...inventory.deadStock.map(p => [p.name, p.category, p.stock, p.value]),
+      ];
+      downloadCSV(`inventory_report_${from}_to_${to}.csv`, rows);
+      toast.success("Inventory report downloaded!");
+    } else {
+      if (!metrics) return;
+      const rows: (string | number)[][] = [
+        ["Business Report - Summary"],
+        [`Date Range: ${from} to ${to}`],
+        [`Payment Method Filter: ${method}`],
+        [""],
+        ["-- FINANCIAL OVERVIEW --"],
+        ["Total Revenue", metrics.totalRevenue],
+        ["Total Transactions", metrics.txnCount],
+        ["Average Order Value", metrics.aov],
+        ["Cost of Goods Sold (COGS)", metrics.cogs],
+        ["Gross Profit", metrics.grossProfit],
+        ["Total Expenses", metrics.expenseTotal],
+        ["Net Profit", metrics.netProfit],
+        [""],
+        ["-- EXPENSES BREAKDOWN --"],
+        ["Category", "Amount"],
+        ...metrics.expensesList.map((e) => [e.category, e.total]),
+        [""],
+        ["-- TOP SELLING PRODUCTS --"],
+        ["Product Name", "Quantity Sold", "Generated Revenue"],
+        ...metrics.topProducts.map((p) => [p.name, p.qty, p.revenue])
+      ];
+      downloadCSV(`business_report_${from}_to_${to}.csv`, rows);
+      toast.success("Report downloaded successfully!");
+    }
   };
 
   if (isMetricsLoading || isInventoryLoading || !metrics || !inventory) {
@@ -87,145 +132,159 @@ export function ReportsClient() {
     );
   }
 
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const setPreset = (preset: "today" | "yesterday" | "thisWeek" | "thisMonth" | "allTime") => {
+    const d = new Date();
+    const todayStr = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+    if (preset === "today") {
+      setFrom(todayStr);
+      setTo(todayStr);
+    } else if (preset === "yesterday") {
+      d.setDate(d.getDate() - 1);
+      const yStr = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+      setFrom(yStr);
+      setTo(yStr);
+    } else if (preset === "thisWeek") {
+      const day = d.getDay();
+      const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+      const firstDay = new Date(d.setDate(diff));
+      setFrom(new Date(firstDay.getTime() - firstDay.getTimezoneOffset() * 60000).toISOString().slice(0, 10));
+      setTo(todayStr);
+    } else if (preset === "thisMonth") {
+      const firstDay = new Date(d.getFullYear(), d.getMonth(), 1);
+      setFrom(new Date(firstDay.getTime() - firstDay.getTimezoneOffset() * 60000).toISOString().slice(0, 10));
+      setTo(todayStr);
+    } else if (preset === "allTime") {
+      setFrom("2020-01-01");
+      setTo(todayStr);
+    }
+  };
+
   return (
-    <div className="space-y-6 max-w-[1600px] mx-auto animate-in fade-in duration-500 pb-20">
+    <div className="space-y-6 max-w-[1600px] mx-auto animate-in fade-in duration-500 pb-20 print:p-0 print:m-0 print:space-y-4">
       
-      {/* ── Page Header & Filters ── */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-900 via-slate-800 to-indigo-950 p-6 sm:p-8 shadow-xl">
+      {/* ── Print Header (Hidden on Screen) ── */}
+      <div className="hidden print:block text-center border-b-2 border-slate-800 pb-6 mb-6">
+        <h1 className="text-3xl font-extrabold text-slate-900">
+          {activeTab === "pl" ? "P&L Report" : activeTab === "sales" ? "Sales Report" : "Inventory Report"}
+        </h1>
+        <p className="text-lg font-bold text-slate-600 mt-2">Date Range: {from} to {to}</p>
+        <p className="text-sm font-medium text-slate-500">Generated on {new Date().toLocaleDateString()}</p>
+      </div>
+
+      {/* ── Page Header (Clean) ── */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-900 via-slate-800 to-indigo-950 p-6 sm:p-8 shadow-xl print:hidden">
         <div className="absolute inset-0 bg-[url('/noise.svg')] opacity-10 mix-blend-overlay" />
         <div className="absolute top-0 right-0 h-64 w-64 bg-indigo-500/20 blur-[100px] rounded-full" />
         
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-          <div>
-            <h1 className="text-3xl font-extrabold text-white tracking-tight flex items-center gap-3">
-              <BarChart3 className="h-8 w-8 text-indigo-400" />
-              Business Reports
-            </h1>
-            <p className="text-sm text-slate-300 font-medium mt-1.5">
-              Deep dive into your sales, P&L, and inventory health.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-end gap-3 bg-white/10 p-4 rounded-xl border border-white/10 backdrop-blur-md">
-            <div>
-              <label className="text-[11px] font-bold text-indigo-200 uppercase tracking-wider block mb-1.5">From</label>
-              <Input 
-                type="date" 
-                value={from} 
-                onChange={(e) => setFrom(e.target.value)} 
-                className="bg-white/90 border-white/20 text-slate-800 font-bold h-9 w-40" 
-              />
-            </div>
-            <div>
-              <label className="text-[11px] font-bold text-indigo-200 uppercase tracking-wider block mb-1.5">To</label>
-              <Input 
-                type="date" 
-                value={to} 
-                onChange={(e) => setTo(e.target.value)} 
-                className="bg-white/90 border-white/20 text-slate-800 font-bold h-9 w-40" 
-              />
-            </div>
-            <div>
-              <label className="text-[11px] font-bold text-indigo-200 uppercase tracking-wider block mb-1.5">Method</label>
-              <Select value={method} onValueChange={setMethod}>
-                <SelectTrigger className="w-36 bg-white/90 border-white/20 text-slate-800 font-bold h-9">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="All">All Tenders</SelectItem>
-                  <SelectItem value="Cash">Cash</SelectItem>
-                  <SelectItem value="Card">Card</SelectItem>
-                  <SelectItem value="Mobile Banking">Mobile Banking</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+        <div className="relative z-10 flex flex-col gap-2">
+          <h1 className="text-3xl font-extrabold text-white tracking-tight flex items-center gap-3">
+            <BarChart3 className="h-8 w-8 text-indigo-400" />
+            Business Reports
+          </h1>
+          <p className="text-sm text-slate-300 font-medium">
+            Deep dive into your sales, P&L, and inventory health.
+          </p>
         </div>
       </div>
 
-      <Tabs defaultValue="pl" className="w-full">
-        <div className="bg-slate-100/50 p-1.5 rounded-xl border border-slate-200/60 inline-flex mb-6 w-full sm:w-auto overflow-x-auto">
-          <TabsList className="bg-transparent gap-2">
-            <TabsTrigger value="pl" className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg px-4 py-2 font-bold text-slate-600 data-[state=active]:text-indigo-600">
-              <Calculator className="h-4 w-4 mr-2" /> P&L
-            </TabsTrigger>
-            <TabsTrigger value="sales" className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg px-4 py-2 font-bold text-slate-600 data-[state=active]:text-indigo-600">
-              <Receipt className="h-4 w-4 mr-2" /> Sales
-            </TabsTrigger>
-            <TabsTrigger value="inventory" className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg px-4 py-2 font-bold text-slate-600 data-[state=active]:text-indigo-600">
-              <Boxes className="h-4 w-4 mr-2" /> Inventory
-            </TabsTrigger>
-          </TabsList>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        
+        {/* Tabs and Filters Container */}
+        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 mb-6 print:hidden">
+          
+          <div className="bg-slate-100/50 p-1.5 rounded-xl border border-slate-200/60 inline-flex overflow-x-auto w-full xl:w-auto">
+            <TabsList className="bg-transparent gap-2 w-full justify-start">
+              <TabsTrigger value="pl" className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg px-4 py-2 font-bold text-slate-600 data-[state=active]:text-indigo-600">
+                <Calculator className="h-4 w-4 mr-2" /> P&L
+              </TabsTrigger>
+              <TabsTrigger value="sales" className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg px-4 py-2 font-bold text-slate-600 data-[state=active]:text-indigo-600">
+                <Receipt className="h-4 w-4 mr-2" /> Sales
+              </TabsTrigger>
+              <TabsTrigger value="inventory" className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg px-4 py-2 font-bold text-slate-600 data-[state=active]:text-indigo-600">
+                <Boxes className="h-4 w-4 mr-2" /> Inventory
+              </TabsTrigger>
+            </TabsList>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <Button size="sm" variant="outline" className="h-8 font-bold text-xs" onClick={() => setPreset("today")}>Today</Button>
+              <Button size="sm" variant="outline" className="h-8 font-bold text-xs" onClick={() => setPreset("yesterday")}>Yesterday</Button>
+              <Button size="sm" variant="outline" className="h-8 font-bold text-xs" onClick={() => setPreset("thisWeek")}>This Week</Button>
+              <Button size="sm" variant="outline" className="h-8 font-bold text-xs" onClick={() => setPreset("thisMonth")}>This Month</Button>
+              <Button size="sm" variant="outline" className="h-8 font-bold text-xs" onClick={() => setPreset("allTime")}>All Time</Button>
+            </div>
+            
+            <div className="flex flex-wrap items-end gap-3 bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+              <div>
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">From</label>
+                <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="font-bold h-9 w-36" />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">To</label>
+                <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="font-bold h-9 w-36" />
+              </div>
+              {activeTab !== "inventory" && (
+                <div>
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Method</label>
+                  <Select value={method} onValueChange={setMethod}>
+                    <SelectTrigger className="w-32 h-9 font-bold"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="All">All Tenders</SelectItem>
+                      <SelectItem value="Cash">Cash</SelectItem>
+                      <SelectItem value="Card">Card</SelectItem>
+                      <SelectItem value="Mobile Banking">Mobile Banking</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              <div className="flex items-center gap-2 ml-auto">
+                <Button size="sm" variant="outline" className="font-bold h-9" onClick={exportData}>
+                  <Download className="h-4 w-4 mr-2" /> 
+                  Export {activeTab === "pl" ? "P&L" : activeTab === "sales" ? "Sales" : "Inventory"}
+                </Button>
+                <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-9 shadow-md" onClick={handlePrint}>
+                  <Printer className="h-4 w-4 mr-2" /> 
+                  Print {activeTab === "pl" ? "P&L" : activeTab === "sales" ? "Sales" : "Inventory"}
+                </Button>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* ── PROFIT & LOSS ── */}
-        <TabsContent value="pl" className="space-y-6 mt-0">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            <Stat label="Total Revenue" value={formatCurrency(metrics.totalRevenue)} icon={TrendingUp} bg="from-blue-50 to-cyan-50" text="text-green-700" />
-            <Stat label="Cost of Goods (COGS)" value={formatCurrency(metrics.cogs)} icon={Layers} bg="from-amber-50 to-orange-50" text="text-amber-700" />
-            <Stat label="Gross Profit" value={formatCurrency(metrics.grossProfit)} icon={Calculator} bg="from-emerald-50 to-teal-50" text="text-emerald-700" />
-            <Stat label="Net Profit" value={formatCurrency(metrics.netProfit)} icon={TrendingUp} bg={metrics.netProfit >= 0 ? "from-indigo-50 to-purple-50" : "from-red-50 to-rose-50"} text={metrics.netProfit >= 0 ? "text-indigo-700" : "text-red-600"} />
+        <TabsContent value="pl" className="space-y-6 mt-0 print:block">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
+            <Stat label="Total Revenue" value={formatCurrency(metrics.totalRevenue)} icon={TrendingUp} bg="from-indigo-500 to-blue-600" text="text-white" />
+            <Stat label="Cost of Goods" value={formatCurrency(metrics.cogs)} icon={Layers} bg="from-slate-700 to-slate-800" text="text-white" />
+            <Stat label="Total Expenses" value={formatCurrency(metrics.expenseTotal)} icon={TrendingDown} bg="from-rose-500 to-red-600" text="text-white" />
+            <Stat label="Gross Profit" value={formatCurrency(metrics.grossProfit)} icon={Calculator} bg="from-teal-500 to-emerald-600" text="text-white" />
+            <Stat label="Net Profit" value={formatCurrency(metrics.netProfit)} icon={TrendingUp} bg={metrics.netProfit >= 0 ? "from-indigo-600 to-purple-600" : "from-red-600 to-rose-700"} text="text-white" />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 bg-white/60 backdrop-blur-xl rounded-2xl border border-slate-200/60 shadow-xl overflow-hidden p-6">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="h-10 w-10 rounded-xl bg-indigo-50 flex items-center justify-center">
-                  <BarChart3 className="h-5 w-5 text-indigo-600" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-slate-800">Financial Overview</h3>
-                  <p className="text-xs text-slate-500">Revenue vs COGS vs Expenses vs Net</p>
-                </div>
-              </div>
-              <div className="h-[300px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={[
-                    { name: "Revenue", value: metrics.totalRevenue },
-                    { name: "COGS", value: metrics.cogs },
-                    { name: "Expenses", value: metrics.expenseTotal },
-                    { name: "Net Profit", value: metrics.netProfit },
-                  ]} margin={{ left: 20 }}>
-                    <defs>
-                      <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#6366f1" stopOpacity={1} />
-                        <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0.8} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="4 4" stroke="#e2e8f0" vertical={false} opacity={0.5} />
-                    <XAxis dataKey="name" stroke="#64748b" fontSize={12} fontWeight={600} axisLine={false} tickLine={false} dy={10} />
-                    <YAxis stroke="#64748b" fontSize={11} fontWeight={600} axisLine={false} tickLine={false} tickFormatter={(v) => `৳${v >= 1000 ? (v/1000).toFixed(0)+'k' : v}`} />
-                    <Tooltip content={<ChartTooltip />} cursor={{ fill: "#f1f5f9" }} />
-                    <Bar dataKey="value" fill="url(#barGrad)" radius={[8, 8, 0, 0]} barSize={48}>
-                      {
-                        [...Array(4)].map((_, i) => (
-                          <Cell key={i} fill={i === 1 ? "#fbbf24" : i === 2 ? "#f87171" : i === 3 && metrics.netProfit < 0 ? "#ef4444" : "url(#barGrad)"} />
-                        ))
-                      }
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            <div className="bg-white/60 backdrop-blur-xl rounded-2xl border border-slate-200/60 shadow-xl overflow-hidden flex flex-col">
-              <div className="p-6 border-b border-slate-100/50">
+          <div className="grid grid-cols-1 gap-6">
+            <div className="bg-white/60 backdrop-blur-xl rounded-2xl border border-slate-200/60 shadow-xl overflow-hidden flex flex-col print:border-none print:shadow-none">
+              <div className="p-6 border-b border-slate-100/50 print:px-0">
                 <h3 className="text-base font-bold text-slate-800">Expenses Breakdown</h3>
                 <p className="text-xs text-slate-500 mt-1">Categorized spending in range</p>
               </div>
               <div className="flex-1 overflow-y-auto">
                 <table className="w-full text-sm">
-                  <thead className="bg-slate-50 sticky top-0 z-10">
+                  <thead className="bg-slate-50 sticky top-0 z-10 print:bg-transparent">
                     <tr className="text-slate-500">
-                      <th className="text-left px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider">Category</th>
-                      <th className="text-right px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider">Total</th>
+                      <th className="text-left px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider print:px-0">Category</th>
+                      <th className="text-right px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider print:px-0">Total</th>
                     </tr>
                   </thead>
                   <tbody>
                     {metrics.expensesList.map((e) => (
                       <tr key={e.category} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50">
-                        <td className="px-4 py-3"><Badge variant="outline" className="font-bold text-slate-600 bg-white shadow-sm border-slate-200">{e.category}</Badge></td>
-                        <td className="px-4 py-3 text-right font-extrabold text-slate-800">{formatCurrency(e.total)}</td>
+                        <td className="px-4 py-3 print:px-0"><Badge variant="outline" className="font-bold text-slate-600 bg-white shadow-sm border-slate-200">{e.category}</Badge></td>
+                        <td className="px-4 py-3 text-right font-extrabold text-slate-800 print:px-0">{formatCurrency(e.total)}</td>
                       </tr>
                     ))}
                     {metrics.expensesList.length === 0 && (
@@ -239,11 +298,12 @@ export function ReportsClient() {
         </TabsContent>
 
         {/* ── SALES ── */}
-        <TabsContent value="sales" className="space-y-6 mt-0">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-            <Stat label="Total Revenue" value={formatCurrency(metrics.totalRevenue)} icon={TrendingUp} bg="from-indigo-50 to-purple-50" text="text-indigo-700" />
-            <Stat label="Transactions" value={metrics.txnCount.toString()} icon={Receipt} bg="from-blue-50 to-cyan-50" text="text-green-700" />
-            <Stat label="Average Order Value" value={formatCurrency(metrics.aov)} icon={Calculator} bg="from-emerald-50 to-teal-50" text="text-emerald-700" />
+        <TabsContent value="sales" className="space-y-6 mt-0 print:block">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            <Stat label="Total Revenue" value={formatCurrency(metrics.totalRevenue)} icon={TrendingUp} bg="from-indigo-500 to-purple-600" text="text-white" />
+            <Stat label="Transactions" value={metrics.txnCount.toString()} icon={Receipt} bg="from-blue-500 to-cyan-600" text="text-white" />
+            <Stat label="Products Sold" value={metrics.topProducts.reduce((sum, p) => sum + p.qty, 0).toString()} icon={Box} bg="from-amber-500 to-orange-600" text="text-white" />
+            <Stat label="Average Order Value" value={formatCurrency(metrics.aov)} icon={Calculator} bg="from-emerald-500 to-teal-600" text="text-white" />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -291,7 +351,7 @@ export function ReportsClient() {
                 <h3 className="text-base font-bold text-slate-800">Top Selling Products</h3>
                 <p className="text-xs text-slate-500 mt-1">Best performers in selected range</p>
               </div>
-              <Button size="sm" variant="outline" className="bg-white shadow-sm border-slate-200 text-slate-700 font-bold" onClick={exportSales}>
+              <Button size="sm" variant="outline" className="bg-white shadow-sm border-slate-200 text-slate-700 font-bold" onClick={exportData}>
                 <Download className="h-3.5 w-3.5 mr-2" /> Export
               </Button>
             </div>
@@ -371,7 +431,7 @@ export function ReportsClient() {
             <div className="bg-white/60 backdrop-blur-xl rounded-2xl border border-slate-200/60 shadow-xl overflow-hidden flex flex-col h-[500px]">
               <div className="p-5 border-b border-slate-100/50 bg-rose-50/50">
                 <h3 className="text-base font-bold text-rose-900">Dead Stock Value</h3>
-                <p className="text-xs text-rose-700/80 mt-1">Active inventory with no sales in 90 days</p>
+                <p className="text-xs text-rose-700/80 mt-1">Active inventory with no sales in selected date range</p>
               </div>
               <div className="flex-1 overflow-y-auto">
                 <table className="w-full text-sm">
@@ -410,13 +470,13 @@ export function ReportsClient() {
 
 function Stat({ label, value, icon: Icon, bg, text }: { label: string; value: string; icon: any; bg: string; text: string }) {
   return (
-    <div className={cn("relative overflow-hidden rounded-2xl bg-gradient-to-br p-5 shadow-lg border border-white/40", bg)}>
-      <div className="absolute top-0 right-0 p-4 opacity-10">
+    <div className={cn("relative overflow-hidden rounded-2xl bg-gradient-to-br p-5 shadow-xl border border-white/10 transition-transform hover:-translate-y-1 print:shadow-none print:border-slate-200", bg)}>
+      <div className="absolute top-0 right-0 p-4 opacity-20 print:opacity-5">
         <Icon className={cn("h-16 w-16", text)} />
       </div>
       <div className="relative z-10">
-        <p className={cn("text-[11px] font-extrabold uppercase tracking-widest mb-1 opacity-80", text)}>{label}</p>
-        <p className={cn("text-3xl font-extrabold tracking-tight tabular-nums", text)}>{value}</p>
+        <p className={cn("text-[11px] font-extrabold uppercase tracking-widest mb-1 opacity-90 print:text-slate-500", text)}>{label}</p>
+        <p className={cn("text-2xl lg:text-3xl font-extrabold tracking-tight tabular-nums drop-shadow-md print:drop-shadow-none print:text-slate-900", text)}>{value}</p>
       </div>
     </div>
   );

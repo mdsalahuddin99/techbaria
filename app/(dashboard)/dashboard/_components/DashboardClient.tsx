@@ -303,61 +303,8 @@ export default function DashboardClient() {
 
       <StorefrontBlock />
 
-      {/* ── Charts row ── */}
+      {/* ── Main Content Rows ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-        {/* Monthly revenue bar chart */}
-        <div className="lg:col-span-2 bg-white/60 backdrop-blur-xl rounded-2xl border border-slate-200/60 shadow-xl overflow-hidden flex flex-col">
-          <SectionHeader
-            icon={BarChart3}
-            title="Revenue Overview"
-            subtitle="Last 6 months trajectory"
-            iconBg="bg-indigo-500/10"
-            iconColor="text-indigo-600"
-          />
-          <div className="flex-1 p-5">
-            {metrics.monthlyChart.every((m) => m.total === 0) ? (
-              <div className="h-64 flex flex-col items-center justify-center text-slate-400 bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
-                <BarChart3 className="h-12 w-12 mb-3 opacity-20" />
-                <p className="text-sm font-medium text-slate-500">Awaiting sales data</p>
-              </div>
-            ) : (
-              <div className="h-64 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={metrics.monthlyChart} margin={{ left: 0, right: 0, top: 10, bottom: 0 }} barSize={36}>
-                    <defs>
-                      <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#6366f1" stopOpacity={1} />
-                        <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0.7} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="4 4" stroke="#e2e8f0" vertical={false} opacity={0.5} />
-                    <XAxis
-                      dataKey="month"
-                      stroke="#64748b"
-                      fontSize={12}
-                      fontWeight={500}
-                      axisLine={false}
-                      tickLine={false}
-                      dy={10}
-                    />
-                    <YAxis
-                      stroke="#64748b"
-                      fontSize={11}
-                      fontWeight={600}
-                      axisLine={false}
-                      tickLine={false}
-                      width={50}
-                      tickFormatter={(v) => `৳${v >= 1000 ? (v / 1000).toFixed(0) + "k" : v}`}
-                    />
-                    <Tooltip content={<ChartTooltip />} cursor={{ fill: "#f8fafc" }} />
-                    <Bar dataKey="total" fill="url(#revenueGrad)" radius={[6, 6, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            )}
-          </div>
-        </div>
 
         {/* Stock distribution donut */}
         <div className="bg-white/60 backdrop-blur-xl rounded-2xl border border-slate-200/60 shadow-xl overflow-hidden flex flex-col">
@@ -434,13 +381,8 @@ export default function DashboardClient() {
             )}
           </div>
         </div>
-      </div>
-
-      {/* ── Bottom row: Recent invoices + Top products ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-
         {/* Recent invoices table */}
-        <div className="lg:col-span-3 bg-white/60 backdrop-blur-xl rounded-2xl border border-slate-200/60 shadow-xl overflow-hidden">
+        <div className="lg:col-span-2 bg-white/60 backdrop-blur-xl rounded-2xl border border-slate-200/60 shadow-xl overflow-hidden">
           <SectionHeader
             icon={Receipt}
             title="Recent Transactions"
@@ -519,12 +461,13 @@ export default function DashboardClient() {
             </div>
           )}
         </div>
+      </div>
 
-        {/* Top products + Reorder queue */}
-        <div className="lg:col-span-2 flex flex-col gap-6">
+      {/* ── Top products + Reorder queue ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-          {/* Top selling products */}
-          <div className="bg-white/60 backdrop-blur-xl rounded-2xl border border-slate-200/60 shadow-xl overflow-hidden flex-1">
+        {/* Top selling products */}
+        <div className="bg-white/60 backdrop-blur-xl rounded-2xl border border-slate-200/60 shadow-xl overflow-hidden flex-1">
             <SectionHeader
               icon={BarChart3}
               title="Trending Items"
@@ -637,7 +580,6 @@ export default function DashboardClient() {
             )}
           </div>
 
-        </div>
       </div>
 
     </div>
