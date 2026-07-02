@@ -41,7 +41,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
         images: image ? [{ url: image }] : [],
       },
     };
-  } catch {
+  } catch (err: any) {
+    if (err?.digest === "DYNAMIC_SERVER_USAGE" || err?.message?.includes("Dynamic server usage")) {
+      throw err;
+    }
     return { title: "Product Not Found" };
   }
 }
@@ -102,7 +105,10 @@ export default async function StorefrontProduct({ params }: { params: Promise<{ 
       </ProductDetailClient>
       </>
     );
-  } catch (err) {
+  } catch (err: any) {
+    if (err?.digest === "DYNAMIC_SERVER_USAGE" || err?.message?.includes("Dynamic server usage")) {
+      throw err;
+    }
     console.error("Product not found:", err);
     notFound();
   }
