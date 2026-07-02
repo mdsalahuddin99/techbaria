@@ -48,9 +48,7 @@ export function useRestocksQuery() {
 // ---------- Backward-compat reader hooks ----------
 
 export function usePurchases(initialData?: PurchaseOrder[]): PurchaseOrder[] {
-  const { data } = usePurchasesQuery(
-    initialData ? { items: initialData, total: initialData.length } : undefined
-  );
+  const { data } = usePurchasesQuery(initialData);
   return ((data as any)?.items ?? []) as PurchaseOrder[];
 }
 
