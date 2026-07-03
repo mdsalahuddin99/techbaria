@@ -21,6 +21,35 @@ export interface ReportsMetrics {
   byMethod: Array<{ name: string; value: number }>;
   topProducts: Array<{ name: string; qty: number; revenue: number }>;
   expensesList: Array<{ category: string; total: number; count: number }>;
+  openingStock: number;
+  totalPurchase: number;
+  totalPurchaseTax: number;
+  totalOtherChargesPurchase: number;
+  totalDiscountPurchase: number;
+  paidPurchase: number;
+  duePurchase: number;
+  totalPurchaseReturn: number;
+  totalPurchaseReturnTax: number;
+  totalOtherChargesPurchaseReturn: number;
+  totalDiscountPurchaseReturn: number;
+  paidPurchaseReturn: number;
+  duePurchaseReturn: number;
+  salesBeforeTax: number;
+  totalSalesTax: number;
+  totalOtherChargesSales: number;
+  totalDiscountSales: number;
+  couponDiscount: number;
+  totalSales: number;
+  paidSales: number;
+  dueSales: number;
+  totalSalesReturn: number;
+  totalSalesReturnTax: number;
+  totalOtherChargesSalesReturn: number;
+  couponDiscountSalesReturn: number;
+  totalDiscountSalesReturn: number;
+  returnTotal: number;
+  paidSalesReturn: number;
+  dueSalesReturn: number;
 }
 
 export function useReportsMetricsQuery({ from, to, paymentMethod = "All" }: ReportRange) {
@@ -57,6 +86,48 @@ export function useInventoryMetricsQuery({ from, to }: { from?: string; to?: str
       return res.json();
     },
     enabled: status !== "loading" && !!session,
+    ...QueryTier.TRANSACTION,
+  });
+}
+
+export interface DuesMetrics {
+  customers: Array<{ id: string; name: string; phone: string; due: number }>;
+  suppliers: Array<{ id: string; name: string; phone: string; payable: number }>;
+  totalCustomerDue: number;
+  totalSupplierPayable: number;
+}
+
+export function useDuesMetricsQuery() {
+  const { session, status } = useAuth();
+  return useQuery({
+    queryKey: ["reports", "dues"],
+    queryFn: async (): Promise<DuesMetrics> => {
+      const res = await fetch("/api/reports/dues");
+      if (!res.ok) throw new Error("Failed to fetch dues metrics");
+      return res.json();
+    },
+    enabled: status !== "loading" && !!session,
+    ...QueryTier.TRANSACTION,
+  });
+}
+
+export interface ExpensesDetailed {
+  expenses: Array<{ id: string; category: string; amount: number; date: string; notes: string }>;
+  breakdown: Array<{ category: string; count: number; amount: number; percentage: number }>;
+  totalExpense: number;
+}
+
+export function useExpensesDetailedQuery({ from, to }: { from: string; to: string }) {
+  const { session, status } = useAuth();
+  return useQuery({
+    queryKey: ["reports", "expenses", from, to],
+    queryFn: async (): Promise<ExpensesDetailed> => {
+      const params = new URLSearchParams({ from, to });
+      const res = await fetch(`/api/reports/expenses?${params.toString()}`);
+      if (!res.ok) throw new Error("Failed to fetch detailed expenses");
+      return res.json();
+    },
+    enabled: status !== "loading" && !!session && !!from && !!to,
     ...QueryTier.TRANSACTION,
   });
 }

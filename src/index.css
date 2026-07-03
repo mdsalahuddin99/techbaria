@@ -607,8 +607,8 @@
     padding: 0 !important;
   }
   body * { visibility: hidden !important; }
-  #invoice-printable, #invoice-printable * { visibility: visible !important; }
-  #invoice-printable {
+  #invoice-printable, #invoice-printable *, .printable-area, .printable-area * { visibility: visible !important; }
+  #invoice-printable, .printable-area {
     position: absolute !important;
     left: 0; top: 0;
     width: 100% !important;
@@ -620,7 +620,7 @@
     padding: 0 !important;
   }
   /* Avoid breaking item rows across pages */
-  #invoice-printable table { page-break-inside: auto; }
-  #invoice-printable tr { page-break-inside: avoid; page-break-after: auto; }
-  #invoice-printable thead { display: table-header-group; }
+  #invoice-printable table, .printable-area table { page-break-inside: auto; }
+  #invoice-printable tr, .printable-area tr { page-break-inside: avoid; page-break-after: auto; }
+  #invoice-printable thead, .printable-area thead { display: table-header-group; }
 }
