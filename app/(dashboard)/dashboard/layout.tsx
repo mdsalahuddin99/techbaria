@@ -7,6 +7,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   // session for props and VIEWER role check.
   const session = await auth();
 
+  if (!session?.user) {
+    const { redirect } = await import("next/navigation");
+    redirect("/login?unauthenticated=true");
+  }
+
   // VIEWER role (storefront users) cannot access dashboard
   if (session?.user?.role === "VIEWER") {
     const { redirect } = await import("next/navigation");
@@ -22,3 +27,4 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     </AdminShell>
   );
 }
+

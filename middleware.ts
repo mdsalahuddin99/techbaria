@@ -84,8 +84,16 @@ export function middleware(request: NextRequest) {
 
   // ─── 2. Auth pages: redirect to dashboard (authenticated) ─────────────
   if ((pathname === "/login" || pathname === "/register") && authenticated) {
+    if (request.nextUrl.searchParams.get("unauthenticated") === "true") {
+      const response = NextResponse.next();
+      SESSION_COOKIES.forEach((name) => {
+        response.cookies.delete(name);
+      });
+      return response;
+    }
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
+
 
   // ─── 3. Storefront: rewrite /storefront/* → route group paths ─────────
   if (pathname.startsWith("/storefront")) {

@@ -217,9 +217,9 @@ function ScanField({
 }) {
   const [val, setVal] = useState("");
   return (
-    <div className="flex gap-2">
+    <div className="flex gap-2 items-center w-full">
       <div className="relative flex-1">
-        <ScanLine className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+        <ScanLine className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           autoFocus={autoFocus}
           value={val}
@@ -227,18 +227,39 @@ function ScanField({
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.preventDefault();
-              onAdd(productId, val);
-              setVal("");
+              if (val.trim()) {
+                onAdd(productId, val.trim());
+                setVal("");
+              }
             }
           }}
-          placeholder="Scan barcode / type serial…"
-          className="pl-10 font-mono"
+          placeholder="এখানে ক্লিক করে USB স্ক্যানার দিয়ে স্ক্যান করুন..."
+          className="pl-9 font-mono h-10 w-full"
         />
       </div>
-      <Button type="button" variant="outline" size="icon" onClick={onCamera} title="Camera scan" className="shrink-0 w-10">
-        <QrCode className="h-5 w-5" />
+      <Button
+        type="button"
+        variant="outline"
+        size="icon"
+        onClick={onCamera}
+        title="ক্যামেরা দিয়ে স্ক্যান করুন"
+        className="shrink-0 h-10 w-10"
+      >
+        <Camera className="h-4 w-4 text-slate-500" />
       </Button>
-      <Button type="button" variant="secondary" onClick={() => { onAdd(productId, val); setVal(""); }} className="shrink-0">Add</Button>
+      <Button
+        type="button"
+        variant="secondary"
+        onClick={() => {
+          if (val.trim()) {
+            onAdd(productId, val.trim());
+            setVal("");
+          }
+        }}
+        className="shrink-0 h-10"
+      >
+        Add
+      </Button>
     </div>
   );
 }
