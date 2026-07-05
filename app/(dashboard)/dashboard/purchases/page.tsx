@@ -11,14 +11,10 @@ export default async function PurchasesPage() {
   const ctx = buildCtx(session?.user);
   
   const [
-    suppliersRes,
-    productsRes,
     purchasesRes,
     accountsRes,
     ledgerRes
   ] = await Promise.all([
-    suppliersService.list(ctx),
-    productsService.list(ctx, { limit: 2000 }),
     purchasesService.list(ctx),
     accountsService.list(ctx),
     accountsService.listLedger(ctx),
@@ -26,8 +22,8 @@ export default async function PurchasesPage() {
 
   return (
     <PurchasesClient
-      initialSuppliers={suppliersRes.items}
-      initialProducts={productsRes.items}
+      initialSuppliers={[]} // suppliers are now fetched via AsyncSuggest
+      initialProducts={[]} // products are now fetched via AsyncSuggest
       initialPurchases={purchasesRes.items}
       initialAccounts={accountsRes.items}
       initialLedger={ledgerRes}

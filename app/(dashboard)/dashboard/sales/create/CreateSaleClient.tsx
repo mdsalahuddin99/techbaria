@@ -304,23 +304,27 @@ export function CreateSaleClient() {
       qs.set("q", code);
       if (selectedWarehouseId) qs.set("warehouseId", selectedWarehouseId);
       
-      const res = await apiFetch<{ items: any[] }>(`/api/products/search?${qs.toString()}`);
-      const found = res.items.find(
-        (p: any) => p.barcode === code || p.sku === code,
-      );
-      if (found) {
-        addProductToVoucher(found);
-        return;
+      try {
+        const res = await apiFetch<{ items: any[] }>(`/api/products/search?${qs.toString()}`);
+        const found = res.items.find(
+          (p: any) => p.barcode === code || p.sku === code,
+        );
+        if (found) {
+          addProductToVoucher(found);
+          return;
+        }
+        // Try barcode lookup via serial
+        const serial = res.items.find((p: any) =>
+          p.serials?.some((s: any) => s.serialNumber === code || s.imei === code || s.serial === code),
+        );
+        if (serial) {
+          addProductToVoucher(serial, code);
+          return;
+        }
+        toast.error(`No product found for barcode: ${code}`);
+      } catch (err) {
+        toast.error(`Error searching barcode: ${code}`);
       }
-      // Try barcode lookup via serial
-      const serial = res.items.find((p: any) =>
-        p.serials?.some((s: any) => s.serialNumber === code || s.imei === code || s.serial === code),
-      );
-      if (serial) {
-        addProductToVoucher(serial, code);
-        return;
-      }
-      toast.error(`No product found for barcode: ${code}`);
     },
     [selectedWarehouseId, addProductToVoucher],
   );

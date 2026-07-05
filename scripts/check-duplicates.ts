@@ -6,11 +6,11 @@ async function main() {
   const categories = await prisma.category.findMany();
   console.log(`Total categories: ${categories.length}`);
   
-  const brands = await prisma.categoryBrand.findMany();
+  const brands = await prisma.brand.findMany();
   console.log(`Total brands: ${brands.length}`);
 
-  const products = await prisma.subcategoryProduct.findMany();
-  console.log(`Total products: ${products.length}`);
+  const products = await prisma.productType.findMany();
+  console.log(`Total product types: ${products.length}`);
 
   // check for duplicates in brands
   const brandCounts = brands.reduce((acc, curr) => {

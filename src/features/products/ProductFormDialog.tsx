@@ -255,7 +255,7 @@ export function ProductFormDialog({
           {editing ? "Edit product details" : "Add a new product"}
         </DialogDescription>
         <DialogHeader>
-          <DialogTitle className="flex items-center justify-between gap-2">
+          <DialogTitle className="flex items-center justify-between gap-2 pr-8">
             <span>{editing ? "Edit" : "Add"} Product</span>
             <div className="flex items-center gap-2 text-xs font-normal">
               <Label htmlFor="adv-mode" className="text-muted-foreground cursor-pointer select-none">

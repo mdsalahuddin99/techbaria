@@ -11,18 +11,16 @@ export default async function InventoryPage() {
   const ctx = buildCtx(session?.user);
   
   const [
-    productsRes,
     adjustmentsRes,
     categoriesRes
   ] = await Promise.all([
-    listProductsAction(undefined, { limit: 2000 }),
     inventoryService.listAdjustments(ctx, { limit: 1000 }),
     categoriesService.listFlat(ctx),
   ]);
 
   return (
     <InventoryClient
-      initialProducts={productsRes.items}
+      initialProducts={[]} // removed mass fetch
       initialAdjustments={adjustmentsRes.items as StockAdjustment[]}
       initialCategories={categoriesRes}
     />

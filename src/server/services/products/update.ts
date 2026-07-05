@@ -6,7 +6,7 @@ import type { Ctx } from "@/server/lib/ctx";
 import { auditLogService } from "../auditLogService";
 import { cache } from "@/lib/cache";
 import { serialise } from "./serialiser";
-import { resolveCategoryId, resolveBrandId, resolveModelId, resolveSeriesId } from "./resolvers";
+import { resolveCategoryId, resolveBrandId, resolveModelId, resolveSeriesId, resolveProductTypeId } from "./resolvers";
 import type { ProductUpdateInput } from "./types";
 
 /** Update an existing product. Requires MANAGER+. */
@@ -15,15 +15,19 @@ export async function update(ctx: Ctx, id: string, input: ProductUpdateInput) {
 
   const existingProduct = await prisma.product.findUnique({
     where: { id },
-    select: { name: true, categoryId: true, brandId: true, modelId: true },
+    select: { name: true, categoryId: true, globalBrandId: true, globalModelId: true },
   });
   if (!existingProduct) {
     throw new ServiceError("NOT_FOUND", "Product not found", 404);
   }
 
-  // Build update data — skip undefined fields, resolve category name→ID
+  // Build update data — skip undefined fields
   const data: Record<string, unknown> = {};
-  if (input.name !== undefined) data.name = input.name;
+  if (input.name !== undefined) {
+    data.name = input.name;
+    // Attempt to resolve global ProductType from name
+    data.productTypeId = await resolveProductTypeId(ctx, input.name) ?? null;
+  }
   if (input.slug !== undefined) data.slug = input.slug;
   if (input.description !== undefined) data.description = input.description;
   if (input.shortDescription !== undefined) data.shortDescription = input.shortDescription;
@@ -44,22 +48,16 @@ export async function update(ctx: Ctx, id: string, input: ProductUpdateInput) {
     data.categoryId = resolvedCategoryId ?? null;
   }
 
-  let resolvedBrandId = existingProduct.brandId;
   if (input.brand !== undefined) {
-    resolvedBrandId = input.brand ? (await resolveBrandId(ctx, input.brand, resolvedCategoryId)) ?? null : null;
-    data.brandId = resolvedBrandId;
+    data.globalBrandId = input.brand ? (await resolveBrandId(ctx, input.brand)) ?? null : null;
   }
 
-  let resolvedModelId = existingProduct.modelId;
   if (input.model !== undefined) {
-    const productName = input.name !== undefined ? input.name : existingProduct.name;
-    resolvedModelId = input.model ? (await resolveModelId(ctx, input.model, resolvedBrandId, productName)) ?? null : null;
-    data.modelId = resolvedModelId;
+    data.globalModelId = input.model ? (await resolveModelId(ctx, input.model)) ?? null : null;
   }
 
   if (input.series !== undefined) {
-    const resolvedSeriesId = input.series ? (await resolveSeriesId(ctx, input.series, resolvedModelId)) ?? null : null;
-    data.seriesId = resolvedSeriesId;
+    data.globalSeriesId = input.series ? (await resolveSeriesId(ctx, input.series)) ?? null : null;
   }
 
   if (input.subcategory !== undefined) data.subcategory = input.subcategory;
@@ -78,9 +76,6 @@ export async function update(ctx: Ctx, id: string, input: ProductUpdateInput) {
 
   // Handle imageUrl and galleryImages update via ProductImage relation
   if (input.imageUrl !== undefined || input.galleryImages !== undefined) {
-    // If we're updating images, we clear existing ones and recreate to ensure correct positioning.
-    // Wait, let's only do this if we are actively updating images to avoid wiping them if not provided.
-    // In our payload, we always provide both when saving from the form, so this is safe for full updates.
     await prisma.productImage.deleteMany({ where: { productId: id } });
     
     const imagesData = [];
@@ -117,9 +112,10 @@ export async function update(ctx: Ctx, id: string, input: ProductUpdateInput) {
       include: {
         category: true,
         images: { orderBy: { position: "asc" } },
-        brand: true,
-        model: true,
-        series: true,
+        globalBrand: true,
+        globalModel: true,
+        globalSeries: true,
+        productType: true,
       },
     })
   );

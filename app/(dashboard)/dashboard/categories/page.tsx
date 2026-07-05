@@ -22,10 +22,10 @@ export default async function CategoriesPage() {
     series
   ] = await Promise.all([
     categoriesService.listFlat(ctx),
-    listBrands(ctx, "all"),
-    listProductNames(ctx, "all"),
-    listModels(ctx, "all"),
-    listSeries(ctx, "all")
+    listBrands(ctx),
+    listProductNames(ctx),
+    listModels(ctx),
+    listSeries(ctx)
   ]);
 
   return (

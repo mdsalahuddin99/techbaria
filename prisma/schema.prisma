@@ -110,63 +110,38 @@ model Category {
   parent    Category?       @relation("CategoryTree", fields: [parentId], references: [id])
   children  Category[]      @relation("CategoryTree")
   products  Product[]
-  brands    CategoryBrand[]
   createdAt DateTime        @default(now())
   updatedAt DateTime        @updatedAt
 }
 
-/// Brands under a subcategory, e.g. "Walton", "Samsung" under "TV"
-model CategoryBrand {
-  id         String               @id @default(cuid())
-  name       String
-  categoryId String
-  category   Category             @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  products   SubcategoryProduct[]
-  productItems Product[]
-  createdAt  DateTime             @default(now())
+// ============ GLOBAL PRODUCT ATTRIBUTES ============
 
-  @@unique([categoryId, name])
-  @@index([categoryId])
+model Brand {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  products  Product[]
+  createdAt DateTime  @default(now())
 }
 
-/// Product names under a brand, e.g. "Smart TV 4K", "OLED 55\" under "Walton"
-model SubcategoryProduct {
-  id        String             @id @default(cuid())
-  name      String
-  brandId   String
-  brand     CategoryBrand      @relation(fields: [brandId], references: [id], onDelete: Cascade)
-  models    SubcategoryModel[]
-  createdAt DateTime           @default(now())
-
-  @@unique([brandId, name])
-  @@index([brandId])
+model ProductType {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  products  Product[]
+  createdAt DateTime  @default(now())
 }
 
-/// Models under a product name, e.g. "W110", "W120" under "Smart TV 4K"
-model SubcategoryModel {
-  id        String              @id @default(cuid())
-  name      String
-  productId String
-  product   SubcategoryProduct  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  series    SubcategorySeries[]
-  productItems Product[]
-  createdAt DateTime            @default(now())
-
-  @@unique([productId, name])
-  @@index([productId])
+model Model {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  products  Product[]
+  createdAt DateTime  @default(now())
 }
 
-/// Series under a model, e.g. "Pro", "Ultra" under "W110"
-model SubcategorySeries {
-  id        String            @id @default(cuid())
-  name      String
-  modelId   String
-  model     SubcategoryModel  @relation(fields: [modelId], references: [id], onDelete: Cascade)
-  productItems Product[]
-  createdAt DateTime          @default(now())
-
-  @@unique([modelId, name])
-  @@index([modelId])
+model Series {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  products  Product[]
+  createdAt DateTime  @default(now())
 }
 
 model Product {
@@ -185,14 +160,18 @@ model Product {
   reorderLevel     Int               @default(0)
   unit             String            @default("pc")
 
-  // ── Extended product details ──
-  brandId           String?
-  brand             CategoryBrand?    @relation(fields: [brandId], references: [id], onDelete: SetNull)
-  modelId           String?
-  model             SubcategoryModel? @relation(fields: [modelId], references: [id], onDelete: SetNull)
-  seriesId          String?
-  series            SubcategorySeries? @relation(fields: [seriesId], references: [id], onDelete: SetNull)
   subcategory       String?
+
+  // ── New Global Attributes ──
+  globalBrandId     String?
+  globalBrand       Brand?            @relation(fields: [globalBrandId], references: [id], onDelete: SetNull)
+  productTypeId     String?
+  productType       ProductType?      @relation(fields: [productTypeId], references: [id], onDelete: SetNull)
+  globalModelId     String?
+  globalModel       Model?            @relation(fields: [globalModelId], references: [id], onDelete: SetNull)
+  globalSeriesId    String?
+  globalSeries      Series?           @relation(fields: [globalSeriesId], references: [id], onDelete: SetNull)
+
   color             String?
   storage           String?
   ram               String?
@@ -221,9 +200,10 @@ model Product {
   @@index([isPublished])
   @@index([categoryId])
   @@index([supplierId])
-  @@index([brandId])
-  @@index([modelId])
-  @@index([seriesId])
+  @@index([globalBrandId])
+  @@index([productTypeId])
+  @@index([globalModelId])
+  @@index([globalSeriesId])
 }
 
 model ProductImage {

@@ -62,15 +62,19 @@ export interface Product {
   // ---- Electronics-specific (optional) ----
   /** Optional sub-category name (child of `category`). */
   subcategory?: string;
+  productTypeId?: string;
   /** Product series / line (e.g. "Galaxy A", "iPhone 15", "ThinkPad"). */
   series?: string;
   seriesId?: string;
+  globalSeriesId?: string;
   brand?: string;
   /** FK id for the brand (CategoryBrand). Used when submitting the product form. */
   brandId?: string;
+  globalBrandId?: string;
   model?: string;
   /** FK id for the model (SubcategoryModel). Used when submitting the product form. */
   modelId?: string;
+  globalModelId?: string;
   catalogProductId?: string;
   serialNumber?: string;
   imei?: string;

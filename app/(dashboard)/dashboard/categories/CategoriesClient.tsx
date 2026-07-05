@@ -17,7 +17,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/shared/ui/alert-dialog";
-import { Plus, Pencil, Trash2, FolderTree, CornerDownRight, ChevronRight } from "lucide-react";
+import { Plus, Pencil, Trash2, FolderTree, CornerDownRight, ChevronRight, Search } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/shared/ui/collapsible";
 import { Input } from "@/shared/ui/input";
 import {
@@ -46,6 +46,7 @@ export function CategoriesClient({
   usePageTitle("Categories");
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("categories");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const { data: categories = [] } = useQuery({
     queryKey: ["categories", "flat"],
@@ -63,7 +64,7 @@ export function CategoriesClient({
   const { data: allBrands = [] } = useQuery({
     queryKey: ["catalog", "brands"],
     queryFn: async () => {
-      const res = await fetch(`/api/catalog?entity=brands&parentId=all`);
+      const res = await fetch(`/api/catalog?entity=brands`);
       if (!res.ok) return [];
       return res.json();
     },
@@ -73,7 +74,7 @@ export function CategoriesClient({
   const { data: allProducts = [] } = useQuery({
     queryKey: ["catalog", "products"],
     queryFn: async () => {
-      const res = await fetch(`/api/catalog?entity=products&parentId=all`);
+      const res = await fetch(`/api/catalog?entity=products`);
       if (!res.ok) return [];
       return res.json();
     },
@@ -83,7 +84,7 @@ export function CategoriesClient({
   const { data: allModels = [] } = useQuery({
     queryKey: ["catalog", "models"],
     queryFn: async () => {
-      const res = await fetch(`/api/catalog?entity=models&parentId=all`);
+      const res = await fetch(`/api/catalog?entity=models`);
       if (!res.ok) return [];
       return res.json();
     },
@@ -93,7 +94,7 @@ export function CategoriesClient({
   const { data: allSeries = [] } = useQuery({
     queryKey: ["catalog", "series"],
     queryFn: async () => {
-      const res = await fetch(`/api/catalog?entity=series&parentId=all`);
+      const res = await fetch(`/api/catalog?entity=series`);
       if (!res.ok) return [];
       return res.json();
     },
@@ -104,15 +105,10 @@ export function CategoriesClient({
   const [editingItem, setEditingItem] = useState<{ type: string, id: string, name: string } | null>(null);
   const [deleteItem, setDeleteItem] = useState<{ type: string, id: string } | null>(null);
   const [editName, setEditName] = useState("");
-  const [brandCategoryFilter, setBrandCategoryFilter] = useState<string>("all");
-  const [productBrandFilter, setProductBrandFilter] = useState<string>("all");
-  const [modelProductFilter, setModelProductFilter] = useState<string>("all");
-  const [seriesModelFilter, setSeriesModelFilter] = useState<string>("all");
 
   type CatalogEntity = "brands" | "products" | "models" | "series";
   const [createOpen, setCreateOpen] = useState(false);
   const [createEntity, setCreateEntity] = useState<CatalogEntity>("brands");
-  const [createParentId, setCreateParentId] = useState<string>("");
   const [createName, setCreateName] = useState<string>("");
 
   const deleteMut = useMutation({
@@ -152,12 +148,8 @@ export function CategoriesClient({
   });
 
   const createItemMut = useMutation({
-    mutationFn: async ({ entity, parentId, name }: { entity: CatalogEntity; parentId: string; name: string }) => {
+    mutationFn: async ({ entity, name }: { entity: CatalogEntity; name: string }) => {
       const payload: any = { entity, name };
-      if (entity === "brands") payload.categoryId = parentId;
-      if (entity === "products") payload.brandId = parentId;
-      if (entity === "models") payload.productId = parentId;
-      if (entity === "series") payload.modelId = parentId;
       const res = await fetch("/api/catalog", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -184,6 +176,31 @@ export function CategoriesClient({
   const productNameById = useMemo(() => new Map<string, any>(allProducts.map((p: any) => [p.id, p])), [allProducts]);
   const modelById = useMemo(() => new Map<string, any>(allModels.map((m: any) => [m.id, m])), [allModels]);
 
+  const [modelProductFilter, setModelProductFilter] = useState("all");
+
+  const filteredBrands = useMemo(() => {
+    return allBrands.filter((b: any) => b.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  }, [allBrands, searchQuery]);
+
+  const filteredProducts = useMemo(() => {
+    return allProducts.filter((p: any) => p.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  }, [allProducts, searchQuery]);
+
+  const filteredModels = useMemo(() => {
+    let result = allModels;
+    if (modelProductFilter !== "all") {
+      result = result.filter((m: any) => m.productId === modelProductFilter);
+    }
+    if (searchQuery) {
+      result = result.filter((m: any) => m.name.toLowerCase().includes(searchQuery.toLowerCase()));
+    }
+    return result;
+  }, [allModels, modelProductFilter, searchQuery]);
+
+  const filteredSeries = useMemo(() => {
+    return allSeries.filter((s: any) => s.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  }, [allSeries, searchQuery]);
+
   const childrenOf = (pid: string) =>
     categories.filter((c) => c.parentId === pid && c.id !== pid);
 
@@ -206,7 +223,25 @@ export function CategoriesClient({
 
   const handleSaveEdit = async () => {
     if (!editingItem || !editName.trim()) return;
-    await updateItemMut.mutateAsync({ type: editingItem.type, id: editingItem.id, name: editName });
+
+    const name = editName.trim();
+    let isDuplicate = false;
+    
+    if (editingItem.type === "brands") {
+      isDuplicate = allBrands.some((b: any) => b.name.toLowerCase() === name.toLowerCase() && b.id !== editingItem.id);
+    } else if (editingItem.type === "products") {
+      isDuplicate = allProducts.some((p: any) => p.name.toLowerCase() === name.toLowerCase() && p.id !== editingItem.id);
+    } else if (editingItem.type === "models") {
+      isDuplicate = allModels.some((m: any) => m.name.toLowerCase() === name.toLowerCase() && m.id !== editingItem.id);
+    } else if (editingItem.type === "series") {
+      isDuplicate = allSeries.some((s: any) => s.name.toLowerCase() === name.toLowerCase() && s.id !== editingItem.id);
+    }
+
+    if (isDuplicate) {
+      return toast.error("An item with this name already exists");
+    }
+
+    await updateItemMut.mutateAsync({ type: editingItem.type, id: editingItem.id, name });
   };
 
   const handleDeleteItem = async () => {
@@ -217,45 +252,32 @@ export function CategoriesClient({
   const openCreate = (entity: CatalogEntity) => {
     setCreateEntity(entity);
     setCreateName("");
-    if (entity === "brands") {
-      setCreateParentId(brandCategoryFilter !== "all" ? brandCategoryFilter : "");
-    } else if (entity === "products") {
-      setCreateParentId(productBrandFilter !== "all" ? productBrandFilter : "");
-    } else if (entity === "models") {
-      setCreateParentId(modelProductFilter !== "all" ? modelProductFilter : "");
-    } else {
-      setCreateParentId(seriesModelFilter !== "all" ? seriesModelFilter : "");
-    }
     setCreateOpen(true);
   };
 
   const handleCreate = async () => {
     const name = createName.trim();
-    const parentId = createParentId.trim();
     if (!name) return toast.error("Name is required");
-    if (!parentId) return toast.error("Select parent first");
-    await createItemMut.mutateAsync({ entity: createEntity, parentId, name });
+
+    let isDuplicate = false;
+    if (createEntity === "brands") {
+      isDuplicate = allBrands.some((b: any) => b.name.toLowerCase() === name.toLowerCase());
+    } else if (createEntity === "products") {
+      isDuplicate = allProducts.some((p: any) => p.name.toLowerCase() === name.toLowerCase());
+    } else if (createEntity === "models") {
+      isDuplicate = allModels.some((m: any) => m.name.toLowerCase() === name.toLowerCase());
+    } else if (createEntity === "series") {
+      isDuplicate = allSeries.some((s: any) => s.name.toLowerCase() === name.toLowerCase());
+    }
+
+    if (isDuplicate) {
+      return toast.error("An item with this name already exists");
+    }
+
+    await createItemMut.mutateAsync({ entity: createEntity, name });
   };
 
-  const filteredBrands = useMemo(() => {
-    if (brandCategoryFilter === "all") return allBrands;
-    return allBrands.filter((b: any) => b.categoryId === brandCategoryFilter);
-  }, [allBrands, brandCategoryFilter]);
 
-  const filteredProductNames = useMemo(() => {
-    if (productBrandFilter === "all") return allProducts;
-    return allProducts.filter((p: any) => p.brandId === productBrandFilter);
-  }, [allProducts, productBrandFilter]);
-
-  const filteredModels = useMemo(() => {
-    if (modelProductFilter === "all") return allModels;
-    return allModels.filter((m: any) => m.productId === modelProductFilter);
-  }, [allModels, modelProductFilter]);
-
-  const filteredSeries = useMemo(() => {
-    if (seriesModelFilter === "all") return allSeries;
-    return allSeries.filter((s: any) => s.modelId === seriesModelFilter);
-  }, [allSeries, seriesModelFilter]);
 
   return (
     <div className="space-y-4">
@@ -264,7 +286,7 @@ export function CategoriesClient({
         description="Manage categories, sub-categories, brands, product names, models, and series."
       />
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); setSearchQuery(""); }}>
         <TabsList>
           <TabsTrigger value="categories">Categories</TabsTrigger>
           <TabsTrigger value="brands">Brands</TabsTrigger>
@@ -368,21 +390,19 @@ export function CategoriesClient({
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total Brands</p>
-                <p className="text-2xl font-bold">{filteredBrands.length}</p>
+                <p className="text-2xl font-bold">{allBrands.length}</p>
               </div>
             </div>
             <div className="flex gap-2 sm:ml-auto w-full sm:w-auto">
-              <Select value={brandCategoryFilter} onValueChange={setBrandCategoryFilter}>
-                <SelectTrigger className="w-full sm:w-72"><SelectValue placeholder="Filter by sub-category" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All sub-categories</SelectItem>
-                  {subcategories.map((c) => {
-                    const p = c.parentId ? categoryById.get(c.parentId) : undefined;
-                    const label = p ? `${p.name} → ${c.name}` : c.name;
-                    return <SelectItem key={c.id} value={c.id}>{label}</SelectItem>;
-                  })}
-                </SelectContent>
-              </Select>
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search brands..."
+                  className="pl-8"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
               <Button onClick={() => openCreate("brands")} className="bg-primary text-primary-foreground hover:bg-primary/90 shrink-0">
                 <Plus className="h-4 w-4 mr-2" />Add Brand
               </Button>
@@ -392,20 +412,11 @@ export function CategoriesClient({
           <Card>
             <div className="divide-y">
               {filteredBrands.map((brand: any) => {
-                const cat = categoryById.get(brand.categoryId);
-                const parent = cat?.parentId ? categoryById.get(cat.parentId) : undefined;
-                const catLabel = cat ? (parent ? `${parent.name} → ${cat.name}` : cat.name) : "";
-                const productCount = allProducts.filter((p: any) => p.brandId === brand.id).length;
                 return (
-                  <div key={brand.id} className="flex items-center gap-2 p-3 sm:p-4">
+                  <div key={brand.id} className="flex items-center gap-2 p-3 sm:p-4 hover:bg-secondary/20 transition-colors">
                     {editingItem?.type === "brands" && editingItem.id === brand.id ? (
                       <>
-                        <Input
-                          value={editName}
-                          onChange={(e) => setEditName(e.target.value)}
-                          className="flex-1"
-                          autoFocus
-                        />
+                        <Input value={editName} onChange={(e) => setEditName(e.target.value)} className="flex-1" autoFocus />
                         <LoadingButton size="sm" onClick={handleSaveEdit} loading={updateItemMut.isPending}>Save</LoadingButton>
                         <Button size="sm" variant="outline" onClick={() => setEditingItem(null)}>Cancel</Button>
                       </>
@@ -413,9 +424,7 @@ export function CategoriesClient({
                       <>
                         <div className="flex-1 min-w-0">
                           <p className="font-medium truncate">{brand.name}</p>
-                          <p className="text-xs text-muted-foreground truncate">{catLabel || "—"}</p>
                         </div>
-                        <Badge variant="secondary" className="hidden md:inline-flex shrink-0">{productCount} products</Badge>
                         <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleEditItem("brands", brand.id, brand.name)}>
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -427,7 +436,7 @@ export function CategoriesClient({
                   </div>
                 );
               })}
-              {filteredBrands.length === 0 && (
+              {allBrands.length === 0 && (
                 <EmptyState
                   icon={FolderTree}
                   title="No brands yet"
@@ -447,19 +456,19 @@ export function CategoriesClient({
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total Product Names</p>
-                <p className="text-2xl font-bold">{filteredProductNames.length}</p>
+                <p className="text-2xl font-bold">{allProducts.length}</p>
               </div>
             </div>
             <div className="flex gap-2 sm:ml-auto w-full sm:w-auto">
-              <Select value={productBrandFilter} onValueChange={setProductBrandFilter}>
-                <SelectTrigger className="w-full sm:w-72"><SelectValue placeholder="Filter by brand" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All brands</SelectItem>
-                  {allBrands.map((b: any) => (
-                    <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search products..."
+                  className="pl-8"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
               <Button onClick={() => openCreate("products")} className="bg-primary text-primary-foreground hover:bg-primary/90 shrink-0">
                 <Plus className="h-4 w-4 mr-2" />Add Product Name
               </Button>
@@ -468,19 +477,12 @@ export function CategoriesClient({
 
           <Card>
             <div className="divide-y">
-              {filteredProductNames.map((product: any) => {
-                const b = brandById.get(product.brandId);
-                const modelsCount = allModels.filter((m: any) => m.productId === product.id).length;
+              {filteredProducts.map((product: any) => {
                 return (
-                  <div key={product.id} className="flex items-center gap-2 p-3 sm:p-4">
+                  <div key={product.id} className="flex items-center gap-2 p-3 sm:p-4 hover:bg-secondary/20 transition-colors">
                     {editingItem?.type === "products" && editingItem.id === product.id ? (
                       <>
-                        <Input
-                          value={editName}
-                          onChange={(e) => setEditName(e.target.value)}
-                          className="flex-1"
-                          autoFocus
-                        />
+                        <Input value={editName} onChange={(e) => setEditName(e.target.value)} className="flex-1" autoFocus />
                         <LoadingButton size="sm" onClick={handleSaveEdit} loading={updateItemMut.isPending}>Save</LoadingButton>
                         <Button size="sm" variant="outline" onClick={() => setEditingItem(null)}>Cancel</Button>
                       </>
@@ -488,9 +490,7 @@ export function CategoriesClient({
                       <>
                         <div className="flex-1 min-w-0">
                           <p className="font-medium truncate">{product.name}</p>
-                          <p className="text-xs text-muted-foreground truncate">{b?.name ?? "—"}</p>
                         </div>
-                        <Badge variant="secondary" className="hidden md:inline-flex shrink-0">{modelsCount} models</Badge>
                         <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleEditItem("products", product.id, product.name)}>
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -502,7 +502,7 @@ export function CategoriesClient({
                   </div>
                 );
               })}
-              {filteredProductNames.length === 0 && (
+              {allProducts.length === 0 && (
                 <EmptyState
                   icon={FolderTree}
                   title="No product names yet"
@@ -526,8 +526,17 @@ export function CategoriesClient({
               </div>
             </div>
             <div className="flex gap-2 sm:ml-auto w-full sm:w-auto">
+              <div className="relative w-full sm:w-48">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search models..."
+                  className="pl-8"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
               <Select value={modelProductFilter} onValueChange={setModelProductFilter}>
-                <SelectTrigger className="w-full sm:w-72"><SelectValue placeholder="Filter by product name" /></SelectTrigger>
+                <SelectTrigger className="w-full sm:w-48"><SelectValue placeholder="Filter by product name" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All product names</SelectItem>
                   {allProducts.map((p: any) => (
@@ -544,8 +553,6 @@ export function CategoriesClient({
           <Card>
             <div className="divide-y">
               {filteredModels.map((model: any) => {
-                const product = productNameById.get(model.productId);
-                const seriesCount = allSeries.filter((s: any) => s.modelId === model.id).length;
                 return (
                   <div key={model.id} className="flex items-center gap-2 p-3 sm:p-4">
                     {editingItem?.type === "models" && editingItem.id === model.id ? (
@@ -563,9 +570,7 @@ export function CategoriesClient({
                       <>
                         <div className="flex-1 min-w-0">
                           <p className="font-medium truncate">{model.name}</p>
-                          <p className="text-xs text-muted-foreground truncate">{product?.name ?? "—"}</p>
                         </div>
-                        <Badge variant="secondary" className="hidden md:inline-flex shrink-0">{seriesCount} series</Badge>
                         <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleEditItem("models", model.id, model.name)}>
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -597,19 +602,19 @@ export function CategoriesClient({
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total Series</p>
-                <p className="text-2xl font-bold">{filteredSeries.length}</p>
+                <p className="text-2xl font-bold">{allSeries.length}</p>
               </div>
             </div>
             <div className="flex gap-2 sm:ml-auto w-full sm:w-auto">
-              <Select value={seriesModelFilter} onValueChange={setSeriesModelFilter}>
-                <SelectTrigger className="w-full sm:w-72"><SelectValue placeholder="Filter by model" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All models</SelectItem>
-                  {allModels.map((m: any) => (
-                    <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search series..."
+                  className="pl-8"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
               <Button onClick={() => openCreate("series")} className="bg-primary text-primary-foreground hover:bg-primary/90 shrink-0">
                 <Plus className="h-4 w-4 mr-2" />Add Series
               </Button>
@@ -619,7 +624,6 @@ export function CategoriesClient({
           <Card>
             <div className="divide-y">
               {filteredSeries.map((series: any) => {
-                const m = modelById.get(series.modelId);
                 return (
                   <div key={series.id} className="flex items-center gap-2 p-3 sm:p-4">
                     {editingItem?.type === "series" && editingItem.id === series.id ? (
@@ -637,7 +641,6 @@ export function CategoriesClient({
                       <>
                         <div className="flex-1 min-w-0">
                           <p className="font-medium truncate">{series.name}</p>
-                          <p className="text-xs text-muted-foreground truncate">{m?.name ?? "—"}</p>
                         </div>
                         <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleEditItem("series", series.id, series.name)}>
                           <Pencil className="h-4 w-4" />
@@ -650,7 +653,7 @@ export function CategoriesClient({
                   </div>
                 );
               })}
-              {filteredSeries.length === 0 && (
+              {allSeries.length === 0 && (
                 <EmptyState
                   icon={FolderTree}
                   title="No series yet"
@@ -689,48 +692,11 @@ export function CategoriesClient({
                 : "Add Series"}
             </DialogTitle>
             <DialogDescription>
-              Create a new catalog item under the selected parent.
+              Create a new global catalog item.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 pt-2">
-            <div className="space-y-1.5">
-              <Label>
-                {createEntity === "brands"
-                  ? "Sub-category"
-                  : createEntity === "products"
-                  ? "Brand"
-                  : createEntity === "models"
-                  ? "Product Name"
-                  : "Model"}
-                <span className="text-destructive"> *</span>
-              </Label>
-              <Select value={createParentId || ""} onValueChange={setCreateParentId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select parent" />
-                </SelectTrigger>
-                <SelectContent>
-                  {createEntity === "brands" &&
-                    subcategories.map((c) => {
-                      const p = c.parentId ? categoryById.get(c.parentId) : undefined;
-                      const label = p ? `${p.name} → ${c.name}` : c.name;
-                      return <SelectItem key={c.id} value={c.id}>{label}</SelectItem>;
-                    })}
-                  {createEntity === "products" &&
-                    allBrands.map((b: any) => (
-                      <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
-                    ))}
-                  {createEntity === "models" &&
-                    allProducts.map((p: any) => (
-                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                    ))}
-                  {createEntity === "series" &&
-                    allModels.map((m: any) => (
-                      <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-            </div>
 
             <div className="space-y-1.5">
               <Label>Name <span className="text-destructive">*</span></Label>

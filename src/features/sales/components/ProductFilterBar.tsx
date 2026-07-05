@@ -29,6 +29,8 @@ interface Product {
   barcode?: string;
   brand?: string;
   model?: string;
+  globalBrand?: { name: string } | null;
+  globalModel?: { name: string } | null;
   price: number;
   stock: number;
   categoryId?: string;
@@ -132,7 +134,6 @@ export function ProductFilterBar({
     return () => document.removeEventListener("mousedown", handler);
   }, [onShowSuggestions]);
 
-  // ── Barcode / Enter key handler ───────────────────────────────────────────
   const handleKeyDown = useCallback(
     async (e: React.KeyboardEvent<HTMLInputElement>) => {
       if (e.key === "Escape") {
@@ -140,7 +141,16 @@ export function ProductFilterBar({
         return;
       }
       if (e.key === "Enter") {
-        if (showSuggestions && filteredProducts.length > 0) {
+        e.preventDefault();
+        const query = searchQuery.trim().toLowerCase();
+        const firstProduct = filteredProducts[0];
+        const isRelevant = firstProduct && query && (
+          firstProduct.name?.toLowerCase().includes(query) ||
+          firstProduct.sku?.toLowerCase().includes(query) ||
+          firstProduct.barcode?.toLowerCase().includes(query)
+        );
+
+        if (showSuggestions && filteredProducts.length > 0 && isRelevant) {
           onAddProduct(filteredProducts[0]);
           onSearchChange("", false);
         } else {
@@ -152,7 +162,7 @@ export function ProductFilterBar({
         }
       }
     },
-    [showSuggestions, filteredProducts, onAddProduct, onSearchChange, onBarcodeEnter],
+    [showSuggestions, filteredProducts, onAddProduct, onSearchChange, onBarcodeEnter, searchQuery],
   );
 
   return (
@@ -211,6 +221,8 @@ export function ProductFilterBar({
                         </p>
                         <p className="text-[11px] text-slate-400">
                           {[
+                            p.globalBrand?.name,
+                            p.globalModel?.name,
                             typeof p.brand === "object" && p.brand ? (p.brand as any).name : p.brand,
                             typeof p.model === "object" && p.model ? (p.model as any).name : p.model,
                           ]

@@ -10,53 +10,49 @@ import {
 import { z } from "zod";
 import type { Ctx } from "@/server/lib/ctx";
 
-const brandSchema = z.object({ name: z.string().min(1), categoryId: z.string().min(1) });
-const productSchema = z.object({ name: z.string().min(1), brandId: z.string().min(1) });
-const modelSchema = z.object({ name: z.string().min(1), productId: z.string().min(1) });
-const seriesSchema = z.object({ name: z.string().min(1), modelId: z.string().min(1) });
+const entitySchema = z.object({ name: z.string().min(1) });
 
 type Entity = "brands" | "products" | "models" | "series";
 
 /**
- * GET /api/catalog?entity=brands&parentId=xxx — list
- * POST /api/catalog — create { entity, name, parentId }
+ * GET /api/catalog?entity=brands — list all global entities
+ * POST /api/catalog — create { entity, name }
  */
 export const GET = apiHandler(async (ctx: Ctx, req: Request) => {
   const url = new URL(req.url);
   const entity = url.searchParams.get("entity") as Entity | null;
-  const parentId = url.searchParams.get("parentId") || "";
 
-  if (!entity || !parentId) return [];
+  if (!entity) return [];
 
   switch (entity) {
-    case "brands":   return listBrands(ctx, parentId);
-    case "products": return listProductNames(ctx, parentId);
-    case "models":   return listModels(ctx, parentId);
-    case "series":   return listSeries(ctx, parentId);
+    case "brands":   return listBrands(ctx);
+    case "products": return listProductNames(ctx);
+    case "models":   return listModels(ctx);
+    case "series":   return listSeries(ctx);
     default:         return [];
   }
 }, "catalog:list");
 
 export const POST = apiHandler(async (ctx: Ctx, req: Request) => {
-  const body = await req.json() as { entity: Entity; name: string; parentId: string };
-  const { entity, name, parentId } = body;
+  const body = await req.json() as { entity: Entity; name: string };
+  const { entity, name } = body;
 
   switch (entity) {
     case "brands": {
-      const { name: n, categoryId } = brandSchema.parse(body);
-      return createBrand(ctx, n, categoryId);
+      const { name: n } = entitySchema.parse(body);
+      return createBrand(ctx, n);
     }
     case "products": {
-      const { name: n, brandId } = productSchema.parse(body);
-      return createProductName(ctx, n, brandId);
+      const { name: n } = entitySchema.parse(body);
+      return createProductName(ctx, n);
     }
     case "models": {
-      const { name: n, productId } = modelSchema.parse(body);
-      return createModel(ctx, n, productId);
+      const { name: n } = entitySchema.parse(body);
+      return createModel(ctx, n);
     }
     case "series": {
-      const { name: n, modelId } = seriesSchema.parse(body);
-      return createSeries(ctx, n, modelId);
+      const { name: n } = entitySchema.parse(body);
+      return createSeries(ctx, n);
     }
     default:
       throw new Error(`Unknown entity: ${entity}`);

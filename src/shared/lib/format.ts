@@ -43,15 +43,17 @@ export function genInvoiceNo(seq: number): string {
   return `INV-${year}-${String(seq).padStart(4, "0")}`;
 }
 
-/** Brand + Name + Model + Series — combined display name. */
 export function productDisplayName(p: any): string {
   const parts: string[] = [];
-  const brandName = typeof p.brand === 'object' && p.brand !== null ? p.brand.name : p.brand;
+  const brandObj = p.globalBrand || p.brand;
+  const brandName = typeof brandObj === 'object' && brandObj !== null ? brandObj.name : brandObj;
   if (brandName) parts.push(brandName);
   parts.push(p.name);
-  const modelName = typeof p.model === 'object' && p.model !== null ? p.model.name : p.model;
+  const modelObj = p.globalModel || p.model;
+  const modelName = typeof modelObj === 'object' && modelObj !== null ? modelObj.name : modelObj;
   if (modelName) parts.push(`Model ${modelName}`);
-  const seriesName = typeof p.series === 'object' && p.series !== null ? p.series.name : p.series;
+  const seriesObj = p.globalSeries || p.series;
+  const seriesName = typeof seriesObj === 'object' && seriesObj !== null ? seriesObj.name : seriesObj;
   if (seriesName) parts.push(seriesName);
   return parts.join(" ");
 }

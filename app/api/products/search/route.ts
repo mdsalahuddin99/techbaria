@@ -25,9 +25,9 @@ export const GET = apiHandler(async (ctx: Ctx, req: Request) => {
       { name: { contains: q, mode: "insensitive" } },
       { sku: { contains: q, mode: "insensitive" } },
       { barcode: { contains: q, mode: "insensitive" } },
-      { brand: { name: { contains: q, mode: "insensitive" } } },
-      { model: { name: { contains: q, mode: "insensitive" } } },
-      { serialNumbers: { some: { OR: [ { serial: { contains: q, mode: "insensitive" } } ] } } }
+      { globalBrand: { is: { name: { contains: q, mode: "insensitive" } } } },
+      { globalModel: { is: { name: { contains: q, mode: "insensitive" } } } },
+      { serialNumbers: { some: { serial: { equals: q, mode: "insensitive" } } } }
     ];
   }
 
@@ -60,9 +60,9 @@ export const GET = apiHandler(async (ctx: Ctx, req: Request) => {
     },
     category: { select: { name: true } },
     images: { select: { url: true }, take: 1, orderBy: { position: "asc" as const } },
-    brand: { select: { name: true } },
-    model: { select: { name: true } },
-    series: { select: { name: true } },
+    globalBrand: { select: { name: true } },
+    globalModel: { select: { name: true } },
+    globalSeries: { select: { name: true } },
     subcategory: true,
     ...(warehouseId
       ? {

@@ -11,15 +11,35 @@ import type { ProductListFilter } from "./types";
 async function runListQuery(ctx: Ctx, params?: PaginationParams, filter?: ProductListFilter) {
   const where: any = {};
   if (filter?.isPublished !== undefined) where.isPublished = filter.isPublished;
-  if (filter?.categoryId) where.categoryId = filter.categoryId;
+  if (filter?.categoryId) {
+    const cat = await prisma.category.findUnique({ where: { id: filter.categoryId } });
+    if (cat) {
+      if (!where.AND) where.AND = [];
+      where.AND.push({
+        OR: [
+          { categoryId: cat.id },
+          { subcategory: { equals: cat.name, mode: "insensitive" as const } }
+        ]
+      });
+    } else {
+      where.categoryId = filter.categoryId;
+    }
+  }
   if (filter?.lowStock) where.stock = { lte: prisma.product.fields.reorderLevel };
   if (filter?.search) {
-    where.OR = [
-      { name: { contains: filter.search, mode: "insensitive" as const } },
-      { sku: { contains: filter.search, mode: "insensitive" as const } },
-      { barcode: { contains: filter.search } },
-      { serialNumbers: { some: { serial: { contains: filter.search, mode: "insensitive" as const } } } },
-    ];
+    if (!where.AND) where.AND = [];
+    where.AND.push({
+      OR: [
+        { name: { contains: filter.search, mode: "insensitive" as const } },
+        { sku: { contains: filter.search, mode: "insensitive" as const } },
+        { barcode: { contains: filter.search } },
+        { subcategory: { contains: filter.search, mode: "insensitive" as const } },
+        { category: { name: { contains: filter.search, mode: "insensitive" as const } } },
+        { globalBrand: { name: { contains: filter.search, mode: "insensitive" as const } } },
+        { globalModel: { name: { contains: filter.search, mode: "insensitive" as const } } },
+        { serialNumbers: { some: { serial: { contains: filter.search, mode: "insensitive" as const } } } },
+      ]
+    });
   }
 
   const result = await paginate<any>(
@@ -30,9 +50,9 @@ async function runListQuery(ctx: Ctx, params?: PaginationParams, filter?: Produc
         category: true,
         images: { orderBy: { position: "asc" as const } },
         // serialNumbers omitted from list — only needed in getById detail view
-        brand: true,
-        model: true,
-        series: true,
+        globalBrand: true,
+        globalModel: true,
+        globalSeries: true,
       },
     },
     params,
@@ -85,9 +105,10 @@ export async function getById(ctx: Ctx, id: string) {
           },
         },
       },
-      brand: true,
-      model: true,
-      series: true,
+      globalBrand: true,
+      globalModel: true,
+      globalSeries: true,
+      productType: true,
     },
   });
   if (!product) throw new ServiceError("NOT_FOUND", "Product not found", 404);
@@ -104,9 +125,10 @@ export async function getBySlug(slug: string) {
         category: true,
         images: { orderBy: { position: "asc" } },
         variants: true,
-        brand: true,
-        model: true,
-        series: true,
+        globalBrand: true,
+        globalModel: true,
+        globalSeries: true,
+        productType: true,
       },
     });
     if (!product) throw new ServiceError("NOT_FOUND", "Product not found", 404);
@@ -199,7 +221,7 @@ async function runPublicStorefrontQuery(
       OR: [
         { name: { contains: filter.search, mode: "insensitive" as const } },
         { sku: { contains: filter.search, mode: "insensitive" as const } },
-        { brand: { name: { contains: filter.search, mode: "insensitive" as const } } },
+        { globalBrand: { name: { contains: filter.search, mode: "insensitive" as const } } },
       ],
     }),
     ...(filter?.excludeId && { id: { not: filter.excludeId } }),
@@ -212,7 +234,7 @@ async function runPublicStorefrontQuery(
   }
 
   if (filter?.brands && filter.brands.length > 0) {
-    whereClause.brand = { name: { in: filter.brands, mode: "insensitive" } };
+    whereClause.globalBrand = { name: { in: filter.brands, mode: "insensitive" } };
   }
 
   if (filter?.inStockOnly) {
@@ -241,8 +263,8 @@ async function runPublicStorefrontQuery(
         isTrending: true,
         category: { select: { name: true } } as any,
         images: { orderBy: { position: "asc" as const }, take: 1, select: { url: true } } as any,
-        brand: { select: { name: true } } as any,
-        model: { select: { name: true } } as any,
+        globalBrand: { select: { name: true } } as any,
+        globalModel: { select: { name: true } } as any,
       },
       orderBy,
       take: limit,

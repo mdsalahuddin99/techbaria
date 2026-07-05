@@ -26,7 +26,7 @@ export function useProductsQuery(initialData?: any) {
   });
 }
 
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, keepPreviousData } from "@tanstack/react-query";
 
 export function useInfiniteProductsQuery(filter?: { search?: string; categoryId?: string; isPublished?: boolean; lowStock?: boolean }) {
   const { session, status } = useAuth();
@@ -36,6 +36,7 @@ export function useInfiniteProductsQuery(filter?: { search?: string; categoryId?
     getNextPageParam: (lastPage) => lastPage.nextCursor || undefined,
     initialPageParam: undefined as string | undefined,
     enabled: status !== "loading" && !!session,
+    placeholderData: keepPreviousData,
   });
 }
 

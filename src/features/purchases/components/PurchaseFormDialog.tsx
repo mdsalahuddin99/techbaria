@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { LoadingButton } from "@/shared/ui/loading-button";
 import { AutoSuggest } from "@/shared/ui/auto-suggest";
+import { AsyncSuggest } from "@/shared/ui/async-suggest";
 import { formatCurrency, formatDate, productDisplayName } from "@/shared/lib/format";
 import { Plus, X, ShoppingCart, ScanLine, Package, Camera, Wallet, Building2, Warehouse as WarehouseIcon, User, Phone, Mail, FileText, QrCode } from "lucide-react";
 import dynamic from "next/dynamic";
@@ -23,6 +24,8 @@ import { SupplierFormDialog } from "@/features/suppliers/SupplierFormDialog";
 import { ProductFormDialog } from "@/features/products/ProductFormDialog";
 import { usePurchaseForm, lineCost, lineSale, methodFromAccountType } from "../hooks/usePurchaseForm";
 import { ACCOUNT_TYPE_LABEL } from "@/features/accounts/types";
+import { suppliersApi } from "@/shared/api-client/suppliers";
+import { productsApi } from "@/shared/api-client/products";
 
 interface PurchaseFormDialogProps {
   open: boolean;
@@ -266,12 +269,15 @@ function ScanField({
 
 export function PurchaseFormDialog({
   open, onOpenChange, editId, onSuccess,
-  products, suppliers, accounts, accountsTree, balances, defaultAccountId,
+  accounts, accountsTree, balances, defaultAccountId,
   warehouses, selectedWarehouseId, setSelectedWarehouseId,
   initialSupplierId, initialProductId, initialQty
-}: PurchaseFormDialogProps) {
+}: Omit<PurchaseFormDialogProps, "products" | "suppliers">) {
   const [addSupplierOpen, setAddSupplierOpen] = useState(false);
   const [addProductOpen, setAddProductOpen] = useState(false);
+  
+  const [localProducts, setLocalProducts] = useState<Record<string, any>>({});
+  const [localSuppliers, setLocalSuppliers] = useState<Record<string, any>>({});
 
   const form = usePurchaseForm({
     editId,
@@ -279,38 +285,59 @@ export function PurchaseFormDialog({
       onOpenChange(false);
       onSuccess();
     },
-    products,
+    products: Object.values(localProducts),
     accounts,
     defaultAccountId,
     selectedWarehouseId,
   });
 
-  const currentSupplier = suppliers.find(s => s.id === form.supplierId);
+  const currentSupplier = form.supplierId ? localSuppliers[form.supplierId] : null;
   const supplierAdvance = currentSupplier?.advanceBalance || 0;
+
+  useEffect(() => {
+    if (form.supplierId && !localSuppliers[form.supplierId]) {
+      suppliersApi.getById(form.supplierId).then(supplier => {
+        if (supplier) setLocalSuppliers(prev => ({ ...prev, [supplier.id]: supplier }));
+      }).catch(console.error);
+    }
+  }, [form.supplierId, localSuppliers]);
 
   // Auto-initialize from props (URL params)
   useEffect(() => {
-    if (open && initialProductId && !editId && form.lines.length === 0) {
-      const product = products.find((p) => p.id === initialProductId);
-      if (product) {
-        form.setSupplierId(initialSupplierId || product.supplierId || "");
-        form.setLines([
-          {
-            productId: product.id,
-            name: productDisplayName(product),
-            baseCost: 0,
-            extraCost: 0,
-            saleMode: "amount",
-            saleInput: "",
-            warrantyStartDate: undefined,
-            warrantyMonths: undefined,
-            expectedDate: undefined,
-            serials: [],
-            trackSerials: product.trackSerials !== false,
-            manualQty: initialQty || 1,
-          },
-        ]);
-        form.setActiveProductId(product.id);
+    if (!editId && open) {
+      if (initialSupplierId) form.setSupplierId(initialSupplierId);
+      if (initialProductId) {
+        // Fetch product if not in local cache
+        const fetchAndAdd = async () => {
+          let product = localProducts[initialProductId];
+          if (!product) {
+            product = await productsApi.getById(initialProductId);
+            if (product) {
+              setLocalProducts((prev) => ({ ...prev, [product.id]: product }));
+            }
+          }
+          if (product && !form.lines.some((l) => l.productId === product.id)) {
+            form.setLines((prev) => [
+              ...prev,
+              {
+                productId: product.id,
+                name: productDisplayName(product),
+                baseCost: 0,
+                extraCost: 0,
+                saleMode: "amount",
+                saleInput: "",
+                warrantyStartDate: undefined,
+                warrantyMonths: undefined,
+                expectedDate: undefined,
+                serials: [],
+                trackSerials: product.trackSerials !== false,
+                manualQty: initialQty || 1,
+              },
+            ]);
+            form.setActiveProductId(product.id);
+          }
+        };
+        fetchAndAdd();
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -353,10 +380,18 @@ export function PurchaseFormDialog({
                 <label className="text-sm font-medium mb-1.5 block">Supplier</label>
                 <div className="flex gap-2">
                   <div className="flex-1">
-                    <AutoSuggest
+                    <AsyncSuggest
                       value={form.supplierId}
                       onValueChange={form.setSupplierId}
-                      options={suppliers.map((s) => ({ value: s.id, label: s.name }))}
+                      onSelectObject={(opt) => {
+                        if (opt?.raw) {
+                          setLocalSuppliers((prev) => ({ ...prev, [opt.raw.id]: opt.raw }));
+                        }
+                      }}
+                      fetchOptions={async (search) => {
+                        const res = await suppliersApi.list({ search }, { limit: 20 });
+                        return res.items.map((s) => ({ value: s.id, label: s.name, raw: s }));
+                      }}
                       placeholder="Search supplier…"
                       emptyMessage="No supplier found"
                       allowClear
@@ -378,17 +413,26 @@ export function PurchaseFormDialog({
                   <label className="text-xs font-medium text-muted-foreground">Add product</label>
                   <div className="flex gap-2">
                     <div className="flex-1">
-                      <AutoSuggest
+                      <AsyncSuggest
                         value={form.activeProductId}
                         onValueChange={form.setActiveProductId}
-                        options={products
-                          .filter((p) => p.active && !form.lines.some((l) => l.productId === p.id))
-                          .map((p) => ({
-                            value: p.id,
-                            label: productDisplayName(p),
-                            description: p.subcategory || undefined,
-                            badge: `Stock: ${p.stock ?? 0}`,
-                          }))}
+                        onSelectObject={(opt) => {
+                          if (opt?.raw) {
+                            setLocalProducts((prev) => ({ ...prev, [opt.value]: opt.raw }));
+                          }
+                        }}
+                        fetchOptions={async (search) => {
+                          const res = await productsApi.list({ search }, { limit: 20 });
+                          return res.items
+                            .filter((p) => !form.lines.some((l) => l.productId === p.id))
+                            .map((p) => ({
+                              value: p.id,
+                              label: productDisplayName(p),
+                              description: p.subcategory || undefined,
+                              badge: `Stock: ${p.stock ?? 0}`,
+                              raw: p,
+                            }));
+                        }}
                         placeholder="Search product…"
                         emptyMessage="No product found"
                         allowClear
@@ -412,7 +456,7 @@ export function PurchaseFormDialog({
             {form.lines.length > 0 && (
               <div className="space-y-2">
                 {form.lines.map((l) => {
-                  const product = products.find((p) => p.id === l.productId);
+                  const product = localProducts[l.productId];
                   const finalSale = lineSale(l, product?.price || 0);
                   const totalCost = lineCost(l);
                   const isCollapsed = form.collapsedSet.has(l.productId);

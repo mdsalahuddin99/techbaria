@@ -5,7 +5,7 @@ import type { Ctx } from "@/server/lib/ctx";
 import { auditLogService } from "../auditLogService";
 import { cache } from "@/lib/cache";
 import { serialise } from "./serialiser";
-import { resolveCategoryId, resolveBrandId, resolveModelId, resolveSeriesId } from "./resolvers";
+import { resolveCategoryId, resolveBrandId, resolveModelId, resolveSeriesId, resolveProductTypeId } from "./resolvers";
 import type { ProductCreateInput } from "./types";
 
 function slugify(name: string): string {
@@ -28,9 +28,13 @@ export async function create(ctx: Ctx, input: ProductCreateInput) {
     slug = `${slug}-${Date.now().toString().slice(-4)}`;
   }
   const resolvedCategoryId = await resolveCategoryId(ctx, input.categoryId);
-  const resolvedBrandId = await resolveBrandId(ctx, input.brand, resolvedCategoryId);
-  const resolvedModelId = await resolveModelId(ctx, input.model, resolvedBrandId, input.name);
-  const resolvedSeriesId = await resolveSeriesId(ctx, input.series, resolvedModelId);
+  const resolvedBrandId = await resolveBrandId(ctx, input.brand);
+  const resolvedModelId = await resolveModelId(ctx, input.model);
+  const resolvedSeriesId = await resolveSeriesId(ctx, input.series);
+  
+  // input.name is the actual product name string. 
+  // We can try to resolve it to a product type (for global catalog).
+  const resolvedProductTypeId = await resolveProductTypeId(ctx, input.name);
 
   const product = await prisma.product.create({
     data: {
@@ -48,10 +52,11 @@ export async function create(ctx: Ctx, input: ProductCreateInput) {
       unit: input.unit ?? "pc",
       isPublished: input.isPublished ?? false,
       // Extended fields
-      brandId: resolvedBrandId,
-      modelId: resolvedModelId,
-      seriesId: resolvedSeriesId,
-      subcategory: input.subcategory,
+      globalBrandId: resolvedBrandId,
+      productTypeId: resolvedProductTypeId,
+      globalModelId: resolvedModelId,
+      globalSeriesId: resolvedSeriesId,
+      subcategory: input.subcategory, // we still save the text here for backward compat
       color: input.color,
       storage: input.storage,
       ram: input.ram,
@@ -72,9 +77,10 @@ export async function create(ctx: Ctx, input: ProductCreateInput) {
     include: {
       category: true,
       images: { orderBy: { position: "asc" as const } },
-      brand: true,
-      model: true,
-      series: true,
+      globalBrand: true,
+      globalModel: true,
+      globalSeries: true,
+      productType: true,
     },
   });
   await auditLogService.log(ctx, {

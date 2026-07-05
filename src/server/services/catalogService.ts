@@ -1,6 +1,6 @@
 /**
  * Catalog hierarchy service — brands, product names, models, series.
- * Minimal CRUD for cascading dropdowns in Product form.
+ * Minimal CRUD for global dropdowns in Product form.
  */
 import "server-only";
 import { prisma } from "@/server/db/client";
@@ -13,111 +13,81 @@ import type { Ctx } from "@/server/lib/ctx";
 export interface BrandOutput {
   id: string;
   name: string;
-  categoryId: string;
 }
 
-export async function listBrands(ctx: Ctx, categoryId: string): Promise<BrandOutput[]> {
-  if (categoryId === "all") {
-    const items = await prisma.categoryBrand.findMany({
-      orderBy: { name: "asc" },
-    });
-    return items.map((b) => ({ id: b.id, name: b.name, categoryId: b.categoryId }));
-  }
-  const items = await prisma.categoryBrand.findMany({
-    where: { categoryId },
+export async function listBrands(ctx: Ctx): Promise<BrandOutput[]> {
+  const items = await prisma.brand.findMany({
     orderBy: { name: "asc" },
   });
-  return items.map((b) => ({ id: b.id, name: b.name, categoryId: b.categoryId }));
+  return items.map((b) => ({ id: b.id, name: b.name }));
 }
 
-export async function createBrand(ctx: Ctx, name: string, categoryId: string): Promise<BrandOutput> {
+export async function createBrand(ctx: Ctx, name: string): Promise<BrandOutput> {
   requireRole(ctx, "ADMIN");
-  const existing = await prisma.categoryBrand.findFirst({
-    where: { categoryId, name: { equals: name, mode: "insensitive" } },
+  const existing = await prisma.brand.findFirst({
+    where: { name: { equals: name, mode: "insensitive" } },
   });
   if (existing) throw new ServiceError("CONFLICT", `Brand "${name}" already exists`, 409);
-  const b = await prisma.categoryBrand.create({ data: { name, categoryId } });
-  return { id: b.id, name: b.name, categoryId: b.categoryId };
+  const b = await prisma.brand.create({ data: { name } });
+  return { id: b.id, name: b.name };
 }
 
 export async function updateBrand(ctx: Ctx, id: string, name: string): Promise<BrandOutput> {
   requireRole(ctx, "ADMIN");
-  const b = await prisma.categoryBrand.findFirst({
-    where: { id },
-  });
+  const b = await prisma.brand.findFirst({ where: { id } });
   if (!b) throw new ServiceError("NOT_FOUND", "Brand not found", 404);
-  const existing = await prisma.categoryBrand.findFirst({
-    where: { categoryId: b.categoryId, name: { equals: name, mode: "insensitive" } },
+  const existing = await prisma.brand.findFirst({
+    where: { name: { equals: name, mode: "insensitive" } },
   });
   if (existing && existing.id !== id) throw new ServiceError("CONFLICT", `Brand "${name}" already exists`, 409);
-  const updated = await prisma.categoryBrand.update({
-    where: { id },
-    data: { name },
-  });
-  return { id: updated.id, name: updated.name, categoryId: updated.categoryId };
+  const updated = await prisma.brand.update({ where: { id }, data: { name } });
+  return { id: updated.id, name: updated.name };
 }
 
 export async function deleteBrand(ctx: Ctx, id: string): Promise<void> {
   requireRole(ctx, "ADMIN");
-  await prisma.categoryBrand.deleteMany({
-    where: { id },
-  });
+  await prisma.brand.deleteMany({ where: { id } });
 }
 
-// ─── Product Names ────────────────────────────────────────────────────────────
+// ─── Product Names (Product Types) ────────────────────────────────────────────
 
 export interface ProductNameOutput {
   id: string;
   name: string;
-  brandId: string;
 }
 
-export async function listProductNames(ctx: Ctx, brandId: string): Promise<ProductNameOutput[]> {
-  if (brandId === "all") {
-    const items = await prisma.subcategoryProduct.findMany({
-      orderBy: { name: "asc" },
-    });
-    return items.map((p) => ({ id: p.id, name: p.name, brandId: p.brandId }));
-  }
-  const items = await prisma.subcategoryProduct.findMany({
-    where: { brandId },
+export async function listProductNames(ctx: Ctx): Promise<ProductNameOutput[]> {
+  const items = await prisma.productType.findMany({
     orderBy: { name: "asc" },
   });
-  return items.map((p) => ({ id: p.id, name: p.name, brandId: p.brandId }));
+  return items.map((p) => ({ id: p.id, name: p.name }));
 }
 
-export async function createProductName(ctx: Ctx, name: string, brandId: string): Promise<ProductNameOutput> {
+export async function createProductName(ctx: Ctx, name: string): Promise<ProductNameOutput> {
   requireRole(ctx, "ADMIN");
-  const existing = await prisma.subcategoryProduct.findFirst({
-    where: { brandId, name: { equals: name, mode: "insensitive" } },
+  const existing = await prisma.productType.findFirst({
+    where: { name: { equals: name, mode: "insensitive" } },
   });
   if (existing) throw new ServiceError("CONFLICT", `Product name "${name}" already exists`, 409);
-  const p = await prisma.subcategoryProduct.create({ data: { name, brandId } });
-  return { id: p.id, name: p.name, brandId: p.brandId };
+  const p = await prisma.productType.create({ data: { name } });
+  return { id: p.id, name: p.name };
 }
 
 export async function updateProductName(ctx: Ctx, id: string, name: string): Promise<ProductNameOutput> {
   requireRole(ctx, "ADMIN");
-  const p = await prisma.subcategoryProduct.findFirst({
-    where: { id },
-  });
+  const p = await prisma.productType.findFirst({ where: { id } });
   if (!p) throw new ServiceError("NOT_FOUND", "Product name not found", 404);
-  const existing = await prisma.subcategoryProduct.findFirst({
-    where: { brandId: p.brandId, name: { equals: name, mode: "insensitive" } },
+  const existing = await prisma.productType.findFirst({
+    where: { name: { equals: name, mode: "insensitive" } },
   });
   if (existing && existing.id !== id) throw new ServiceError("CONFLICT", `Product name "${name}" already exists`, 409);
-  const updated = await prisma.subcategoryProduct.update({
-    where: { id },
-    data: { name },
-  });
-  return { id: updated.id, name: updated.name, brandId: updated.brandId };
+  const updated = await prisma.productType.update({ where: { id }, data: { name } });
+  return { id: updated.id, name: updated.name };
 }
 
 export async function deleteProductName(ctx: Ctx, id: string): Promise<void> {
   requireRole(ctx, "ADMIN");
-  await prisma.subcategoryProduct.deleteMany({
-    where: { id },
-  });
+  await prisma.productType.deleteMany({ where: { id } });
 }
 
 // ─── Models ──────────────────────────────────────────────────────────────────
@@ -125,55 +95,40 @@ export async function deleteProductName(ctx: Ctx, id: string): Promise<void> {
 export interface ModelOutput {
   id: string;
   name: string;
-  productId: string;
 }
 
-export async function listModels(ctx: Ctx, productId: string): Promise<ModelOutput[]> {
-  if (productId === "all") {
-    const items = await prisma.subcategoryModel.findMany({
-      orderBy: { name: "asc" },
-    });
-    return items.map((m) => ({ id: m.id, name: m.name, productId: m.productId }));
-  }
-  const items = await prisma.subcategoryModel.findMany({
-    where: { productId },
+export async function listModels(ctx: Ctx): Promise<ModelOutput[]> {
+  const items = await prisma.model.findMany({
     orderBy: { name: "asc" },
   });
-  return items.map((m) => ({ id: m.id, name: m.name, productId: m.productId }));
+  return items.map((m) => ({ id: m.id, name: m.name }));
 }
 
-export async function createModel(ctx: Ctx, name: string, productId: string): Promise<ModelOutput> {
+export async function createModel(ctx: Ctx, name: string): Promise<ModelOutput> {
   requireRole(ctx, "ADMIN");
-  const existing = await prisma.subcategoryModel.findFirst({
-    where: { productId, name: { equals: name, mode: "insensitive" } },
+  const existing = await prisma.model.findFirst({
+    where: { name: { equals: name, mode: "insensitive" } },
   });
   if (existing) throw new ServiceError("CONFLICT", `Model "${name}" already exists`, 409);
-  const m = await prisma.subcategoryModel.create({ data: { name, productId } });
-  return { id: m.id, name: m.name, productId: m.productId };
+  const m = await prisma.model.create({ data: { name } });
+  return { id: m.id, name: m.name };
 }
 
 export async function updateModel(ctx: Ctx, id: string, name: string): Promise<ModelOutput> {
   requireRole(ctx, "ADMIN");
-  const m = await prisma.subcategoryModel.findFirst({
-    where: { id },
-  });
+  const m = await prisma.model.findFirst({ where: { id } });
   if (!m) throw new ServiceError("NOT_FOUND", "Model not found", 404);
-  const existing = await prisma.subcategoryModel.findFirst({
-    where: { productId: m.productId, name: { equals: name, mode: "insensitive" } },
+  const existing = await prisma.model.findFirst({
+    where: { name: { equals: name, mode: "insensitive" } },
   });
   if (existing && existing.id !== id) throw new ServiceError("CONFLICT", `Model "${name}" already exists`, 409);
-  const updated = await prisma.subcategoryModel.update({
-    where: { id },
-    data: { name },
-  });
-  return { id: updated.id, name: updated.name, productId: updated.productId };
+  const updated = await prisma.model.update({ where: { id }, data: { name } });
+  return { id: updated.id, name: updated.name };
 }
 
 export async function deleteModel(ctx: Ctx, id: string): Promise<void> {
   requireRole(ctx, "ADMIN");
-  await prisma.subcategoryModel.deleteMany({
-    where: { id },
-  });
+  await prisma.model.deleteMany({ where: { id } });
 }
 
 // ─── Series ──────────────────────────────────────────────────────────────────
@@ -181,53 +136,38 @@ export async function deleteModel(ctx: Ctx, id: string): Promise<void> {
 export interface SeriesOutput {
   id: string;
   name: string;
-  modelId: string;
 }
 
-export async function listSeries(ctx: Ctx, modelId: string): Promise<SeriesOutput[]> {
-  if (modelId === "all") {
-    const items = await prisma.subcategorySeries.findMany({
-      orderBy: { name: "asc" },
-    });
-    return items.map((s) => ({ id: s.id, name: s.name, modelId: s.modelId }));
-  }
-  const items = await prisma.subcategorySeries.findMany({
-    where: { modelId },
+export async function listSeries(ctx: Ctx): Promise<SeriesOutput[]> {
+  const items = await prisma.series.findMany({
     orderBy: { name: "asc" },
   });
-  return items.map((s) => ({ id: s.id, name: s.name, modelId: s.modelId }));
+  return items.map((s) => ({ id: s.id, name: s.name }));
 }
 
-export async function createSeries(ctx: Ctx, name: string, modelId: string): Promise<SeriesOutput> {
+export async function createSeries(ctx: Ctx, name: string): Promise<SeriesOutput> {
   requireRole(ctx, "ADMIN");
-  const existing = await prisma.subcategorySeries.findFirst({
-    where: { modelId, name: { equals: name, mode: "insensitive" } },
+  const existing = await prisma.series.findFirst({
+    where: { name: { equals: name, mode: "insensitive" } },
   });
   if (existing) throw new ServiceError("CONFLICT", `Series "${name}" already exists`, 409);
-  const s = await prisma.subcategorySeries.create({ data: { name, modelId } });
-  return { id: s.id, name: s.name, modelId: s.modelId };
+  const s = await prisma.series.create({ data: { name } });
+  return { id: s.id, name: s.name };
 }
 
 export async function updateSeries(ctx: Ctx, id: string, name: string): Promise<SeriesOutput> {
   requireRole(ctx, "ADMIN");
-  const s = await prisma.subcategorySeries.findFirst({
-    where: { id },
-  });
+  const s = await prisma.series.findFirst({ where: { id } });
   if (!s) throw new ServiceError("NOT_FOUND", "Series not found", 404);
-  const existing = await prisma.subcategorySeries.findFirst({
-    where: { modelId: s.modelId, name: { equals: name, mode: "insensitive" } },
+  const existing = await prisma.series.findFirst({
+    where: { name: { equals: name, mode: "insensitive" } },
   });
   if (existing && existing.id !== id) throw new ServiceError("CONFLICT", `Series "${name}" already exists`, 409);
-  const updated = await prisma.subcategorySeries.update({
-    where: { id },
-    data: { name },
-  });
-  return { id: updated.id, name: updated.name, modelId: updated.modelId };
+  const updated = await prisma.series.update({ where: { id }, data: { name } });
+  return { id: updated.id, name: updated.name };
 }
 
 export async function deleteSeries(ctx: Ctx, id: string): Promise<void> {
   requireRole(ctx, "ADMIN");
-  await prisma.subcategorySeries.deleteMany({
-    where: { id },
-  });
+  await prisma.series.deleteMany({ where: { id } });
 }

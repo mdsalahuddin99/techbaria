@@ -18,9 +18,10 @@ export interface PaginatedResponse<T> {
 }
 
 export const suppliersApi = {
-  async list(filter?: any, pagination?: { cursor?: string }): Promise<PaginatedResponse<Supplier>> {
+  async list(filter?: any, pagination?: { cursor?: string; limit?: number }): Promise<PaginatedResponse<Supplier>> {
     const params = new URLSearchParams();
     if (pagination?.cursor) params.append("cursor", pagination.cursor);
+    if (pagination?.limit) params.append("limit", pagination.limit.toString());
     if (filter?.search) params.append("search", filter.search);
     if (filter?.sortKey) params.append("sortKey", filter.sortKey);
     if (filter?.sortDir) params.append("sortDir", filter.sortDir);

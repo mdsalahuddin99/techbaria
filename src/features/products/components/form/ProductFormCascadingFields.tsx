@@ -31,9 +31,8 @@ interface Props {
 export function ProductFormCascadingFields({ form, editing }: Props) {
   const { control } = form;
   const category = useWatch({ name: "category", control });
-  const subcategory = useWatch({ name: "subcategory", control });
 
-  // ── Categories for cascading selects ──
+  // ── Categories (still hierarchical) ──
   const { data: allCategories = [] } = useQuery({
     queryKey: ["categories", "flat"],
     queryFn: () => listCategories(true) as Promise<any[]>,
@@ -46,76 +45,32 @@ export function ProductFormCascadingFields({ form, editing }: Props) {
     return parent && c.parentId === parent.id;
   });
 
-  // Find subcategory ID from name for catalog API queries
-  const subcategoryItem = allCategories.find((c: any) => c.name === subcategory);
-  const subcategoryId = subcategoryItem?.id || "";
-
-  // ── Cascading select state (IDs for API queries) ──
-  const [selectedBrandId, setSelectedBrandId] = useState("");
-  const [selectedProductId, setSelectedProductId] = useState("");
-  const [selectedModelId, setSelectedModelId] = useState("");
   type QuickCreateEntity = "brands" | "products" | "models" | "series";
   const [quickCreateOpen, setQuickCreateOpen] = useState(false);
   const [quickCreateEntity, setQuickCreateEntity] = useState<QuickCreateEntity>("brands");
   const [quickCreateName, setQuickCreateName] = useState("");
   const [quickCreateSaving, setQuickCreateSaving] = useState(false);
 
-  // Fetch brands for selected subcategory
+  // Fetch independent global lists
   const { data: brands = [] } = useQuery({
-    queryKey: ["catalog", "brands", subcategoryId],
-    queryFn: () => apiFetch<any[]>(`/api/catalog?entity=brands&parentId=${subcategoryId}`),
-    enabled: !!subcategoryId,
+    queryKey: ["catalog", "brands"],
+    queryFn: () => apiFetch<any[]>(`/api/catalog?entity=brands`),
   });
 
-  // Fetch products for selected brand
   const { data: products = [] } = useQuery({
-    queryKey: ["catalog", "products", selectedBrandId],
-    queryFn: () => apiFetch<any[]>(`/api/catalog?entity=products&parentId=${selectedBrandId}`),
-    enabled: !!selectedBrandId,
+    queryKey: ["catalog", "products"],
+    queryFn: () => apiFetch<any[]>(`/api/catalog?entity=products`),
   });
 
-  // Fetch models for selected product
   const { data: models = [] } = useQuery({
-    queryKey: ["catalog", "models", selectedProductId],
-    queryFn: () => apiFetch<any[]>(`/api/catalog?entity=models&parentId=${selectedProductId}`),
-    enabled: !!selectedProductId,
+    queryKey: ["catalog", "models"],
+    queryFn: () => apiFetch<any[]>(`/api/catalog?entity=models`),
   });
 
-  // Fetch series for selected model
   const { data: seriesList = [] } = useQuery({
-    queryKey: ["catalog", "series", selectedModelId],
-    queryFn: () => apiFetch<any[]>(`/api/catalog?entity=series&parentId=${selectedModelId}`),
-    enabled: !!selectedModelId,
+    queryKey: ["catalog", "series"],
+    queryFn: () => apiFetch<any[]>(`/api/catalog?entity=series`),
   });
-
-  // Initialize selected IDs when editing (load from saved FK IDs)
-  const initRef = useRef(false);
-  useEffect(() => {
-    if (!editing || initRef.current) return;
-    initRef.current = true;
-    const bId = editing.brandId;
-    const mId = editing.modelId;
-    const catalogProdId = editing.catalogProductId;
-    if (bId) {
-      setSelectedBrandId(bId);
-      if (catalogProdId) {
-        setSelectedProductId(catalogProdId);
-      }
-      if (mId) {
-        setSelectedModelId(mId);
-      }
-    }
-  }, [editing]);
-
-  // When products list loads, if selectedProductId is not set, try to match by product name
-  useEffect(() => {
-    if (editing && !selectedProductId && products.length > 0) {
-      const match = products.find((p) => p.name === editing.name);
-      if (match) {
-        setSelectedProductId(match.id);
-      }
-    }
-  }, [editing, products, selectedProductId]);
 
   // Category creation dialog state
   const [catDialogOpen, setCatDialogOpen] = useState(false);
@@ -127,83 +82,34 @@ export function ProductFormCascadingFields({ form, editing }: Props) {
     setQuickCreateOpen(true);
   };
 
-  const quickCreateParent = (() => {
-    if (quickCreateEntity === "brands") {
-      return {
-        id: subcategoryId,
-        label: subcategory ?? "",
-        fieldLabel: "Sub-category",
-        title: "Add Brand",
-      };
-    }
-    if (quickCreateEntity === "products") {
-      const b = brands.find((x: any) => x.id === selectedBrandId);
-      return {
-        id: selectedBrandId,
-        label: b?.name ?? (form.getValues("brand") ?? ""),
-        fieldLabel: "Brand",
-        title: "Add Product Name",
-      };
-    }
-    if (quickCreateEntity === "models") {
-      const p = products.find((x: any) => x.id === selectedProductId);
-      return {
-        id: selectedProductId,
-        label: p?.name ?? (form.getValues("name") ?? ""),
-        fieldLabel: "Product Name",
-        title: "Add Model",
-      };
-    }
-    const m = models.find((x: any) => x.id === selectedModelId);
-    return {
-      id: selectedModelId,
-      label: m?.name ?? (form.getValues("model") ?? ""),
-      fieldLabel: "Model",
-      title: "Add Series",
-    };
-  })();
+  const quickCreateTitles = {
+    brands: { title: "Add Brand", label: "Brand Name" },
+    products: { title: "Add Product Name", label: "Product Name" },
+    models: { title: "Add Model", label: "Model Name" },
+    series: { title: "Add Series", label: "Series Name" },
+  };
 
   const handleQuickCreate = async () => {
     const name = quickCreateName.trim();
-    const parentId = quickCreateParent.id;
     if (!name) {
       toast.error("Name is required");
-      return;
-    }
-    if (!parentId) {
-      toast.error(`Select ${quickCreateParent.fieldLabel} first`);
       return;
     }
     setQuickCreateSaving(true);
     try {
       const payload: any = { entity: quickCreateEntity, name };
-      if (quickCreateEntity === "brands") payload.categoryId = parentId;
-      if (quickCreateEntity === "products") payload.brandId = parentId;
-      if (quickCreateEntity === "models") payload.productId = parentId;
-      if (quickCreateEntity === "series") payload.modelId = parentId;
       const created = await apiFetch<any>("/api/catalog", {
         method: "POST",
         body: JSON.stringify(payload),
       });
-      queryClient.invalidateQueries({ queryKey: ["catalog"] });
+      queryClient.invalidateQueries({ queryKey: ["catalog", quickCreateEntity] });
+      
       if (quickCreateEntity === "brands") {
         form.setValue("brand", created.id, { shouldDirty: true });
-        setSelectedBrandId(created.id);
-        setSelectedProductId("");
-        setSelectedModelId("");
-        form.setValue("name", "");
-        form.setValue("model", "");
-        form.setValue("series", "");
       } else if (quickCreateEntity === "products") {
         form.setValue("name", created.name, { shouldDirty: true });
-        setSelectedProductId(created.id);
-        setSelectedModelId("");
-        form.setValue("model", "");
-        form.setValue("series", "");
       } else if (quickCreateEntity === "models") {
         form.setValue("model", created.id, { shouldDirty: true });
-        setSelectedModelId(created.id);
-        form.setValue("series", "");
       } else {
         form.setValue("series", created.id, { shouldDirty: true });
       }
@@ -227,13 +133,6 @@ export function ProductFormCascadingFields({ form, editing }: Props) {
               <Select value={field.value} onValueChange={(v) => {
                 field.onChange(v);
                 form.setValue("subcategory", "");
-                form.setValue("brand", "");
-                form.setValue("name", "");
-                form.setValue("model", "");
-                form.setValue("series", "");
-                setSelectedBrandId("");
-                setSelectedProductId("");
-                setSelectedModelId("");
               }}>
                 <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
                 <SelectContent>
@@ -263,16 +162,7 @@ export function ProductFormCascadingFields({ form, editing }: Props) {
             <div className="flex-1 min-w-0">
               <Select
                 value={field.value}
-                onValueChange={(v) => {
-                  field.onChange(v);
-                  form.setValue("brand", "");
-                  form.setValue("name", "");
-                  form.setValue("model", "");
-                  form.setValue("series", "");
-                  setSelectedBrandId("");
-                  setSelectedProductId("");
-                  setSelectedModelId("");
-                }}
+                onValueChange={(v) => field.onChange(v)}
                 disabled={!category || subcategories.length === 0}
               >
                 <SelectTrigger><SelectValue placeholder={!category ? "Select category first" : "Select sub-category"} /></SelectTrigger>
@@ -320,20 +210,11 @@ export function ProductFormCascadingFields({ form, editing }: Props) {
             <div className="flex-1 min-w-0">
               <Select
                 value={field.value ?? ""}
-                onValueChange={(v) => {
-                  field.onChange(v);
-                  setSelectedBrandId(v);
-                  setSelectedProductId("");
-                  setSelectedModelId("");
-                  form.setValue("name", "");
-                  form.setValue("model", "");
-                  form.setValue("series", "");
-                }}
-                disabled={!subcategoryId}
+                onValueChange={(v) => field.onChange(v)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder={!subcategoryId ? "Select subcategory first" : brands.length === 0 ? "No brands available" : "Select brand"}>
-                    {brands.find((b: any) => b.id === field.value)?.name || (editing?.brandId === field.value ? editing?.brand : field.value) || ""}
+                  <SelectValue placeholder={brands.length === 0 ? "No brands available" : "Select brand"}>
+                    {brands.find((b: any) => b.id === field.value)?.name || (editing?.globalBrandId === field.value ? (editing as any).globalBrand?.name : field.value) || ""}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
@@ -345,7 +226,6 @@ export function ProductFormCascadingFields({ form, editing }: Props) {
             </div>
             <Button
               type="button" size="icon" variant="outline" className="h-10 w-10 shrink-0"
-              disabled={!subcategoryId}
               onClick={() => openQuickCreate("brands")}
               title="Add new brand"
             >
@@ -364,18 +244,10 @@ export function ProductFormCascadingFields({ form, editing }: Props) {
             <div className="flex-1 min-w-0">
               <Select
                 value={field.value ?? ""}
-                onValueChange={(v) => {
-                  field.onChange(v);
-                  const product = products.find((p: any) => p.name === v);
-                  setSelectedProductId(product?.id || "");
-                  setSelectedModelId("");
-                  form.setValue("model", "");
-                  form.setValue("series", "");
-                }}
-                disabled={!selectedBrandId}
+                onValueChange={(v) => field.onChange(v)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder={!selectedBrandId ? "Select brand first" : products.length === 0 ? "No products available" : "Select product name"}>
+                  <SelectValue placeholder={products.length === 0 ? "No products available" : "Select product name"}>
                     {products.find((p: any) => p.name === field.value || p.id === field.value)?.name ?? field.value ?? ""}
                   </SelectValue>
                 </SelectTrigger>
@@ -388,7 +260,6 @@ export function ProductFormCascadingFields({ form, editing }: Props) {
             </div>
             <Button
               type="button" size="icon" variant="outline" className="h-10 w-10 shrink-0"
-              disabled={!selectedBrandId}
               onClick={() => openQuickCreate("products")}
               title="Add new product name"
             >
@@ -407,16 +278,11 @@ export function ProductFormCascadingFields({ form, editing }: Props) {
             <div className="flex-1 min-w-0">
               <Select
                 value={field.value ?? ""}
-                onValueChange={(v) => {
-                  field.onChange(v);
-                  setSelectedModelId(v);
-                  form.setValue("series", "");
-                }}
-                disabled={!selectedProductId}
+                onValueChange={(v) => field.onChange(v)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder={!selectedProductId ? "Select product first" : models.length === 0 ? "No models available" : "Select model"}>
-                    {models.find((m: any) => m.id === field.value)?.name || (editing?.modelId === field.value ? editing?.model : field.value) || ""}
+                  <SelectValue placeholder={models.length === 0 ? "No models available" : "Select model"}>
+                    {models.find((m: any) => m.id === field.value)?.name || (editing?.globalModelId === field.value ? (editing as any).globalModel?.name : field.value) || ""}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
@@ -428,7 +294,6 @@ export function ProductFormCascadingFields({ form, editing }: Props) {
             </div>
             <Button
               type="button" size="icon" variant="outline" className="h-10 w-10 shrink-0"
-              disabled={!selectedProductId}
               onClick={() => openQuickCreate("models")}
               title="Add new model"
             >
@@ -447,14 +312,11 @@ export function ProductFormCascadingFields({ form, editing }: Props) {
             <div className="flex-1 min-w-0">
               <Select
                 value={field.value ?? ""}
-                onValueChange={(v) => {
-                  field.onChange(v);
-                }}
-                disabled={!selectedModelId}
+                onValueChange={(v) => field.onChange(v)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder={!selectedModelId ? "Select model first" : seriesList.length === 0 ? "No series available" : "Select series"}>
-                    {seriesList.find((s: any) => s.id === field.value)?.name || (editing?.seriesId === field.value ? editing?.series : field.value) || ""}
+                  <SelectValue placeholder={seriesList.length === 0 ? "No series available" : "Select series"}>
+                    {seriesList.find((s: any) => s.id === field.value)?.name || (editing?.globalSeriesId === field.value ? (editing as any).globalSeries?.name : field.value) || ""}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
@@ -466,7 +328,6 @@ export function ProductFormCascadingFields({ form, editing }: Props) {
             </div>
             <Button
               type="button" size="icon" variant="outline" className="h-10 w-10 shrink-0"
-              disabled={!selectedModelId}
               onClick={() => openQuickCreate("series")}
               title="Add new series"
             >
@@ -486,38 +347,31 @@ export function ProductFormCascadingFields({ form, editing }: Props) {
       >
         <DialogContent className="sm:max-w-xl">
           <DialogHeader>
-            <DialogTitle>{quickCreateParent.title}</DialogTitle>
+            <DialogTitle>{quickCreateTitles[quickCreateEntity].title}</DialogTitle>
             <DialogDescription>
-              Create a new item under the selected {quickCreateParent.fieldLabel.toLowerCase()}.
+              Create a new global {quickCreateEntity.replace(/s$/, '')}.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-2">
             <div className="space-y-1.5">
-              <Label>{quickCreateParent.fieldLabel}</Label>
-              <Input value={quickCreateParent.label || ""} disabled />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Name <span className="text-destructive">*</span></Label>
+              <Label>{quickCreateTitles[quickCreateEntity].label} <span className="text-destructive">*</span></Label>
               <Input
+                autoFocus
+                placeholder="e.g. Dahua, Smart TV..."
                 value={quickCreateName}
                 onChange={(e) => setQuickCreateName(e.target.value)}
-                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleQuickCreate();
+                  }
+                }}
               />
             </div>
           </div>
-          <DialogFooter className="pt-2">
-            <Button type="button" variant="outline" onClick={() => setQuickCreateOpen(false)} disabled={quickCreateSaving}>
-              Cancel
-            </Button>
-            <LoadingButton
-              type="button"
-              className="bg-primary text-primary-foreground hover:bg-primary/90"
-              onClick={handleQuickCreate}
-              loading={quickCreateSaving}
-              disabled={!quickCreateParent.id || !quickCreateName.trim()}
-            >
-              Save
-            </LoadingButton>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setQuickCreateOpen(false)}>Cancel</Button>
+            <LoadingButton loading={quickCreateSaving} onClick={handleQuickCreate}>Save</LoadingButton>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -114,10 +114,7 @@ export function PurchasesClient({
 
   useEffect(() => {
     if (initialProductId) {
-      const product = products.find((p) => p.id === initialProductId);
-      if (product) {
-        setOpen(true);
-      }
+      setOpen(true);
       const next = new URLSearchParams(searchParams.toString());
       next.delete("createPO");
       next.delete("qty");
@@ -163,8 +160,6 @@ export function PurchasesClient({
           setEditId(null);
           if (id) setReceiptId(id);
         }}
-        products={products}
-        suppliers={suppliers}
         accounts={accounts}
         accountsTree={accountsTree}
         balances={balances}

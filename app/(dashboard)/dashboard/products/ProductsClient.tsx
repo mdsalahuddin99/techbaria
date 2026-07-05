@@ -60,10 +60,6 @@ export function ProductsClient({
     initialData: initialCategories,
   });
   
-  const CATEGORIES = useMemo<Category[]>(
-    () => storeCategories.map((c) => c.name as Category),
-    [storeCategories],
-  );
 
   const [search, setSearch] = useState("");
   const [lowStockOnly, setLowStockOnly] = useState(false);
@@ -85,8 +81,41 @@ export function ProductsClient({
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useInfiniteProductsQuery(queryFilter);
 
   const products = useMemo(() => {
-    return data?.pages.flatMap((page) => page.items) ?? initialProducts;
-  }, [data, initialProducts]);
+    let result = data?.pages.flatMap((page) => page.items) ?? initialProducts;
+
+    // Apply local filter for instant feedback while server fetches
+    if (queryFilter.search) {
+      const s = queryFilter.search.toLowerCase();
+      result = result.filter(
+        (p) => {
+          const catName = (storeCategories.find(c => c.id === p.category)?.name || categoryName(p.category))?.toLowerCase() || "";
+          return (
+            (p.name && p.name.toLowerCase().includes(s)) ||
+            (p.sku && p.sku.toLowerCase().includes(s)) ||
+            (p.barcode && p.barcode.toLowerCase().includes(s)) ||
+            (p.serialNumber && p.serialNumber.toLowerCase().includes(s)) ||
+            (p.subcategory && p.subcategory.toLowerCase().includes(s)) ||
+            (p.brand && p.brand.toLowerCase().includes(s)) ||
+            (p.model && p.model.toLowerCase().includes(s)) ||
+            catName.includes(s)
+          );
+        }
+      );
+    }
+    if (queryFilter.categoryId) {
+      const selectedCat = storeCategories.find(c => c.id === queryFilter.categoryId);
+      result = result.filter((p) => {
+        if (p.category === queryFilter.categoryId) return true;
+        if (selectedCat && p.subcategory && p.subcategory.toLowerCase() === selectedCat.name.toLowerCase()) return true;
+        return false;
+      });
+    }
+    if (queryFilter.lowStock) {
+      result = result.filter((p) => p.stock <= p.minStock);
+    }
+
+    return result;
+  }, [data, initialProducts, queryFilter]);
 
   const [editing, setEditing] = useState<Product | null>(null);
   const [open, setOpen] = useState(false);
@@ -304,9 +333,13 @@ export function ProductsClient({
             <SelectTrigger className="sm:w-52"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="All">All categories</SelectItem>
-              {CATEGORIES.map((c) => (
-                <SelectItem key={c as string} value={c as string}>{c as string}</SelectItem>
-              ))}
+              {storeCategories.map((c) => {
+                const parent = c.parentId ? storeCategories.find(p => p.id === c.parentId) : null;
+                const displayName = parent ? `${parent.name} > ${c.name}` : c.name;
+                return (
+                  <SelectItem key={c.id} value={c.id}>{displayName}</SelectItem>
+                );
+              })}
             </SelectContent>
           </Select>
         </div>
@@ -346,20 +379,18 @@ export function ProductsClient({
       )}
 
       <Card>
-        {filtered.length === 0 ? (
+        {products.length === 0 ? (
           <EmptyState
             icon={PackageOpen}
-            title={products.length === 0 ? "No products yet" : "No products match your filters"}
-            description={products.length === 0
-              ? "Add your first product to start selling."
-              : "Try adjusting search or category filter."}
-            action={
-              products.length === 0 ? (
-                <Button onClick={openNew} className="bg-primary text-primary-foreground hover:bg-primary/90">
-                  <Plus className="h-4 w-4 mr-2" />Add Product
-                </Button>
-              ) : null
-            }
+            title={(queryFilter.search || queryFilter.categoryId || queryFilter.lowStock) ? "No products match your filters" : "No products yet"}
+            description={(queryFilter.search || queryFilter.categoryId || queryFilter.lowStock)
+              ? "Try adjusting your search or filters to find what you're looking for."
+              : "Add your first product to start selling."}
+            action={!(queryFilter.search || queryFilter.categoryId || queryFilter.lowStock) ? (
+              <Button onClick={openNew} className="bg-primary text-primary-foreground hover:bg-primary/90 mt-4">
+                <Plus className="h-4 w-4 mr-2" />Add Product
+              </Button>
+            ) : undefined}
           />
         ) : (
           <>
@@ -697,7 +728,7 @@ export function ProductsClient({
                 >
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {CATEGORIES.map((c) => <SelectItem key={c as string} value={c as string}>{c as string}</SelectItem>)}
+                    {storeCategories.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
