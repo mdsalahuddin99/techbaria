@@ -8,6 +8,7 @@ import { auditLogService } from "../auditLogService";
 import { cache } from "@/lib/cache";
 import { inventoryService } from "../inventoryService";
 import { PurchaseCreateInput } from "./types";
+import * as math from "@/server/lib/math";
 
 /** Create a new purchase order. Requires MANAGER+. */
 export async function create(ctx: Ctx, input: PurchaseCreateInput) {
@@ -57,12 +58,12 @@ export async function create(ctx: Ctx, input: PurchaseCreateInput) {
     }
   }
 
-  const subtotal = input.items.reduce((sum, i) => sum + i.cost * i.qty, 0);
-  const total = subtotal - (input.discount ?? 0);
+  const subtotal = input.items.reduce((sum, i) => math.add(sum, math.mul(i.cost, i.qty)), 0);
+  const total = math.sub(subtotal, (input.discount ?? 0));
 
   const raw = await prisma.$transaction(async (tx) => {
-    const paid = input.tenders?.reduce((sum, t) => sum + t.amount, 0) ?? 0;
-    const due = Math.max(0, total - paid);
+    const paid = input.tenders?.reduce((sum, t) => math.add(sum, t.amount), 0) ?? 0;
+    const due = Math.max(0, math.sub(total, paid));
 
     const created = await tx.purchase.create({
       data: {

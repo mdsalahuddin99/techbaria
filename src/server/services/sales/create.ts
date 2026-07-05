@@ -8,6 +8,7 @@ import { cache } from "@/lib/cache";
 import { salesAccounting } from "./salesAccounting";
 import { salesSerial } from "./salesSerial";
 import type { SaleCreateInput } from "./types";
+import * as math from "@/server/lib/math";
 
 /** Validate stock availability for all sale items. Throws OUT_OF_STOCK if insufficient. */
 async function __validateItemsStock(
@@ -118,12 +119,14 @@ export async function create(ctx: Ctx, input: SaleCreateInput) {
     const currentYear = new Date().getFullYear().toString();
     const invoiceNo = `${prefix}${currentYear}${startSeq + count}`;
 
-    const subtotal = input.items.reduce((sum, i) => sum + i.price * i.qty - (i.discount ?? 0), 0);
-    const total = subtotal - (input.discount ?? 0) + (input.vat ?? 0) + (input.extraCharges ?? 0);
+    const subtotal = input.items.reduce((sum, i) => math.add(sum, math.sub(math.mul(i.price, i.qty), (i.discount ?? 0))), 0);
+    const total = math.add(math.add(math.sub(subtotal, (input.discount ?? 0)), (input.vat ?? 0)), (input.extraCharges ?? 0));
+    
     const paid = input.tenders
       .filter((t) => t.type !== "Due")
-      .reduce((sum, t) => sum + t.amount, 0);
-    const due = Math.max(0, total - paid);
+      .reduce((sum, t) => math.add(sum, t.amount), 0);
+      
+    const due = Math.max(0, math.sub(total, paid));
 
     // Create sale with items and tenders
     const sale = await tx.sale.create({

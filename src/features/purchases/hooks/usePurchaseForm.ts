@@ -6,6 +6,8 @@ import { productDisplayName } from "@/shared/lib/format";
 import type { AccountType } from "@/features/accounts/types";
 import type { PaymentMethod } from "@/features/sales/types";
 
+const DRAFT_KEY = "pos99_purchase_draft";
+
 export interface DraftLine {
   productId: string;
   name: string;
@@ -49,6 +51,7 @@ export function usePurchaseForm({
   accounts,
   defaultAccountId,
   selectedWarehouseId,
+  open,
 }: {
   editId: string | null;
   onSuccess: () => void;
@@ -56,6 +59,7 @@ export function usePurchaseForm({
   accounts: any[];
   defaultAccountId: string;
   selectedWarehouseId: string | null;
+  open?: boolean;
 }) {
   const { create: createPurchase, update: updatePurchase, addPayment } = usePurchaseActions();
 
@@ -123,6 +127,38 @@ export function usePurchaseForm({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editId]);
 
+  // Load Draft (only if not editing)
+  useEffect(() => {
+    if (editId || open === false) return;
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.supplierId) setSupplierId(parsed.supplierId);
+        if (parsed.reference) setReference(parsed.reference);
+        if (parsed.lines?.length) {
+          setLines(parsed.lines);
+          setCollapsedSet(new Set(parsed.lines.map((l: DraftLine) => l.productId)));
+        }
+        if (parsed.tenders?.length) setTenders(parsed.tenders);
+        toast.info("Unsaved draft loaded");
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, [editId, open]);
+
+  // Save Draft on state changes
+  useEffect(() => {
+    if (editId || open === false) return;
+    const draft = { supplierId, reference, lines, tenders };
+    if (supplierId || reference || lines.length > 0 || tenders.length > 0) {
+      try { localStorage.setItem(DRAFT_KEY, JSON.stringify(draft)); } catch (e) {}
+    } else {
+      try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
+    }
+  }, [editId, open, supplierId, reference, lines, tenders]);
+
   const lineUnits = (l: DraftLine) => (l.trackSerials ? l.serials.length : l.manualQty);
   const subtotal = lines.reduce((s, l) => s + lineUnits(l) * lineCost(l), 0);
   const saleTotal = lines.reduce(
@@ -130,7 +166,7 @@ export function usePurchaseForm({
     0
   );
 
-  const reset = () => {
+  const reset = (clearDraft = false) => {
     setSupplierId("");
     setLines([]);
     setActiveProductId("");
@@ -139,6 +175,9 @@ export function usePurchaseForm({
     setReference("");
     setTenders([]);
     setCollapsedSet(new Set());
+    if (clearDraft && !editId) {
+      try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
+    }
   };
 
   const activeLine = lines.find((l) => l.productId === activeScanId);
@@ -351,7 +390,7 @@ export function usePurchaseForm({
           status: "Ordered",
         });
         toast.success(`PO updated`);
-        reset();
+        reset(true);
         onSuccess();
         return editId;
       }
@@ -387,7 +426,7 @@ export function usePurchaseForm({
       
       const totalUnits = lines.reduce((s, l) => s + lineUnits(l), 0);
       toast.success(`${po.poNumber} — ${totalUnits} unit inventory-তে যোগ হয়েছে`);
-      reset();
+      reset(true);
       onSuccess();
       return po.id;
     } catch (err) {

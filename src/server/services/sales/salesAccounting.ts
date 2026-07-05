@@ -2,6 +2,7 @@ import "server-only";
 import { prisma } from "@/server/db/client";
 import { ServiceError } from "@/server/lib/errors";
 import type { Ctx } from "@/server/lib/ctx";
+import * as math from "@/server/lib/math";
 
 export const salesAccounting = {
   /** Validate customer and financial accounts belong to the current shop. */
@@ -59,7 +60,7 @@ export const salesAccounting = {
 
       // Revert old due — create a compensating ADJUSTMENT ledger entry
       if (oldDue > 0) {
-        const dueAfterRevert = Math.max(0, runningDue - oldDue);
+        const dueAfterRevert = Math.max(0, math.sub(runningDue, oldDue));
         await tx.customer.update({
           where: { id: customerId },
           data: { due: dueAfterRevert },
@@ -84,7 +85,7 @@ export const salesAccounting = {
       // Apply new due — create a new SALE ledger entry
       if (due > 0) {
         const creditLimit = Number(cust.creditLimit);
-        const newDue = runningDue + due;
+        const newDue = math.add(runningDue, due);
         if (creditLimit > 0 && newDue > creditLimit) {
           throw new ServiceError(
             "CONFLICT",
@@ -116,7 +117,7 @@ export const salesAccounting = {
         select: { due: true, creditLimit: true },
       });
       const currentDue = Number(cust.due);
-      const newDue = currentDue + due;
+      const newDue = math.add(currentDue, due);
       const creditLimit = Number(cust.creditLimit);
  
       if (creditLimit > 0 && newDue > creditLimit) {
@@ -181,7 +182,7 @@ export const salesAccounting = {
         },
       });
     } else {
-      const newDue = Math.max(0, Number(cust.due) - dueAmount);
+      const newDue = Math.max(0, math.sub(Number(cust.due), dueAmount));
       await tx.customer.update({
         where: { id: customerId },
         data: { due: newDue },
@@ -201,7 +202,7 @@ export const salesAccounting = {
     const walletTenders = tenders.filter((t) => t.type === "Wallet");
     if (walletTenders.length === 0) return;
 
-    const walletAmount = walletTenders.reduce((sum, t) => sum + t.amount, 0);
+    const walletAmount = walletTenders.reduce((sum, t) => math.add(sum, t.amount), 0);
     if (walletAmount <= 0) return;
 
     const cust = await tx.customer.findUniqueOrThrow({
@@ -223,11 +224,11 @@ export const salesAccounting = {
       );
     }
 
-    const newBalance = Math.max(0, balanceVal - walletAmount);
-    const remainingWallet = walletAmount - balanceVal;
+    const newBalance = Math.max(0, math.sub(balanceVal, walletAmount));
+    const remainingWallet = math.sub(walletAmount, balanceVal);
     let newDue = dueVal;
     if (remainingWallet > 0 && dueVal < 0) {
-      newDue = dueVal + remainingWallet;
+      newDue = math.add(dueVal, remainingWallet);
     }
 
     await tx.customer.update({
@@ -261,7 +262,7 @@ export const salesAccounting = {
   ): Promise<void> {
     const walletAmount = (tenders ?? [])
       .filter((t) => t.type === "WALLET" || t.type === "Wallet")
-      .reduce((sum, t) => sum + Number(t.amount), 0);
+      .reduce((sum, t) => math.add(sum, Number(t.amount)), 0);
 
     if (walletAmount <= 0) return;
 
@@ -270,7 +271,7 @@ export const salesAccounting = {
       select: { balance: true },
     });
 
-    const newBalance = Number(cust.balance) + walletAmount;
+    const newBalance = math.add(Number(cust.balance), walletAmount);
     await tx.customer.update({
       where: { id: customerId },
       data: { balance: newBalance },
@@ -304,7 +305,7 @@ export const salesAccounting = {
       select: { balance: true },
     });
     const currentBalance = Number(cust.balance);
-    const newBalance = currentBalance + refundAmount;
+    const newBalance = math.add(currentBalance, refundAmount);
 
     await tx.customer.update({
       where: { id: customerId },

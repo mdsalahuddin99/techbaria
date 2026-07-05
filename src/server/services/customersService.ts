@@ -50,8 +50,8 @@ export const customersService = {
       const q = filter.search;
       where.OR = [
         { name: { contains: q, mode: "insensitive" as const } },
-        { phone: { contains: q } },
-        { email: { contains: q, mode: "insensitive" as const } },
+        { phone: { startsWith: q } },
+        { email: { startsWith: q, mode: "insensitive" as const } },
       ];
     }
     if (filter?.dueFilter === "with-due") {

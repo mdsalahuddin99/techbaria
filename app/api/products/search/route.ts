@@ -21,13 +21,25 @@ export const GET = apiHandler(async (ctx: Ctx, req: Request) => {
   }
 
   if (q) {
-    where.OR = [
-      { name: { contains: q, mode: "insensitive" } },
-      { sku: { contains: q, mode: "insensitive" } },
-      { barcode: { contains: q, mode: "insensitive" } },
-      { globalBrand: { is: { name: { contains: q, mode: "insensitive" } } } },
-      { globalModel: { is: { name: { contains: q, mode: "insensitive" } } } },
-      { serialNumbers: { some: { serial: { equals: q, mode: "insensitive" } } } }
+    const terms = q.split(/\s+/).filter(Boolean);
+    const wordConditions = terms.map(term => ({
+      OR: [
+        { name: { contains: term, mode: "insensitive" as const } },
+        { sku: { contains: term, mode: "insensitive" as const } },
+        { globalBrand: { name: { contains: term, mode: "insensitive" as const } } },
+        { globalModel: { name: { contains: term, mode: "insensitive" as const } } },
+        { category: { name: { contains: term, mode: "insensitive" as const } } }
+      ]
+    }));
+
+    where.AND = [
+      {
+        OR: [
+          { barcode: { equals: q, mode: "insensitive" as const } },
+          { serialNumbers: { some: { serial: { equals: q, mode: "insensitive" as const } } } },
+          { AND: wordConditions }
+        ]
+      }
     ];
   }
 
@@ -50,14 +62,7 @@ export const GET = apiHandler(async (ctx: Ctx, req: Request) => {
     supplierId: true,
     warrantyStartDate: true,
     warrantyMonths: true,
-    purchaseItems: {
-      orderBy: { purchase: { createdAt: "desc" } } as const,
-      take: 1,
-      select: {
-        warrantyStartDate: true,
-        warrantyMonths: true,
-      },
-    },
+    // purchaseItems omitted for search performance
     category: { select: { name: true } },
     images: { select: { url: true }, take: 1, orderBy: { position: "asc" as const } },
     globalBrand: { select: { name: true } },
@@ -75,10 +80,7 @@ export const GET = apiHandler(async (ctx: Ctx, req: Request) => {
     serialNumbers: {
       where: { status: "IN_STOCK" as const },
       select: { 
-        serial: true, 
-        warrantyExpiryDate: true, 
-        createdAt: true,
-        purchaseItem: { select: { warrantyStartDate: true, warrantyMonths: true } }
+        serial: true,
       },
     },
     stock: true,

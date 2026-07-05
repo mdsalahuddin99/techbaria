@@ -281,6 +281,7 @@ export function PurchaseFormDialog({
 
   const form = usePurchaseForm({
     editId,
+    open,
     onSuccess: () => {
       onOpenChange(false);
       onSuccess();

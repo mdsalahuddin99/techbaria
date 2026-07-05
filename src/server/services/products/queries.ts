@@ -28,16 +28,22 @@ async function runListQuery(ctx: Ctx, params?: PaginationParams, filter?: Produc
   if (filter?.lowStock) where.stock = { lte: prisma.product.fields.reorderLevel };
   if (filter?.search) {
     if (!where.AND) where.AND = [];
+    const terms = filter.search.trim().split(/\s+/).filter(Boolean);
+    const wordConditions = terms.map(term => ({
+      OR: [
+        { name: { contains: term, mode: "insensitive" as const } },
+        { sku: { contains: term, mode: "insensitive" as const } },
+        { globalBrand: { name: { contains: term, mode: "insensitive" as const } } },
+        { globalModel: { name: { contains: term, mode: "insensitive" as const } } },
+        { category: { name: { contains: term, mode: "insensitive" as const } } }
+      ]
+    }));
+
     where.AND.push({
       OR: [
-        { name: { contains: filter.search, mode: "insensitive" as const } },
-        { sku: { contains: filter.search, mode: "insensitive" as const } },
-        { barcode: { contains: filter.search } },
-        { subcategory: { contains: filter.search, mode: "insensitive" as const } },
-        { category: { name: { contains: filter.search, mode: "insensitive" as const } } },
-        { globalBrand: { name: { contains: filter.search, mode: "insensitive" as const } } },
-        { globalModel: { name: { contains: filter.search, mode: "insensitive" as const } } },
-        { serialNumbers: { some: { serial: { contains: filter.search, mode: "insensitive" as const } } } },
+        { barcode: { equals: filter.search, mode: "insensitive" as const } },
+        { serialNumbers: { some: { serial: { equals: filter.search, mode: "insensitive" as const } } } },
+        { AND: wordConditions }
       ]
     });
   }
@@ -217,13 +223,17 @@ async function runPublicStorefrontQuery(
   const whereClause: any = {
     isPublished: true,
     ...(categoryId && { categoryId }),
-    ...(filter?.search && {
-      OR: [
-        { name: { contains: filter.search, mode: "insensitive" as const } },
-        { sku: { contains: filter.search, mode: "insensitive" as const } },
-        { globalBrand: { name: { contains: filter.search, mode: "insensitive" as const } } },
-      ],
-    }),
+    ...(filter?.search && (function() {
+      const terms = filter.search.trim().split(/\s+/).filter(Boolean);
+      const wordConditions = terms.map(term => ({
+        OR: [
+          { name: { contains: term, mode: "insensitive" as const } },
+          { sku: { contains: term, mode: "insensitive" as const } },
+          { globalBrand: { name: { contains: term, mode: "insensitive" as const } } },
+        ]
+      }));
+      return { AND: wordConditions };
+    })()),
     ...(filter?.excludeId && { id: { not: filter.excludeId } }),
   };
 

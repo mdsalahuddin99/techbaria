@@ -49,7 +49,9 @@ function getRedis(): Redis | null {
            const bodyParsed = init?.body ? JSON.parse(init.body) : null;
            const cmd = Array.isArray(bodyParsed) && Array.isArray(bodyParsed[0]) ? bodyParsed[0][0] : (Array.isArray(bodyParsed) ? bodyParsed[0] : null);
            if (typeof cmd === 'string' && cmd.toLowerCase() === 'get') isGet = true;
-        } catch(e) {}
+        } catch(e) {
+           // ignore error
+        }
         
         // Return cache miss for GET, and success for SET/DEL without making any real fetch
         const result = isGet ? null : "OK";

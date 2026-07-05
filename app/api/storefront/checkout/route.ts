@@ -24,10 +24,15 @@ const checkoutSchema = z.object({
   paymentMethod: z.enum(["cod", "bkash", "nagad", "card"]),
 });
 
+import { auth } from "@/server/auth/config";
+
 export const POST = publicApiHandler(async (req: Request) => {
   const body = await parseBody(req, checkoutSchema);
+  const session = await auth();
+  const userId = (session?.user as any)?.id || "";
+
   return salesService.createStorefrontOrder(
-    { userId: "", role: "CASHIER" },
+    { userId, role: "CASHIER" },
     body,
   );
 });

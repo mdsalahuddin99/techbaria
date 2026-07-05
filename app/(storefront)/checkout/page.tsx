@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ArrowRight, ShieldCheck, Wallet, Smartphone, CreditCard } from "lucide-react";
 import { Button } from "@/shared/ui/button";
 import { toast } from "sonner";
@@ -35,6 +35,15 @@ export default function StorefrontCheckout() {
   });
   const [shippingMethod, setShippingMethod] = useState<ShippingMethod>("inside_dhaka");
   const [paymentMethod, setPaymentMethod] = useState<StorefrontPaymentMethod>("cod");
+
+  useEffect(() => {
+    const data = localStorage.getItem("storefront_default_address");
+    if (data) {
+      try {
+        setAddress((prev) => ({ ...prev, ...JSON.parse(data) }));
+      } catch (e) {}
+    }
+  }, []);
 
   const shipping = shippingCost(shippingMethod);
   const total = subtotal + shipping;

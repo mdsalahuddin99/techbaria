@@ -72,6 +72,7 @@ export const storefrontOrder = {
 
       const sale = await tx.sale.create({
         data: {
+          ...(ctx.userId ? { userId: ctx.userId } : {}),
           channel: "STOREFRONT",
           status: "COMPLETED",
           subtotal,

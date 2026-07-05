@@ -76,7 +76,18 @@ export function AsyncSuggest<T = any>({
     ...defaultOptions.filter((d) => !searchResults.some((s) => s.value === d.value)),
   ];
 
-  const selected = allOptions.find((o) => o.value === value);
+  const currentSelected = allOptions.find((o) => o.value === value);
+  const [rememberedSelected, setRememberedSelected] = useState<AsyncSuggestOption<T> | null>(null);
+
+  useEffect(() => {
+    if (currentSelected) {
+      setRememberedSelected(currentSelected);
+    } else if (!value) {
+      setRememberedSelected(null);
+    }
+  }, [currentSelected, value]);
+
+  const selected = currentSelected || rememberedSelected;
 
   useEffect(() => {
     if (value && selected) {

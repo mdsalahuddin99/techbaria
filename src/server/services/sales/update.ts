@@ -9,6 +9,7 @@ import { cache } from "@/lib/cache";
 import { salesAccounting } from "./salesAccounting";
 import { salesSerial } from "./salesSerial";
 import type { SaleUpdateInput } from "./types";
+import * as math from "@/server/lib/math";
 
 /** Update a completed sale — replaces items, tenders, and syncs stock/serials. Requires MANAGER+. */
 export async function update(ctx: Ctx, id: string, input: SaleUpdateInput) {
@@ -84,12 +85,14 @@ export async function update(ctx: Ctx, id: string, input: SaleUpdateInput) {
     const existingData = (sale.data ?? {}) as Record<string, any>;
     const invoiceNo = (existingData.invoiceNo as string) ?? sale.id.slice(0, 8).toUpperCase();
 
-    const subtotal = input.items.reduce((sum, i) => sum + i.price * i.qty - (i.discount ?? 0), 0);
-    const total = subtotal - (input.discount ?? 0) + (input.vat ?? 0) + (input.extraCharges ?? 0);
+    const subtotal = input.items.reduce((sum, i) => math.add(sum, math.sub(math.mul(i.price, i.qty), (i.discount ?? 0))), 0);
+    const total = math.add(math.add(math.sub(subtotal, (input.discount ?? 0)), (input.vat ?? 0)), (input.extraCharges ?? 0));
+    
     const paid = input.tenders
       .filter((t) => t.type !== "Due")
-      .reduce((sum, t) => sum + t.amount, 0);
-    const due = Math.max(0, total - paid);
+      .reduce((sum, t) => math.add(sum, t.amount), 0);
+      
+    const due = Math.max(0, math.sub(total, paid));
 
     // Step 7: Update sale header + create new items + tenders
     const updated = await tx.sale.update({

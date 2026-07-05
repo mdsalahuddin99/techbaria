@@ -7,6 +7,7 @@ import { serializePurchase, encodeNotes } from "@/server/lib/serialize";
 import { auditLogService } from "../auditLogService";
 import { cache } from "@/lib/cache";
 import { PurchaseUpdateInput } from "./types";
+import * as math from "@/server/lib/math";
 
 /** Edit a purchase — updates stock, serials, and all line items. */
 export async function update(ctx: Ctx, id: string, input: PurchaseUpdateInput) {
@@ -55,10 +56,10 @@ export async function update(ctx: Ctx, id: string, input: PurchaseUpdateInput) {
 
   const oldQtyMap = new Map(existing.items.map((i) => [i.productId, i.qty]));
 
-  const subtotal = input.items.reduce((sum, i) => sum + i.cost * i.qty, 0);
-  const total = subtotal - (input.discount ?? 0);
-  const paid = input.tenders?.reduce((sum, t) => sum + t.amount, 0) ?? Number(existing.paid);
-  const due = Math.max(0, total - paid);
+  const subtotal = input.items.reduce((sum, i) => math.add(sum, math.mul(i.cost, i.qty)), 0);
+  const total = math.sub(subtotal, (input.discount ?? 0));
+  const paid = input.tenders?.reduce((sum, t) => math.add(sum, t.amount), 0) ?? Number(existing.paid);
+  const due = Math.max(0, math.sub(total, paid));
 
   const raw = await prisma.$transaction(async (tx) => {
     // 1. Collect old serials for this purchase
