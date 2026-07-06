@@ -61,7 +61,8 @@ async function runListQuery(ctx: Ctx, params?: PaginationParams, filter?: Produc
       include: {
         category: true,
         images: { orderBy: { position: "asc" as const } },
-        // serialNumbers omitted from list — only needed in getById detail view
+        // Include IN_STOCK serialNumbers so POS can select them
+        serialNumbers: { where: { status: "IN_STOCK" } },
         globalBrand: true,
         globalModel: true,
         globalSeries: true,

@@ -103,7 +103,7 @@ export const TTL = {
 
 export const cacheKeys = {
   products: {
-    list: () => `app:products:list:v2`,
+    list: () => `app:products:list:v3`,
     byId: (id: string) => `app:products:${id}`,
     bySlug: (slug: string) => `app:products:slug:${slug}`,
   },
