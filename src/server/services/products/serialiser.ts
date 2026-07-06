@@ -65,6 +65,7 @@ export function serialiseOne(p: any) {
       soldInSaleId: undefined,
       note: undefined,
     })),
+    warehouseStocks: p.warehouseStocks,
   };
 }
 
