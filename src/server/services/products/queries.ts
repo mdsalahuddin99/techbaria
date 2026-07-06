@@ -27,23 +27,29 @@ async function runListQuery(ctx: Ctx, params?: PaginationParams, filter?: Produc
   }
   if (filter?.lowStock) where.stock = { lte: prisma.product.fields.reorderLevel };
   if (filter?.search) {
+    const q = filter.search.trim();
     if (!where.AND) where.AND = [];
-    const terms = filter.search.trim().split(/\s+/).filter(Boolean);
-    const wordConditions = terms.map(term => ({
-      OR: [
-        { name: { contains: term, mode: "insensitive" as const } },
-        { sku: { contains: term, mode: "insensitive" as const } },
-        { globalBrand: { name: { contains: term, mode: "insensitive" as const } } },
-        { globalModel: { name: { contains: term, mode: "insensitive" as const } } },
-        { category: { name: { contains: term, mode: "insensitive" as const } } }
-      ]
-    }));
+    const terms = q.split(/\s+/).filter(Boolean);
+
+    // [SUPERFAST PATH] Pre-fetch relation IDs to avoid massive JOINs in the main query
+    const [matchingModels, matchingBrands, matchingSerials] = await Promise.all([
+      prisma.model.findMany({ where: { name: { contains: q, mode: "insensitive" } }, select: { id: true }, take: 20 }),
+      prisma.brand.findMany({ where: { name: { contains: q, mode: "insensitive" } }, select: { id: true }, take: 20 }),
+      prisma.serialNumber.findMany({ where: { serial: { equals: q, mode: "insensitive" } }, select: { productId: true }, take: 10 })
+    ]);
+
+    const modelIds = matchingModels.map(m => m.id);
+    const brandIds = matchingBrands.map(b => b.id);
+    const productIdsBySerial = matchingSerials.map(s => s.productId);
 
     where.AND.push({
       OR: [
-        { barcode: { equals: filter.search, mode: "insensitive" as const } },
-        { serialNumbers: { some: { serial: { equals: filter.search, mode: "insensitive" as const } } } },
-        { AND: wordConditions }
+        { AND: terms.map(term => ({ name: { contains: term, mode: "insensitive" as const } })) },
+        { sku: { contains: q, mode: "insensitive" as const } },
+        { barcode: { equals: q, mode: "insensitive" as const } },
+        ...(modelIds.length > 0 ? [{ globalModelId: { in: modelIds } }] : []),
+        ...(brandIds.length > 0 ? [{ globalBrandId: { in: brandIds } }] : []),
+        ...(productIdsBySerial.length > 0 ? [{ id: { in: productIdsBySerial } }] : [])
       ]
     });
   }
@@ -59,6 +65,7 @@ async function runListQuery(ctx: Ctx, params?: PaginationParams, filter?: Produc
         globalBrand: true,
         globalModel: true,
         globalSeries: true,
+        warehouseStocks: true,
       },
     },
     params,
@@ -220,19 +227,34 @@ async function runPublicStorefrontQuery(
   const page = filter?.page ?? 1;
   const skip = (page - 1) * limit;
 
+  // Pre-fetch relation IDs for storefront search too
+  let preModelIds: string[] = [];
+  let preBrandIds: string[] = [];
+  
+  if (filter?.search) {
+    const q = filter.search.trim();
+    const [mModels, mBrands] = await Promise.all([
+      prisma.model.findMany({ where: { name: { contains: q, mode: "insensitive" } }, select: { id: true }, take: 20 }),
+      prisma.brand.findMany({ where: { name: { contains: q, mode: "insensitive" } }, select: { id: true }, take: 20 })
+    ]);
+    preModelIds = mModels.map(m => m.id);
+    preBrandIds = mBrands.map(b => b.id);
+  }
+
   const whereClause: any = {
     isPublished: true,
     ...(categoryId && { categoryId }),
     ...(filter?.search && (function() {
-      const terms = filter.search.trim().split(/\s+/).filter(Boolean);
-      const wordConditions = terms.map(term => ({
+      const q = filter.search.trim();
+      const terms = q.split(/\s+/).filter(Boolean);
+      return {
         OR: [
-          { name: { contains: term, mode: "insensitive" as const } },
-          { sku: { contains: term, mode: "insensitive" as const } },
-          { globalBrand: { name: { contains: term, mode: "insensitive" as const } } },
+          { AND: terms.map(term => ({ name: { contains: term, mode: "insensitive" as const } })) },
+          { sku: { contains: q, mode: "insensitive" as const } },
+          ...(preModelIds.length > 0 ? [{ globalModelId: { in: preModelIds } }] : []),
+          ...(preBrandIds.length > 0 ? [{ globalBrandId: { in: preBrandIds } }] : [])
         ]
-      }));
-      return { AND: wordConditions };
+      };
     })()),
     ...(filter?.excludeId && { id: { not: filter.excludeId } }),
   };

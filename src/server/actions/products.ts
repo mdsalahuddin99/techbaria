@@ -48,9 +48,13 @@ export async function updateProductAction(id: string, patch: any) {
 }
 
 export async function deleteProductAction(id: string) {
-  const ctx = await getActionCtx();
-  await productsService.remove(ctx, id);
-  return { success: true };
+  try {
+    const ctx = await getActionCtx();
+    await productsService.remove(ctx, id);
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message || "Failed to delete product" };
+  }
 }
 
 export async function getProductDistinctValuesAction(field: string, parent?: string) {

@@ -40,6 +40,8 @@ export const translations = {
   "nav.sales": { en: "Sales History", bn: "বিক্রয় হিসাব" },
   "nav.returns": { en: "Returns & Refunds", bn: "রিটার্ন ও ফেরত" },
   "nav.warrantyLookup": { en: "Warranty Lookup", bn: "ওয়ারেন্টি খুঁজুন" },
+  "nav.warrantyClaims": { en: "Warranty Claims", bn: "ওয়ারেন্টি ক্লেইম" },
+  "nav.stockAudit": { en: "Stock Audit", bn: "স্টক অডিট" },
   "nav.customers": { en: "Customers", bn: "কাস্টমার" },
   "nav.purchases": { en: "Purchases", bn: "ক্রয়" },
   "nav.suppliers": { en: "Suppliers", bn: "সরবরাহকারী" },

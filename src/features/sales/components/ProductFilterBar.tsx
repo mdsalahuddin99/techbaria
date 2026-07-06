@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useEffect, useCallback } from "react";
+import React, { useRef, useEffect, useCallback, useMemo } from "react";
 import { Input } from "@/shared/ui/input";
 import { Button } from "@/shared/ui/button";
 import {
@@ -15,6 +15,7 @@ import { formatCurrency, productDisplayName } from "@/shared/lib/format";
 import { useQuery } from "@tanstack/react-query";
 import { useDebounce } from "@/shared/hooks/useDebounce";
 import { apiFetch } from "@/shared/api-client/fetch";
+import { useProductsQuery } from "@/features/products/hooks";
 
 interface Category {
   id: string;
@@ -93,28 +94,38 @@ export function ProductFilterBar({
 
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
-  const { data: searchResults, isLoading } = useQuery({
-    queryKey: ["productsSearch", debouncedSearchQuery, category, warehouseId],
-    queryFn: async () => {
-      const qs = new URLSearchParams();
-      if (debouncedSearchQuery) qs.set("q", debouncedSearchQuery);
-      if (category && category !== "all") qs.set("category", category);
-      if (warehouseId) qs.set("warehouseId", warehouseId);
-      qs.set("limit", "50");
-      const res = await apiFetch<{ items: Product[] }>(`/api/products/search?${qs.toString()}`);
-      return res.items;
-    },
-    enabled: showSuggestions,
-    staleTime: 1000 * 60,
-  });
+  const { data: productsData } = useProductsQuery();
+  const allProducts = productsData?.items || [];
+
+  const searchResults = useMemo(() => {
+    let list = allProducts;
+    if (category && category !== "all") {
+      list = list.filter((p: any) => p.categoryId === selectedCat?.id || p.category?.name === category || p.category === category);
+    }
+    if (debouncedSearchQuery) {
+      const q = debouncedSearchQuery.toLowerCase();
+      list = list.filter((p: any) => {
+        const pName = p.name?.toLowerCase() || "";
+        const sku = p.sku?.toLowerCase() || "";
+        const barcode = p.barcode?.toLowerCase() || "";
+        const model = (p.globalModel?.name || p.model)?.toLowerCase() || "";
+        const brand = (p.globalBrand?.name || p.brand)?.toLowerCase() || "";
+        return pName.includes(q) || sku.includes(q) || barcode === q || model.includes(q) || brand.includes(q);
+      });
+    }
+    return list.slice(0, 50);
+  }, [allProducts, category, selectedCat?.id, debouncedSearchQuery]);
+
+  const isLoading = false;
 
   const filteredProducts = (searchResults || []).filter((p) => {
     // Exclude products where available qty would be 0 after accounting for invoice rows
     const inInvoice = invoiceRows.find((r) => r.productId === p.id)?.qty ?? 0;
     
     let availableStock = Number(p.stock ?? 0);
-    if (warehouseId && p.warehouseStocks && p.warehouseStocks.length > 0) {
-      availableStock = Number(p.warehouseStocks[0].qty ?? 0);
+    if (warehouseId && p.warehouseStocks) {
+      const wStock = p.warehouseStocks.find((ws: any) => ws.warehouseId === warehouseId);
+      availableStock = wStock ? Number(wStock.qty ?? 0) : 0;
     } else if (warehouseId) {
       availableStock = 0;
     }
@@ -196,8 +207,9 @@ export function ProductFilterBar({
                   const inInvoice = invoiceRows.find((r) => r.productId === p.id)?.qty ?? 0;
                   
                   let availableStock = Number(p.stock ?? 0);
-                  if (warehouseId && p.warehouseStocks && p.warehouseStocks.length > 0) {
-                    availableStock = Number(p.warehouseStocks[0].qty ?? 0);
+                  if (warehouseId && p.warehouseStocks) {
+                    const wStock = p.warehouseStocks.find((ws: any) => ws.warehouseId === warehouseId);
+                    availableStock = wStock ? Number(wStock.qty ?? 0) : 0;
                   } else if (warehouseId) {
                     availableStock = 0;
                   }

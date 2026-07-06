@@ -32,6 +32,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   "stock-audit": "Stock Audit",
   "restock-orders": "Restock Orders",
   "warranty-lookup": "Warranty Lookup",
+  "warranty-claims": "Warranty Claims",
   dues: "Dues",
   billing: "Billing",
 };

@@ -53,6 +53,7 @@ const adminRedirects: Record<string, string> = {
   "/shop-setup": "/dashboard/shop-setup",
   "/warranty-lookup": "/dashboard/warranty-lookup",
   "/billing": "/dashboard/billing",
+  "/warranty-claims": "/dashboard/warranty-claims",
   "/restock-orders": "/dashboard/restock-orders",
 };
 
@@ -149,6 +150,7 @@ export const config = {
     "/shop-setup", "/shop-setup/:path*",
     "/warranty-lookup", "/warranty-lookup/:path*",
     "/billing", "/billing/:path*",
+    "/warranty-claims", "/warranty-claims/:path*",
     "/restock-orders", "/restock-orders/:path*",
   ],
 };

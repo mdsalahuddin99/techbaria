@@ -8,6 +8,10 @@ export { accountsApi as accountsService } from "./accounts";
 export { expensesApi as expensesService } from "./expenses";
 export { transfersApi as transfersService } from "./transfers";
 export { notificationsApi as notificationsService } from "./notifications";
+export * from "./purchases";
 export { shiftsApi as shiftsService } from "./shifts";
+export * from "./shifts";
+
 export { settingsApi as settingsService } from "./settings";
+export * from "./warrantyClaims";
 export { warehousesApi as warehousesService } from "./warehouses";

@@ -31,6 +31,7 @@ import {
   ChevronDown,
   ChevronRight,
   LayoutTemplate,
+  ShieldAlert,
 } from "lucide-react";
 import type { UserRole } from "@/features/auth/types";
 import { cn } from "@/shared/lib/utils";
@@ -83,6 +84,7 @@ const navGroups: NavGroup[] = [
       { to: "/dashboard/returns", labelKey: "nav.returns", icon: Undo2 },
       { to: "/dashboard/purchases", labelKey: "nav.purchases", icon: Truck },
       { to: "/dashboard/warranty-lookup", labelKey: "nav.warrantyLookup" as TranslationKey, icon: ShieldCheck },
+      { to: "/dashboard/warranty-claims", labelKey: "nav.warrantyClaims" as TranslationKey, icon: ShieldAlert },
     ],
   },
   {
@@ -132,7 +134,8 @@ function getThemeClass(pathname: string) {
     pathname.includes("/dashboard/sales") ||
     pathname.includes("/dashboard/returns") ||
     pathname.includes("/dashboard/purchases") ||
-    pathname.includes("/dashboard/warranty-lookup")
+    pathname.includes("/dashboard/warranty-lookup") ||
+    pathname.includes("/dashboard/warranty-claims")
   ) {
     return "theme-commerce";
   }

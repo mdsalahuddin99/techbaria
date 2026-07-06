@@ -17,6 +17,7 @@ import { CustomerFormDialog } from "@/features/customers/CustomerFormDialog";
 import { useDebounce } from "@/shared/hooks/useDebounce";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/shared/api-client/fetch";
+import { useCustomersQuery } from "@/features/customers/hooks";
 import type { Customer } from "@/features/customers/types";
 
 interface CustomerSearchProps {
@@ -38,20 +39,25 @@ export function CustomerSearch({
   const beforeIdsRef = useRef<Set<string>>(new Set());
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const { data: searchResults, isLoading } = useQuery({
-    queryKey: ["customersSearch", debouncedSearchQuery],
-    queryFn: async () => {
-      const qs = new URLSearchParams();
-      if (debouncedSearchQuery) qs.set("q", debouncedSearchQuery);
-      qs.set("limit", "50");
-      const res = await apiFetch<{ items: Customer[] }>(`/api/customers/search?${qs.toString()}`);
-      return res.items;
-    },
-    enabled: open,
-    staleTime: 1000 * 60,
-  });
+  const { data: customersData } = useCustomersQuery();
+  // Handle case where useCustomersQuery returns a PaginatedResponse or an array
+  const fetchedCustomers = customersData
+    ? (Array.isArray(customersData) ? customersData : (customersData as any).items)
+    : undefined;
+  const allCustomers: Customer[] = fetchedCustomers || initialCustomers;
 
-  const filteredCustomers = searchResults || initialCustomers.slice(0, 50);
+  const filteredCustomers = useMemo(() => {
+    let list = allCustomers;
+    if (debouncedSearchQuery) {
+      const q = debouncedSearchQuery.toLowerCase();
+      list = list.filter((c) => 
+        c.name.toLowerCase().includes(q) || 
+        (c.phone && c.phone.includes(q)) ||
+        (c.id === debouncedSearchQuery)
+      );
+    }
+    return list.slice(0, 50);
+  }, [allCustomers, debouncedSearchQuery]);
 
   const selected = useMemo(
     () => filteredCustomers.find((c) => c.id === selectedCustomerId) ?? null,

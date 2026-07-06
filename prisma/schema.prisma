@@ -194,6 +194,7 @@ model Product {
   restockItems  RestockItem[]
   serialNumbers SerialNumber[]
   warehouseStocks WarehouseStock[]
+  warrantyClaims  WarrantyClaim[]
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
 
@@ -256,6 +257,7 @@ model Customer {
   sales          Sale[]
   heldSales      HeldSale[]
   transactions   CustomerTransaction[]
+  warrantyClaims WarrantyClaim[]
   createdAt      DateTime              @default(now())
 
   @@index([name])
@@ -314,6 +316,7 @@ model Supplier {
   products      Product[]
   payments      SupplierPayment[]
   transactions  SupplierTransaction[]
+  warrantyClaims WarrantyClaim[]
   createdAt     DateTime              @default(now())
 
   @@index([name])
@@ -379,6 +382,7 @@ model Sale {
   tenders     SaleTender[]
   data        Json                  @default("{}")
   customerTransactions CustomerTransaction[]
+  warrantyClaims WarrantyClaim[]
   createdAt   DateTime              @default(now())
 
   @@index([channel, createdAt])
@@ -799,4 +803,61 @@ model SiteConfig {
   updatedAt DateTime @updatedAt
 
   @@index([key])
+}
+
+// ============ WARRANTY CLAIMS (RMA) ============
+
+enum ClaimStatus {
+  RECEIVED_FROM_CUSTOMER
+  SENT_TO_SUPPLIER
+  RECEIVED_FROM_SUPPLIER
+  RESOLVED
+  REJECTED
+}
+
+enum ClaimType {
+  CUSTOMER_CLAIM
+  DEFECTIVE_STOCK
+}
+
+model WarrantyClaim {
+  id              String      @id @default(cuid())
+  claimNo         String      @unique
+  type            ClaimType
+  status          ClaimStatus @default(RECEIVED_FROM_CUSTOMER)
+  
+  productId       String
+  product         Product     @relation(fields: [productId], references: [id])
+  serialNumber    String?
+  
+  customerId      String?
+  customer        Customer?   @relation(fields: [customerId], references: [id])
+  saleId          String?
+  sale            Sale?       @relation(fields: [saleId], references: [id])
+  
+  supplierId      String?
+  supplier        Supplier?   @relation(fields: [supplierId], references: [id])
+  
+  issueDescription String?    @db.Text
+  supplierNotes    String?    @db.Text
+  resolutionNote   String?    @db.Text
+
+  customerCost     Decimal    @default(0) @db.Decimal(12, 2)
+  supplierCost     Decimal    @default(0) @db.Decimal(12, 2)
+  isCustomerPaid   Boolean    @default(false)
+
+  receivedAt       DateTime   @default(now())
+  sentToSupplierAt DateTime?
+  returnedAt       DateTime?
+  resolvedAt       DateTime?
+  
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  @@index([productId])
+  @@index([customerId])
+  @@index([saleId])
+  @@index([supplierId])
+  @@index([status])
+  @@index([claimNo])
 }

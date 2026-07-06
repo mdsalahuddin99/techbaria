@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/shared/api-client/fetch";
 import { suppliersService } from "@/services";
@@ -22,6 +22,7 @@ import dynamic from "next/dynamic";
 const CameraScanner = dynamic(() => import("@/components/CameraScanner"), { ssr: false });
 import { SupplierFormDialog } from "@/features/suppliers/SupplierFormDialog";
 import { ProductFormDialog } from "@/features/products/ProductFormDialog";
+import { useProductsQuery } from "@/features/products/hooks";
 import { usePurchaseForm, lineCost, lineSale, methodFromAccountType } from "../hooks/usePurchaseForm";
 import { ACCOUNT_TYPE_LABEL } from "@/features/accounts/types";
 import { suppliersApi } from "@/shared/api-client/suppliers";
@@ -276,6 +277,8 @@ export function PurchaseFormDialog({
   const [addSupplierOpen, setAddSupplierOpen] = useState(false);
   const [addProductOpen, setAddProductOpen] = useState(false);
   
+  const { data: productsData } = useProductsQuery();
+
   const [localProducts, setLocalProducts] = useState<Record<string, any>>({});
   const [localSuppliers, setLocalSuppliers] = useState<Record<string, any>>({});
 
@@ -414,31 +417,37 @@ export function PurchaseFormDialog({
                   <label className="text-xs font-medium text-muted-foreground">Add product</label>
                   <div className="flex gap-2">
                     <div className="flex-1">
-                      <AsyncSuggest
-                        value={form.activeProductId}
-                        onValueChange={form.setActiveProductId}
-                        onSelectObject={(opt) => {
-                          if (opt?.raw) {
-                            setLocalProducts((prev) => ({ ...prev, [opt.value]: opt.raw }));
-                          }
-                        }}
-                        fetchOptions={async (search) => {
-                          const res = await productsApi.list({ search }, { limit: 20 });
-                          return res.items
-                            .filter((p) => !form.lines.some((l) => l.productId === p.id))
-                            .map((p) => ({
-                              value: p.id,
-                              label: productDisplayName(p),
-                              description: p.subcategory || undefined,
-                              badge: `Stock: ${p.stock ?? 0}`,
-                              raw: p,
-                            }));
-                        }}
-                        placeholder="Search product…"
-                        emptyMessage="No product found"
-                        allowClear
-                        openOnFocus={false}
-                      />
+                      {(() => {
+                        const allProducts = productsData?.items || [];
+                        const productOptions = allProducts
+                          .filter((p: any) => !form.lines.some((l) => l.productId === p.id))
+                          .map((p: any) => ({
+                            value: p.id,
+                            label: productDisplayName(p),
+                            description: p.subcategory || undefined,
+                            badge: `Stock: ${p.stock ?? 0}`
+                          }));
+
+                        return (
+                          <AutoSuggest
+                            value={form.activeProductId}
+                            onValueChange={(val) => {
+                              form.setActiveProductId(val);
+                              if (val) {
+                                const raw = allProducts.find((x: any) => x.id === val);
+                                if (raw) {
+                                  setLocalProducts((prev) => ({ ...prev, [val]: raw }));
+                                }
+                              }
+                            }}
+                            options={productOptions}
+                            placeholder="Search product…"
+                            emptyMessage="No product found"
+                            allowClear
+                            openOnFocus={false}
+                          />
+                        );
+                      })()}
                     </div>
                     <Button type="button" variant="outline" size="icon" className="h-10 w-10 shrink-0 self-end" onClick={() => setAddProductOpen(true)}>
                       <Plus className="h-4 w-4" />

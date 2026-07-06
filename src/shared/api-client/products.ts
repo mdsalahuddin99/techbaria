@@ -41,7 +41,10 @@ export const productsApi = {
   },
 
   remove(id: string): Promise<void> {
-    return deleteProductAction(id).then(() => undefined);
+    return deleteProductAction(id).then((res: any) => {
+      if (res && res.error) throw new Error(res.error);
+      return undefined;
+    });
   },
 
   bulkUpdate(ids: string[], patch: Partial<Product>): Promise<void> {
