@@ -314,9 +314,11 @@ export function CreateSaleClient() {
           return;
         }
         // Try barcode lookup via serial
-        const serial = res.items.find((p: any) =>
-          p.serials?.some((s: any) => s.serialNumber === code || s.imei === code || s.serial === code),
-        );
+        const serial = res.items.find((p: any) => {
+          const matchSerials = p.serials?.some((s: any) => s.serialNumber === code || s.imei === code || s.serial === code);
+          const matchSerialNumbers = p.serialNumbers?.some((s: any) => s.serial === code || s.serialNumber === code || s.imei === code);
+          return matchSerials || matchSerialNumbers;
+        });
         if (serial) {
           addProductToVoucher(serial, code);
           return;
