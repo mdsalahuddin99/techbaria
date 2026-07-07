@@ -2,12 +2,6 @@ import { useCallback, useState } from "react";
 import { useCartStore } from "../store/useCartStore";
 import type { CheckoutAddress, ShippingMethod, StorefrontOrder, StorefrontPaymentMethod } from "../types";
 
-const SHIPPING_RATES: Record<ShippingMethod, number> = {
-  inside_dhaka: 70,
-  outside_dhaka: 130,
-  pickup: 0,
-};
-
 const ORDERS_KEY = "storefront-orders-v1";
 
 const loadOrders = (): StorefrontOrder[] => {
@@ -29,8 +23,6 @@ export const useStoredOrders = () => loadOrders();
 export const getStoredOrder = (id: string) =>
   loadOrders().find((o) => o.id === id || o.orderNo === id) ?? null;
 
-export const shippingCost = (m: ShippingMethod) => SHIPPING_RATES[m];
-
 /**
  * Checkout submission. Tries the real API first; falls back to localStorage
  * if the backend is unreachable (offline / not yet deployed).
@@ -47,6 +39,7 @@ export function useCheckout() {
       shippingMethod: ShippingMethod;
       paymentMethod: StorefrontPaymentMethod;
       discount?: number;
+      shippingPrice?: number;
     }): Promise<StorefrontOrder> => {
       setSubmitting(true);
       setApiError(false);
@@ -88,7 +81,7 @@ export function useCheckout() {
         // 2. Fallback: localStorage-only (offline / API unavailable)
         setApiError(true);
         const subtotal = lines.reduce((s, l) => s + l.price * l.qty, 0);
-        const shipping = shippingCost(input.shippingMethod);
+        const shipping = input.shippingPrice ?? 0;
         const discount = input.discount ?? 0;
         const total = Math.max(0, subtotal + shipping - discount);
         const id = crypto.randomUUID();

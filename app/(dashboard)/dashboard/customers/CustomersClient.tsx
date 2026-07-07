@@ -65,7 +65,19 @@ export function CustomersClient({
     sortDir,
   }), [debouncedSearch, dueFilter, sortKey, sortDir]);
 
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useInfiniteCustomersQuery(queryFilter);
+  const initialInfiniteData = useMemo(() => {
+    return {
+      pages: [{ items: initialCustomers, nextCursor: null, hasMore: false }],
+      pageParams: [undefined],
+    };
+  }, [initialCustomers]);
+
+  const isFilterEmpty = !queryFilter.search && !queryFilter.dueFilter && queryFilter.sortKey === "name" && queryFilter.sortDir === "asc";
+
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useInfiniteCustomersQuery(
+    queryFilter,
+    isFilterEmpty ? initialInfiniteData : undefined
+  );
 
   const customers = useMemo(() => {
     return data?.pages.flatMap((page) => page.items) ?? initialCustomers;

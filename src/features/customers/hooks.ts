@@ -25,7 +25,10 @@ export function useCustomersQuery(initialData?: Customer[]) {
   });
 }
 
-export function useInfiniteCustomersQuery(filter?: { search?: string; dueFilter?: "all" | "with-due" | "no-due"; sortKey?: string; sortDir?: "asc" | "desc" }) {
+export function useInfiniteCustomersQuery(
+  filter?: { search?: string; dueFilter?: "all" | "with-due" | "no-due"; sortKey?: string; sortDir?: "asc" | "desc" },
+  initialData?: any
+) {
   const { session, status } = useAuth();
   return useInfiniteQuery({
     queryKey: [...customerKeys.list(), filter],
@@ -33,6 +36,7 @@ export function useInfiniteCustomersQuery(filter?: { search?: string; dueFilter?
     getNextPageParam: (lastPage) => (lastPage as any).nextCursor || undefined,
     initialPageParam: undefined as string | undefined,
     enabled: status !== "loading" && !!session,
+    initialData,
   });
 }
 

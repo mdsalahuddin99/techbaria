@@ -22,22 +22,21 @@ export interface StorefrontOrderCreateInput {
     postcode?: string;
     notes?: string;
   };
-  shippingMethod: "inside_dhaka" | "outside_dhaka" | "pickup";
+  shippingMethod: string;
   paymentMethod: "cod" | "bkash" | "nagad" | "card";
 }
 
 export type StorefrontOrderStatus = "pending" | "confirmed" | "shipped" | "delivered" | "cancelled";
 
-const SHIPPING_RATES: Record<string, number> = {
-  inside_dhaka: 70,
-  outside_dhaka: 130,
-  pickup: 0,
-};
-
 export const storefrontOrder = {
   /** Create a storefront order (from checkout). No auth required. */
   async createStorefrontOrder(ctx: Ctx, input: StorefrontOrderCreateInput) {
-    const shipping = SHIPPING_RATES[input.shippingMethod] ?? 0;
+    const configRow = await prisma.siteConfig.findUnique({ where: { key: "checkout" } });
+    const checkoutConfig: any = configRow?.value || {};
+    const shippingMethods: any[] = checkoutConfig.shippingMethods || [];
+    const selectedMethod = shippingMethods.find((m) => m.id === input.shippingMethod);
+    const shipping = selectedMethod ? Number(selectedMethod.price) : 0;
+    
     const discount = input.discount ?? 0;
     const now = new Date();
     const orderNo = `AS-${now.getTime().toString().slice(-6)}`;

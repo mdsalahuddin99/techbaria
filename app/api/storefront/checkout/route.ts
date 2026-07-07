@@ -20,7 +20,7 @@ const checkoutSchema = z.object({
     postcode: z.string().optional(),
     notes: z.string().optional(),
   }),
-  shippingMethod: z.enum(["inside_dhaka", "outside_dhaka", "pickup"]),
+  shippingMethod: z.string().min(1, "Shipping method is required"),
   paymentMethod: z.enum(["cod", "bkash", "nagad", "card"]),
 });
 

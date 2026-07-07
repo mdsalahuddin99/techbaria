@@ -60,23 +60,55 @@ function downloadCSV(filename: string, rows: (string | number)[][]) {
   URL.revokeObjectURL(url);
 }
 
-export function ReportsClient() {
+export function ReportsClient({
+  initialMetrics,
+  initialInventory,
+  initialDues,
+  initialExpensesDetailed,
+  initialFromDate,
+  initialToDate,
+}: {
+  initialMetrics?: any;
+  initialInventory?: any;
+  initialDues?: any;
+  initialExpensesDetailed?: any;
+  initialFromDate?: string;
+  initialToDate?: string;
+} = {}) {
   usePageTitle("Reports");
 
   const today = new Date().toISOString().slice(0, 10);
   const monthAgo = new Date(); monthAgo.setDate(monthAgo.getDate() - 29);
-  const [from, setFrom] = useState(monthAgo.toISOString().slice(0, 10));
-  const [to, setTo] = useState(today);
+  
+  const defaultFrom = initialFromDate || monthAgo.toISOString().slice(0, 10);
+  const defaultTo = initialToDate || today;
+
+  const [from, setFrom] = useState(defaultFrom);
+  const [to, setTo] = useState(defaultTo);
   const [method, setMethod] = useState<string>("All");
 
   const [activeTab, setActiveTab] = useState("pl");
   const [searchLowStock, setSearchLowStock] = useState("");
   const [searchExpense, setSearchExpense] = useState("");
 
-  const { data: metrics, isLoading: isMetricsLoading, isError: isMetricsError } = useReportsMetricsQuery({ from, to, paymentMethod: method });
-  const { data: inventory, isLoading: isInventoryLoading, isError: isInventoryError } = useInventoryMetricsQuery({ from, to });
-  const { data: dues, isLoading: isDuesLoading, isError: isDuesError } = useDuesMetricsQuery();
-  const { data: expensesDetailed, isLoading: isExpensesDetailedLoading, isError: isExpensesDetailedError } = useExpensesDetailedQuery({ from, to });
+  const isInitialDateRange = initialFromDate && initialToDate && from === initialFromDate && to === initialToDate && method === "All";
+
+  const { data: metrics, isLoading: isMetricsLoading, isError: isMetricsError } = useReportsMetricsQuery(
+    { from, to, paymentMethod: method },
+    isInitialDateRange ? initialMetrics : undefined
+  );
+  
+  const { data: inventory, isLoading: isInventoryLoading, isError: isInventoryError } = useInventoryMetricsQuery(
+    { from, to },
+    isInitialDateRange ? initialInventory : undefined
+  );
+  
+  const { data: dues, isLoading: isDuesLoading, isError: isDuesError } = useDuesMetricsQuery(initialDues);
+  
+  const { data: expensesDetailed, isLoading: isExpensesDetailedLoading, isError: isExpensesDetailedError } = useExpensesDetailedQuery(
+    { from, to },
+    isInitialDateRange ? initialExpensesDetailed : undefined
+  );
 
   const exportPL = () => {
     if (!metrics) return;
@@ -90,17 +122,13 @@ export function ReportsClient() {
       [""],
       ["-- PURCHASES --"],
       ["Total Purchase", metrics.totalPurchase],
-      ["Total Purchase Tax", metrics.totalPurchaseTax],
-      ["Total Other Charges of Purchase", metrics.totalOtherChargesPurchase],
-      ["Total Discount on Purchase", metrics.totalDiscountPurchase],
+      ["Total Discount", metrics.totalDiscountPurchase],
       ["Paid Payment", metrics.paidPurchase],
       ["Purchase Due", metrics.duePurchase],
       [""],
       ["-- PURCHASE RETURNS --"],
       ["Total Purchase Return", metrics.totalPurchaseReturn],
-      ["Total Purchase Return Tax", metrics.totalPurchaseReturnTax],
-      ["Total Other Charges of Purchase Return", metrics.totalOtherChargesPurchaseReturn],
-      ["Total Discount on Purchase Return", metrics.totalDiscountPurchaseReturn],
+      ["Total Discount", metrics.totalDiscountPurchaseReturn],
       ["Paid Payment", metrics.paidPurchaseReturn],
       ["Purchase Return Due", metrics.duePurchaseReturn],
       [""],
@@ -108,22 +136,14 @@ export function ReportsClient() {
       ["Total Expense", metrics.expenseTotal],
       [""],
       ["-- SALES --"],
-      ["Sales (Before Tax)", metrics.salesBeforeTax],
-      ["Total Sales Tax", metrics.totalSalesTax],
-      ["Total Other Charges of Sales", metrics.totalOtherChargesSales],
-      ["Total Discount on Sales", metrics.totalDiscountSales],
-      ["Coupon Discount", metrics.couponDiscount],
       ["Total Sales", metrics.totalSales],
+      ["Total Discount", metrics.totalDiscountSales + metrics.couponDiscount],
       ["Paid Payment", metrics.paidSales],
       ["Sales Due", metrics.dueSales],
       [""],
       ["-- SALES RETURNS --"],
-      ["Total Sales Return", metrics.totalSalesReturn],
-      ["Total Sales Return Tax", metrics.totalSalesReturnTax],
-      ["Total Other Charges of Sales Return", metrics.totalOtherChargesSalesReturn],
-      ["Coupon Discount", metrics.couponDiscountSalesReturn],
-      ["Total Discount on Sales Return", metrics.totalDiscountSalesReturn],
       ["Return Total", metrics.returnTotal],
+      ["Total Discount", metrics.totalDiscountSalesReturn + metrics.couponDiscountSalesReturn],
       ["Paid Payment", metrics.paidSalesReturn],
       ["Sales Return Due", metrics.dueSalesReturn],
       [""],
@@ -324,7 +344,7 @@ export function ReportsClient() {
                 key={preset}
                 size="sm"
                 variant="outline"
-                className="h-7 text-[11px] font-bold px-3 rounded-lg text-slate-700 bg-white hover:bg-slate-50 border-slate-200/80 hover:border-slate-300 shadow-sm shadow-slate-100/30 transition-all"
+                className="h-7 text-[11px] font-bold px-3 rounded-lg text-slate-700 bg-white hover:bg-slate-50 hover:text-slate-900 border-slate-200/80 hover:border-slate-300 shadow-sm shadow-slate-100/30 transition-all"
                 onClick={() => setPreset(preset as any)}
               >
                 {labelMap[preset as keyof typeof labelMap]}
@@ -356,7 +376,7 @@ export function ReportsClient() {
         </div>
       </div>
       <div className="flex items-center gap-2.5 w-full xl:w-auto xl:justify-end mt-2 xl:mt-0">
-        <Button size="sm" variant="outline" className="h-9 text-xs font-semibold rounded-xl border-slate-200 hover:bg-slate-50 transition-all" onClick={onExport}>
+        <Button size="sm" variant="outline" className="h-9 text-xs font-semibold rounded-xl border-slate-200 hover:bg-slate-50 hover:text-slate-900 transition-all" onClick={onExport}>
           <Download className="h-3.5 w-3.5 mr-2 text-slate-500" /> Export CSV
         </Button>
         <Button size="sm" className="h-9 text-xs font-semibold rounded-xl bg-slate-900 hover:bg-slate-800 text-white shadow-sm transition-all" onClick={handlePrint}>
@@ -506,17 +526,13 @@ export function ReportsClient() {
                       
                       <PLRow label="Purchase" isHeading />
                       <PLRow label="Total Purchase" value={formatCurrency(metrics.totalPurchase)} />
-                      <PLRow label="Total Purchase Tax" value={formatCurrency(metrics.totalPurchaseTax)} />
-                      <PLRow label="Total Other Charges of Purchase" value={formatCurrency(metrics.totalOtherChargesPurchase)} />
-                      <PLRow label="Total Discount on Purchase" value={formatCurrency(metrics.totalDiscountPurchase)} />
+                      <PLRow label="Total Discount" value={formatCurrency(metrics.totalDiscountPurchase)} />
                       <PLRow label="Paid Payment" value={formatCurrency(metrics.paidPurchase)} badgeVariant="success" />
                       <PLRow label="Purchase Due" value={formatCurrency(metrics.duePurchase)} badgeVariant="danger" />
 
                       <PLRow label="Purchase Return" isHeading />
                       <PLRow label="Total Purchase Return" value={formatCurrency(metrics.totalPurchaseReturn)} />
-                      <PLRow label="Total Purchase Return Tax" value={formatCurrency(metrics.totalPurchaseReturnTax)} />
-                      <PLRow label="Total Other Charges of Purchase Return" value={formatCurrency(metrics.totalOtherChargesPurchaseReturn)} />
-                      <PLRow label="Total Discount on Purchase Return" value={formatCurrency(metrics.totalDiscountPurchaseReturn)} />
+                      <PLRow label="Total Discount" value={formatCurrency(metrics.totalDiscountPurchaseReturn)} />
                       <PLRow label="Paid Payment" value={formatCurrency(metrics.paidPurchaseReturn)} badgeVariant="success" />
                       <PLRow label="Purchase Return Due" value={formatCurrency(metrics.duePurchaseReturn)} badgeVariant="danger" />
                     </tbody>
@@ -545,22 +561,14 @@ export function ReportsClient() {
                       <PLRow label="Total Expense" value={formatCurrency(metrics.expenseTotal)} badgeVariant="danger" />
                       
                       <PLRow label="Sales" isHeading />
-                      <PLRow label="Sales (Before Tax)" value={formatCurrency(metrics.salesBeforeTax)} />
-                      <PLRow label="Total Sales Tax" value={formatCurrency(metrics.totalSalesTax)} />
-                      <PLRow label="Total Other Charges of Sales" value={formatCurrency(metrics.totalOtherChargesSales)} />
-                      <PLRow label="Total Discount on Sales" value={formatCurrency(metrics.totalDiscountSales)} />
-                      <PLRow label="Coupon Discount" value={formatCurrency(metrics.couponDiscount)} />
                       <PLRow label="Total Sales" value={formatCurrency(metrics.totalSales)} bgClass="bg-slate-50/50" badgeVariant="highlight" />
+                      <PLRow label="Total Discount" value={formatCurrency(metrics.totalDiscountSales + metrics.couponDiscount)} />
                       <PLRow label="Paid Payment" value={formatCurrency(metrics.paidSales)} badgeVariant="success" />
                       <PLRow label="Sales Due" value={formatCurrency(metrics.dueSales)} badgeVariant="danger" />
 
                       <PLRow label="Sales Return" isHeading />
-                      <PLRow label="Total Sales Return" value={formatCurrency(metrics.totalSalesReturn)} />
-                      <PLRow label="Total Sales Return Tax" value={formatCurrency(metrics.totalSalesReturnTax)} />
-                      <PLRow label="Total Other Charges of Sales Return" value={formatCurrency(metrics.totalOtherChargesSalesReturn)} />
-                      <PLRow label="Coupon Discount" value={formatCurrency(metrics.couponDiscountSalesReturn)} />
-                      <PLRow label="Total Discount on Sales Return" value={formatCurrency(metrics.totalDiscountSalesReturn)} />
                       <PLRow label="Return Total" value={formatCurrency(metrics.returnTotal)} bgClass="bg-slate-50/50" badgeVariant="highlight" />
+                      <PLRow label="Total Discount" value={formatCurrency(metrics.totalDiscountSalesReturn + metrics.couponDiscountSalesReturn)} />
                       <PLRow label="Paid Payment" value={formatCurrency(metrics.paidSalesReturn)} badgeVariant="success" />
                       <PLRow label="Sales Return Due" value={formatCurrency(metrics.dueSalesReturn)} badgeVariant="danger" />
                     </tbody>
@@ -992,39 +1000,39 @@ function PLRow({
   if (isHeading) {
     return (
       <tr className="border-b border-slate-100">
-        <td colSpan={2} className="px-4 py-2 bg-slate-50/50">
-          <div className="flex items-center gap-1.5">
-            <div className="h-2 w-1 bg-indigo-600 rounded-full" />
-            <span className="text-[11px] font-bold text-indigo-900 uppercase tracking-wider">{label}</span>
+        <td colSpan={2} className="px-5 py-3 bg-slate-50/50">
+          <div className="flex items-center gap-2">
+            <div className="h-2 w-1.5 bg-indigo-600 rounded-full" />
+            <span className="text-[13px] font-bold text-indigo-900 uppercase tracking-wider">{label}</span>
           </div>
         </td>
       </tr>
     );
   }
 
-  let valueNode = <span className={cn("font-bold text-[12.5px] tabular-nums", valueClass)}>{value}</span>;
+  let valueNode = <span className={cn("font-bold text-[14px] tabular-nums", valueClass)}>{value}</span>;
 
   if (badgeVariant === "success") {
     valueNode = (
-      <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200/80 font-bold text-[11px] px-2 py-0.5 shadow-none rounded-md">
+      <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200/80 font-bold text-[13px] px-3 py-1 shadow-none rounded-md">
         {value}
       </Badge>
     );
   } else if (badgeVariant === "danger") {
     valueNode = (
-      <Badge variant="outline" className="bg-rose-50 text-rose-700 border-rose-200/80 font-bold text-[11px] px-2 py-0.5 shadow-none rounded-md">
+      <Badge variant="outline" className="bg-rose-50 text-rose-700 border-rose-200/80 font-bold text-[13px] px-3 py-1 shadow-none rounded-md">
         {value}
       </Badge>
     );
   } else if (badgeVariant === "info") {
     valueNode = (
-      <Badge variant="outline" className="bg-sky-50 text-sky-700 border-sky-200/80 font-bold text-[11px] px-2 py-0.5 shadow-none rounded-md">
+      <Badge variant="outline" className="bg-sky-50 text-sky-700 border-sky-200/80 font-bold text-[13px] px-3 py-1 shadow-none rounded-md">
         {value}
       </Badge>
     );
   } else if (badgeVariant === "highlight") {
     valueNode = (
-      <Badge variant="outline" className="bg-slate-100 text-slate-800 border-slate-300 font-bold text-[11px] px-2 py-0.5 shadow-none rounded-md">
+      <Badge variant="outline" className="bg-slate-100 text-slate-800 border-slate-300 font-bold text-[13px] px-3 py-1 shadow-none rounded-md">
         {value}
       </Badge>
     );
@@ -1032,8 +1040,8 @@ function PLRow({
 
   return (
     <tr className={cn("border-b border-slate-100/50 last:border-0 hover:bg-slate-50/30 transition-colors", bgClass)}>
-      <td className="px-4 py-2.5 text-[12.5px] text-slate-500 font-semibold">{label}</td>
-      <td className="px-4 py-2.5 text-right">{valueNode}</td>
+      <td className="px-5 py-3.5 text-[14px] text-slate-600 font-semibold">{label}</td>
+      <td className="px-5 py-3.5 text-right">{valueNode}</td>
     </tr>
   );
 }

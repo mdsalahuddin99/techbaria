@@ -38,7 +38,7 @@ export const GET = publicApiHandler(async (req: Request) => {
     status: 200,
     headers: {
       "Content-Type": "application/json",
-      "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+      "Cache-Control": "no-cache, no-store, must-revalidate",
     },
   });
 });

@@ -70,33 +70,7 @@ export function ProductFormAdvancedFields({ form }: Props) {
         </FormItem>
       )} />
 
-      <FormField control={control} name="warrantyMonths" render={({ field }) => (
-        <FormItem>
-          <FormLabel>Warranty (months)</FormLabel>
-          <FormControl>
-            <Input
-              type="number"
-              placeholder="e.g. 12, 24"
-              {...field}
-              value={field.value ?? ""}
-            />
-          </FormControl>
-          <FormMessage />
-        </FormItem>
-      )} />
-      <FormField control={control} name="warrantyStartDate" render={({ field }) => (
-        <FormItem>
-          <FormLabel>Warranty Start Date</FormLabel>
-          <FormControl>
-            <Input
-              type="date"
-              {...field}
-              value={field.value ?? ""}
-            />
-          </FormControl>
-          <FormMessage />
-        </FormItem>
-      )} />
+
     </>
   );
 }

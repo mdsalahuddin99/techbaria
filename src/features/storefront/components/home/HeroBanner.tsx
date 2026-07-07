@@ -86,7 +86,7 @@ export function HeroBanner({ featured, slides: dbSlides }: Props) {
       goTo((current + 1) % activeSlides.length);
     }, 5000);
     return () => clearInterval(t);
-  }, [current, goTo]);
+  }, [current, goTo, activeSlides.length]);
 
   const slide = activeSlides[current];
 

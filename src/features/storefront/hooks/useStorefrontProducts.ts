@@ -17,6 +17,7 @@ export interface StorefrontFilters {
   /** Only products with a defaultDiscount > 0. */
   onSaleOnly?: boolean;
   initialData?: StorefrontProduct[];
+  enabled?: boolean;
 }
 
 /** Effective public stock — bundles use derived, simple uses .stock. */
@@ -29,14 +30,21 @@ export const publicStock = (p: StorefrontProduct, all: StorefrontProduct[]): num
  */
 export function useStorefrontProducts(filters: StorefrontFilters = {}) {
   const { data: all = filters.initialData ?? [], isLoading, error } = useQuery<StorefrontProduct[]>({
-    queryKey: ["storefront", "products"],
+    queryKey: ["storefront", "products", filters.search, filters.category],
     queryFn: async () => {
-      const res = await fetch("/api/storefront/products");
+      const params = new URLSearchParams();
+      if (filters.search) params.set("search", filters.search);
+      if (filters.category) params.set("category", filters.category);
+      // Cap the client limit to 100 to avoid massive payloads
+      params.set("limit", "100");
+
+      const res = await fetch(`/api/storefront/products?${params.toString()}`);
       if (!res.ok) throw new Error("Failed to fetch storefront products");
       return res.json();
     },
     initialData: filters.initialData,
     staleTime: 5 * 60 * 1000, // 5 mins cache
+    enabled: filters.enabled !== false,
   });
 
   const visible = useMemo(() => all.filter((p) => p.active !== false), [all]);

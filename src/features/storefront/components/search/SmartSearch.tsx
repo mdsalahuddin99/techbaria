@@ -18,11 +18,20 @@ interface Props {
 /** AI-style search: instant suggestions, recent terms, trending categories, voice input. */
 export function SmartSearch({ className = "", variant = "header" }: Props) {
   const [q, setQ] = useState("");
+  const [debouncedQ, setDebouncedQ] = useState("");
+  
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedQ(q), 300);
+    return () => clearTimeout(timer);
+  }, [q]);
+
   const [open, setOpen] = useState(false);
   const [listening, setListening] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
-  const { products } = useStorefrontProducts({ search: q, sort: "popular" });
+  
+  // Use debounced query for API fetch
+  const { products } = useStorefrontProducts({ search: debouncedQ, sort: "popular" });
   const categories = useStorefrontCategories();
   const recent = useRecentSearchesStore((s) => s.items);
   const pushRecent = useRecentSearchesStore((s) => s.push);

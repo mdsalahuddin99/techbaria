@@ -90,10 +90,24 @@ export function PurchasesClient({
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useInfinitePurchasesQuery({
+  const queryFilter = useMemo(() => ({
     search: debouncedSearch,
     status: statusFilter,
-  });
+  }), [debouncedSearch, statusFilter]);
+
+  const initialInfiniteData = useMemo(() => {
+    return {
+      pages: [{ items: initialPurchases, nextCursor: null, hasMore: false }],
+      pageParams: [undefined],
+    };
+  }, [initialPurchases]);
+
+  const isFilterEmpty = !queryFilter.search && queryFilter.status === "All";
+
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useInfinitePurchasesQuery(
+    queryFilter,
+    isFilterEmpty ? initialInfiniteData : undefined
+  );
 
   const allPurchases = useMemo(() => {
     if (!data) return initialPurchases;

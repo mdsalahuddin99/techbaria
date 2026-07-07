@@ -52,17 +52,21 @@ export interface ReportsMetrics {
   dueSalesReturn: number;
 }
 
-export function useReportsMetricsQuery({ from, to, paymentMethod = "All" }: ReportRange) {
+export function useReportsMetricsQuery(
+  { from, to, paymentMethod = "All" }: { from?: string; to?: string; paymentMethod?: string } = {},
+  initialData?: any
+) {
   const { session, status } = useAuth();
   return useQuery({
-    queryKey: reportKeys.metrics(from, to, paymentMethod),
+    queryKey: reportKeys.metrics(from!, to!, paymentMethod!),
     queryFn: async (): Promise<ReportsMetrics> => {
-      const params = new URLSearchParams({ from, to, paymentMethod });
+      const params = new URLSearchParams({ from: from!, to: to!, paymentMethod: paymentMethod! });
       const res = await fetch(`/api/reports/metrics?${params.toString()}`);
       if (!res.ok) throw new Error("Failed to fetch reports metrics");
       return res.json();
     },
     enabled: status !== "loading" && !!session && !!from && !!to,
+    initialData,
     ...QueryTier.TRANSACTION,
   });
 }
@@ -73,7 +77,10 @@ export interface InventoryMetrics {
   deadStock: Array<{ id: string; name: string; category: string; stock: number; unit: string; value: number }>;
 }
 
-export function useInventoryMetricsQuery({ from, to }: { from?: string; to?: string } = {}) {
+export function useInventoryMetricsQuery(
+  { from, to }: { from?: string; to?: string } = {},
+  initialData?: any
+) {
   const { session, status } = useAuth();
   return useQuery({
     queryKey: reportKeys.inventoryMetrics(from, to),
@@ -86,6 +93,7 @@ export function useInventoryMetricsQuery({ from, to }: { from?: string; to?: str
       return res.json();
     },
     enabled: status !== "loading" && !!session,
+    initialData,
     ...QueryTier.TRANSACTION,
   });
 }
@@ -97,7 +105,7 @@ export interface DuesMetrics {
   totalSupplierPayable: number;
 }
 
-export function useDuesMetricsQuery() {
+export function useDuesMetricsQuery(initialData?: any) {
   const { session, status } = useAuth();
   return useQuery({
     queryKey: ["reports", "dues"],
@@ -107,6 +115,7 @@ export function useDuesMetricsQuery() {
       return res.json();
     },
     enabled: status !== "loading" && !!session,
+    initialData,
     ...QueryTier.TRANSACTION,
   });
 }
@@ -117,7 +126,10 @@ export interface ExpensesDetailed {
   totalExpense: number;
 }
 
-export function useExpensesDetailedQuery({ from, to }: { from: string; to: string }) {
+export function useExpensesDetailedQuery(
+  { from, to }: { from: string; to: string },
+  initialData?: any
+) {
   const { session, status } = useAuth();
   return useQuery({
     queryKey: ["reports", "expenses", from, to],
@@ -128,6 +140,7 @@ export function useExpensesDetailedQuery({ from, to }: { from: string; to: strin
       return res.json();
     },
     enabled: status !== "loading" && !!session && !!from && !!to,
+    initialData,
     ...QueryTier.TRANSACTION,
   });
 }

@@ -53,36 +53,7 @@ export function ShopFilters({ value, bounds, onChange, onReset, onCategoryNav, i
         </button>
       </div>
 
-      <Section title="Category">
-        <div className="space-y-1">
-          <button
-            onClick={() => onCategoryNav(null)}
-            className={`w-full flex items-center justify-between py-1.5 text-sm transition ${
-              !value.category ? "text-slate-900 font-bold" : "text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            <span>All Products</span>
-            {!value.category && <Check className="h-3.5 w-3.5" />}
-          </button>
-          {categories.map((c) => (
-            <button
-              key={c.value}
-              onClick={() => onCategoryNav(c.value)}
-              className={`w-full flex items-center justify-between py-1.5 text-sm transition ${
-                value.category === c.value
-                  ? "text-slate-900 font-bold"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              <span className="flex items-center gap-2 truncate">
-                <c.icon className={`h-4 w-4 shrink-0 ${value.category === c.value ? "text-yellow-500" : "text-slate-400"}`} />
-                <span className="truncate">{c.label}</span>
-              </span>
-              <span className="text-[10px] text-slate-500">{c.count}</span>
-            </button>
-          ))}
-        </div>
-      </Section>
+
 
       <Section title="Price range">
         <Slider

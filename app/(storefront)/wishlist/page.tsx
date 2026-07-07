@@ -11,7 +11,7 @@ export default function StorefrontWishlist() {
   useSeo({ title: "Wishlist · AmarShop", description: "আপনার সংরক্ষিত পণ্যসমূহ" });
   const ids = useWishlistStore((s) => s.ids);
   const clear = useWishlistStore((s) => s.clear);
-  const { all, isLoading } = useStorefrontProducts();
+  const { all, isLoading } = useStorefrontProducts({ enabled: ids.length > 0 });
   const items = ids.map((id) => all.find((p) => p.id === id)).filter(Boolean) as typeof all;
 
   return (

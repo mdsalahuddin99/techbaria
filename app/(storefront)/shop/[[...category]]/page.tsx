@@ -31,7 +31,7 @@ export default async function StorefrontCatalog({ params, searchParams }: Props)
     category: categoryName,
     search,
     page,
-    limit: 24,
+    limit: 12,
     minPrice,
     maxPrice,
     brands,

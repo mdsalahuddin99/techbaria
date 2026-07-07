@@ -1,9 +1,9 @@
 "use client";
 
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { LayoutGrid, List, ChevronRight, Filter } from "lucide-react";
+import { LayoutGrid, List, ChevronRight, ChevronLeft, Filter } from "lucide-react";
 import { useStorefrontProducts, useSeo } from "@/features/storefront";
 import { ProductGrid } from "@/features/storefront/components/product/ProductGrid";
 import { ProductListItem } from "@/features/storefront/components/product/ProductListItem";
@@ -24,11 +24,14 @@ interface Props {
 
 export function ShopClient({ initialProducts, totalCount }: Props) {
   const params = useParams();
-  const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+  const nextSearchParams = useSearchParams();
+  // Fallback to window.location if useSearchParams is null (rare but possible in some setups)
+  const searchParams = nextSearchParams ?? (typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null);
   const categoryParam = params.category 
     ? (Array.isArray(params.category) ? params.category[0] : params.category) 
     : undefined;
   const decoded = categoryParam ? decodeURIComponent(categoryParam) : null;
+  const activeSub = searchParams?.get("sub");
   const router = useRouter();
 
   // Remove useStorefrontProducts client fetching and filtering
@@ -61,6 +64,9 @@ export function ShopClient({ initialProducts, totalCount }: Props) {
     if (newFilters.onSaleOnly) sp.set("onSale", "true");
     if (newSort !== "popular") sp.set("sort", newSort);
     if (newPage > 1) sp.set("page", newPage.toString());
+    
+    // Preserve "sub" query param if activeSub is present
+    if (activeSub) sp.set("sub", activeSub);
 
     const queryString = sp.toString();
     const url = `/storefront/shop${decoded ? `/${encodeURIComponent(decoded)}` : ""}${queryString ? `?${queryString}` : ""}`;
@@ -82,11 +88,17 @@ export function ShopClient({ initialProducts, totalCount }: Props) {
   };
 
   useEffect(() => {
-    setFilters((f) => ({ ...f, category: decoded }));
-  }, [decoded]);
+    // Sync filters with URL when URL changes via Links (e.g. SubCategoryTags)
+    const urlBrands = searchParams?.get("brands")?.split(",") || [];
+    setFilters((f) => ({
+      ...f,
+      category: decoded,
+      brands: urlBrands,
+    }));
+  }, [decoded, searchParams]);
 
   const visible = products;
-  const hasMore = page * 24 < totalCount;
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
   const onCategoryNav = (cat: string | null) => {
     if (cat) router.push(`/storefront/shop/${encodeURIComponent(cat)}`);
@@ -115,14 +127,34 @@ export function ShopClient({ initialProducts, totalCount }: Props) {
   return (
     <div className="max-w-7xl mx-auto px-3 sm:px-6 pt-3 sm:pt-4">
       {/* Breadcrumb — Electro style */}
-      <nav className="text-xs text-slate-500 flex items-center gap-1.5 mb-4 bg-[#F0FDF4] border border-[#BFDBFE] px-3 py-2 rounded-md" aria-label="Breadcrumb">
+      <nav className="text-xs text-slate-500 flex items-center gap-1.5 mb-4 bg-[#F0FDF4] border border-[#BFDBFE] px-3 py-2 rounded-md overflow-x-auto whitespace-nowrap scrollbar-hide" aria-label="Breadcrumb">
         <Link href="/" className="hover:text-[#16A34A] font-medium">Home</Link>
-        <ChevronRight className="h-3 w-3 text-slate-300" />
+        <ChevronRight className="h-3 w-3 text-slate-300 shrink-0" />
         <Link href="/shop" className="hover:text-[#16A34A] font-medium">Shop</Link>
         {decoded && (
           <>
-            <ChevronRight className="h-3 w-3 text-slate-300" />
-            <span className="text-[#1E3A5F] font-semibold">{decoded}</span>
+            <ChevronRight className="h-3 w-3 text-slate-300 shrink-0" />
+            {activeSub ? (
+              <Link href={`/shop/${encodeURIComponent(decoded)}`} className="hover:text-[#16A34A] font-medium text-[#475569]">{decoded}</Link>
+            ) : (
+              <span className="text-[#1E3A5F] font-semibold">{decoded}</span>
+            )}
+          </>
+        )}
+        {decoded && activeSub && (
+          <>
+            <ChevronRight className="h-3 w-3 text-slate-300 shrink-0" />
+            {filters.brands.length === 1 ? (
+              <Link href={`/shop/${encodeURIComponent(decoded)}?sub=${encodeURIComponent(activeSub)}`} className="hover:text-[#16A34A] font-medium text-[#475569]">{activeSub}</Link>
+            ) : (
+              <span className="text-[#1E3A5F] font-semibold">{activeSub}</span>
+            )}
+          </>
+        )}
+        {decoded && activeSub && filters.brands.length === 1 && (
+          <>
+            <ChevronRight className="h-3 w-3 text-slate-300 shrink-0" />
+            <span className="text-[#1E3A5F] font-semibold">{filters.brands[0]}</span>
           </>
         )}
       </nav>
@@ -133,7 +165,7 @@ export function ShopClient({ initialProducts, totalCount }: Props) {
           <span className="w-1 h-7 bg-[#16A34A] rounded-full shrink-0" />
           <div>
             <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-[#1E3A5F]">
-              {decoded ?? "All Products"}
+              {filters.brands.length === 1 ? filters.brands[0] : (activeSub ?? decoded ?? "All Products")}
             </h1>
             <p className="text-xs text-slate-500 mt-0.5">
               {products.length.toLocaleString("en-BD")} products
@@ -240,20 +272,54 @@ export function ShopClient({ initialProducts, totalCount }: Props) {
             </div>
           )}
 
-          {hasMore && (
-            <div className="mt-8 flex justify-center">
+          {totalPages > 1 && (
+            <div className="mt-8 flex justify-center items-center gap-2">
               <button
-                onClick={() => handlePageChange(page + 1)}
-                className="h-11 px-8 rounded-full bg-[#16A34A] text-white text-sm font-extrabold hover:bg-[#15803D] transition shadow-md shadow-green-500/20"
+                onClick={() => handlePageChange(Math.max(1, page - 1))}
+                disabled={page === 1}
+                className="h-10 px-4 rounded-xl border border-slate-200 bg-white text-slate-500 font-medium hover:bg-slate-50 disabled:opacity-50 transition"
               >
-                Load more ({totalCount - (page * 24)} বাকি)
+                <ChevronLeft className="h-4 w-4 inline-block mr-1" /> আগে
+              </button>
+              
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => {
+                if (
+                  p === 1 ||
+                  p === totalPages ||
+                  (p >= page - 1 && p <= page + 1)
+                ) {
+                  return (
+                    <button
+                      key={p}
+                      onClick={() => handlePageChange(p)}
+                      className={`h-10 w-10 flex items-center justify-center rounded-xl font-bold transition ${
+                        page === p
+                          ? "bg-[#16A34A] text-white shadow-md shadow-green-500/20"
+                          : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  );
+                } else if (p === page - 2 || p === page + 2) {
+                  return <span key={p} className="text-slate-400">...</span>;
+                }
+                return null;
+              })}
+
+              <button
+                onClick={() => handlePageChange(Math.min(totalPages, page + 1))}
+                disabled={page === totalPages}
+                className="h-10 px-4 rounded-xl border border-slate-200 bg-white text-slate-500 font-medium hover:bg-slate-50 disabled:opacity-50 transition"
+              >
+                পরে <ChevronRight className="h-4 w-4 inline-block ml-1" />
               </button>
             </div>
           )}
 
-          {!hasMore && visible.length > 0 && (
-            <div className="mt-8 text-center text-xs text-slate-500">
-              সব {totalCount} টি পণ্য দেখানো হয়েছে
+          {visible.length > 0 && (
+            <div className="mt-6 text-center text-xs text-slate-500">
+              Showing {Math.min(1 + (page - 1) * 12, totalCount)} to {Math.min(page * 12, totalCount)} of {totalCount} products
             </div>
           )}
 

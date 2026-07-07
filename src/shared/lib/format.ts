@@ -51,7 +51,7 @@ export function productDisplayName(p: any): string {
   parts.push(p.name);
   const modelObj = p.globalModel || p.model;
   const modelName = typeof modelObj === 'object' && modelObj !== null ? modelObj.name : modelObj;
-  if (modelName) parts.push(`Model ${modelName}`);
+  if (modelName) parts.push(modelName);
   const seriesObj = p.globalSeries || p.series;
   const seriesName = typeof seriesObj === 'object' && seriesObj !== null ? seriesObj.name : seriesObj;
   if (seriesName) parts.push(seriesName);

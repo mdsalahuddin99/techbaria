@@ -24,7 +24,7 @@ export interface CheckoutAddress {
   notes?: string;
 }
 
-export type ShippingMethod = "inside_dhaka" | "outside_dhaka" | "pickup";
+export type ShippingMethod = string;
 export type StorefrontPaymentMethod = "cod" | "bkash" | "nagad" | "card";
 
 export interface StorefrontOrder {

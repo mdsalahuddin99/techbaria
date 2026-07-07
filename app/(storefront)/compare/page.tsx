@@ -12,7 +12,7 @@ export default function StorefrontCompare() {
   const ids = useCompareStore((s) => s.ids);
   const remove = useCompareStore((s) => s.remove);
   const clear = useCompareStore((s) => s.clear);
-  const { all } = useStorefrontProducts();
+  const { all } = useStorefrontProducts({ enabled: ids.length > 0 });
   const items = ids.map((id) => all.find((p) => p.id === id)).filter(Boolean) as typeof all;
 
   if (items.length === 0) {

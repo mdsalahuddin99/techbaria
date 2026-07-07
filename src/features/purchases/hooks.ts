@@ -24,7 +24,10 @@ export function usePurchasesQuery(initialData?: any) {
   });
 }
 
-export function useInfinitePurchasesQuery(filter?: { search?: string; status?: string; sortKey?: string; sortDir?: "asc" | "desc" }) {
+export function useInfinitePurchasesQuery(
+  filter?: { search?: string; status?: string; sortKey?: string; sortDir?: "asc" | "desc" },
+  initialData?: any
+) {
   const { session, status } = useAuth();
   return useInfiniteQuery({
     queryKey: [...purchaseKeys.list(), filter],
@@ -32,6 +35,7 @@ export function useInfinitePurchasesQuery(filter?: { search?: string; status?: s
     getNextPageParam: (lastPage) => (lastPage as any).nextCursor || undefined,
     initialPageParam: undefined as string | undefined,
     enabled: status !== "loading" && !!session,
+    initialData,
   });
 }
 

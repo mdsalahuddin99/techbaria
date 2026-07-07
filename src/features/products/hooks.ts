@@ -28,7 +28,10 @@ export function useProductsQuery(initialData?: any) {
 
 import { useInfiniteQuery, keepPreviousData } from "@tanstack/react-query";
 
-export function useInfiniteProductsQuery(filter?: { search?: string; categoryId?: string; isPublished?: boolean; lowStock?: boolean }) {
+export function useInfiniteProductsQuery(
+  filter?: { search?: string; categoryId?: string; isPublished?: boolean; lowStock?: boolean },
+  initialData?: any
+) {
   const { session, status } = useAuth();
   return useInfiniteQuery({
     queryKey: [...productKeys.list(), filter],
@@ -37,6 +40,7 @@ export function useInfiniteProductsQuery(filter?: { search?: string; categoryId?
     initialPageParam: undefined as string | undefined,
     enabled: status !== "loading" && !!session,
     placeholderData: keepPreviousData,
+    initialData,
   });
 }
 

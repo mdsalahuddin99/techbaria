@@ -79,7 +79,19 @@ export function ProductsClient({
     lowStock: lowStockOnly || undefined,
   }), [debouncedSearch, filter, lowStockOnly]);
 
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useInfiniteProductsQuery(queryFilter);
+  const initialInfiniteData = useMemo(() => {
+    return {
+      pages: [{ items: initialProducts, nextCursor: null, hasMore: false }],
+      pageParams: [undefined],
+    };
+  }, [initialProducts]);
+
+  const isFilterEmpty = !(queryFilter.search || queryFilter.categoryId || queryFilter.lowStock);
+
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useInfiniteProductsQuery(
+    queryFilter,
+    isFilterEmpty ? initialInfiniteData : undefined
+  );
 
   const products = useMemo(() => {
     let result = data?.pages.flatMap((page) => page.items) ?? initialProducts;

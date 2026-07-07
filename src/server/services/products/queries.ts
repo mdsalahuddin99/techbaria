@@ -180,15 +180,17 @@ export async function publicStorefrontList(
   const isUnfiltered = !filter?.category && !filter?.search && !filter?.excludeId && !filter?.page && !filter?.minPrice && !filter?.maxPrice && !filter?.brands?.length && !filter?.inStockOnly && !filter?.onSaleOnly;
 
   if (isUnfiltered && filter?.limit === 50) {
-    // Only cache the homepage default query
-    const cacheKey = `products:storefront:v2:unfiltered:50`;
-    return cache.fetch(cacheKey, TTL.CATALOG, () => runPublicStorefrontQuery(filter));
+    // Only cache the homepage default query (Disabled for real-time updates)
+    // const cacheKey = `products:storefront:v2:unfiltered:50`;
+    // return cache.fetch(cacheKey, TTL.CATALOG, () => runPublicStorefrontQuery(filter));
+    return runPublicStorefrontQuery(filter);
   }
 
-  // Cache related products query
+  // Cache related products query (Disabled for real-time updates)
   if (filter?.category && filter?.excludeId && !filter?.search) {
-    const cacheKey = `products:storefront:related:${filter.category}:${filter.excludeId}`;
-    return cache.fetch(cacheKey, TTL.CATALOG, () => runPublicStorefrontQuery(filter));
+    // const cacheKey = `products:storefront:related:${filter.category}:${filter.excludeId}`;
+    // return cache.fetch(cacheKey, TTL.CATALOG, () => runPublicStorefrontQuery(filter));
+    return runPublicStorefrontQuery(filter);
   }
 
   return runPublicStorefrontQuery(filter);

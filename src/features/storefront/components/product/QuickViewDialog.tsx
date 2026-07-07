@@ -17,7 +17,7 @@ import { toast } from "@/shared/hooks/use-toast";
 export function QuickViewDialog() {
   const id = useQuickViewStore((s) => s.productId);
   const close = useQuickViewStore((s) => s.close);
-  const { all = [] } = useStorefrontProducts();
+  const { all = [] } = useStorefrontProducts({ enabled: !!id });
   const product = id ? all.find((p) => p.id === id) : null;
   const add = useCartStore((s) => s.add);
   const wishHas = useWishlistStore((s) => s.has);

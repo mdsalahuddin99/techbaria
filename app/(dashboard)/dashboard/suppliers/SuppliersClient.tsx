@@ -63,9 +63,23 @@ export function SuppliersClient({
     return () => clearTimeout(timer);
   }, [search]);
 
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useInfiniteSuppliersQuery({
+  const queryFilter = useMemo(() => ({
     search: debouncedSearch,
-  });
+  }), [debouncedSearch]);
+
+  const initialInfiniteData = useMemo(() => {
+    return {
+      pages: [{ items: initialSuppliers, nextCursor: null, hasMore: false }],
+      pageParams: [undefined],
+    };
+  }, [initialSuppliers]);
+
+  const isFilterEmpty = !queryFilter.search;
+
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useInfiniteSuppliersQuery(
+    queryFilter,
+    isFilterEmpty ? initialInfiniteData : undefined
+  );
 
   const suppliers = useMemo(() => {
     if (!data) return initialSuppliers;
