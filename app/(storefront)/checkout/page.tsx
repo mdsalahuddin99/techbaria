@@ -41,7 +41,7 @@ export default function StorefrontCheckout() {
     if (data) {
       try {
         setAddress((prev) => ({ ...prev, ...JSON.parse(data) }));
-      } catch (e) {}
+      } catch (e) { /* ignore */ }
     }
   }, []);
 

@@ -153,9 +153,9 @@ export function usePurchaseForm({
     if (editId || open === false) return;
     const draft = { supplierId, reference, lines, tenders };
     if (supplierId || reference || lines.length > 0 || tenders.length > 0) {
-      try { localStorage.setItem(DRAFT_KEY, JSON.stringify(draft)); } catch (e) {}
+      try { localStorage.setItem(DRAFT_KEY, JSON.stringify(draft)); } catch (e) { /* ignore */ }
     } else {
-      try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
+      try { localStorage.removeItem(DRAFT_KEY); } catch (e) { /* ignore */ }
     }
   }, [editId, open, supplierId, reference, lines, tenders]);
 
@@ -176,7 +176,7 @@ export function usePurchaseForm({
     setTenders([]);
     setCollapsedSet(new Set());
     if (clearDraft && !editId) {
-      try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
+      try { localStorage.removeItem(DRAFT_KEY); } catch (e) { /* ignore */ }
     }
   };
 

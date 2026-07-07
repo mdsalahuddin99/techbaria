@@ -34,8 +34,8 @@ export interface HeldSaleForPrint {
   discount: number;
   salesPerson?: string;
   notes?: string;
-  vat: number;
-  extraCharges: number;
+
+
   heldAt: string;
   cashier?: string;
 }
@@ -246,7 +246,7 @@ function buildDraftInvoiceHtml(
   const subtotal = round2(
     cartItems.reduce((s: number, r: any) => s + r.price * r.qty - (r.discount || 0), 0)
   );
-  const total = round2(Math.max(0, subtotal + (draft.vat || 0) + (draft.extraCharges || 0)));
+  const total = round2(Math.max(0, subtotal));
   const totalQty = cartItems.reduce((s: number, i: any) => s + i.qty, 0);
   const words = numberToWords(total) + " Only";
   const totalDiscount = round2(cartItems.reduce((s: number, r: any) => s + (r.discount || 0), 0));
@@ -451,8 +451,8 @@ function buildDraftInvoiceHtml(
         <table style="border-collapse:collapse;width:100%;font-size:10.5px;">
           <tr style="border-bottom:1px solid #ccc;"><td style="padding:5px 10px;font-weight:600;background:#f5f5f5;border-right:1px solid #ccc;">Total Amount</td><td style="padding:5px 10px;text-align:right;font-weight:600;">${subtotal.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td></tr>
           <tr style="border-bottom:1px solid #ccc;"><td style="padding:5px 10px;font-weight:600;background:#f5f5f5;border-right:1px solid #ccc;">Less Discount</td><td style="padding:5px 10px;text-align:right;">${totalDiscount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td></tr>
-          <tr style="border-bottom:1px solid #ccc;"><td style="padding:5px 10px;font-weight:600;background:#f5f5f5;border-right:1px solid #ccc;">Add VAT</td><td style="padding:5px 10px;text-align:right;">${(draft.vat ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td></tr>
-          <tr style="border-bottom:1px solid #ccc;"><td style="padding:5px 10px;font-weight:600;background:#f5f5f5;border-right:1px solid #ccc;">Add Extra Charges</td><td style="padding:5px 10px;text-align:right;">${(draft.extraCharges ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td></tr>
+
+
           <tr style="background:#efefef;"><td style="padding:6px 10px;font-weight:700;font-size:11px;border-right:1px solid #ccc;">Net Payable Amount</td><td style="padding:6px 10px;text-align:right;font-weight:700;font-size:11px;">${total.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td></tr>
         </table>
       </td>

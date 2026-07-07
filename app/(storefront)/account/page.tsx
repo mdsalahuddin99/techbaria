@@ -259,7 +259,7 @@ function AddressTab() {
   useEffect(() => {
     const data = localStorage.getItem("storefront_default_address");
     if (data) {
-      try { setAddress(JSON.parse(data)); } catch (e) {}
+      try { setAddress(JSON.parse(data)); } catch (e) { /* ignore */ }
     }
   }, []);
 

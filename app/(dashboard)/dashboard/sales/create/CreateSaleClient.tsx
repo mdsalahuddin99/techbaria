@@ -83,8 +83,6 @@ export function CreateSaleClient() {
     return (new Date(Date.now() - tzoffset)).toISOString().split('T')[0];
   });
   const [narration, setNarration] = useState("");
-  const [vat, setVat] = useState<number>(0);
-  const [extraCharges, setExtraCharges] = useState<number>(0);
   const [quickName, setQuickName] = useState("");
   const [quickPhone, setQuickPhone] = useState("");
   const [heldOpen, setHeldOpen] = useState(false);
@@ -142,13 +140,13 @@ export function CreateSaleClient() {
         const tenders = sale.payments?.length
           ? sale.payments.map((p: any) => ({
               method: p.method,
-              amount: p.amount,
+              amount: Number(p.amount),
               accountId: p.accountId ?? null,
             }))
           : [
               {
                 method: sale.paymentMethod as PaymentMethod,
-                amount: sale.amountPaid,
+                amount: Number(sale.amountPaid),
                 accountId: null,
               },
             ];
@@ -161,8 +159,6 @@ export function CreateSaleClient() {
           setInvoiceDate(new Date(new Date(sale.date).getTime() - tzoffset).toISOString().split('T')[0]);
         }
         setNarration(sale.notes ?? "");
-        setVat(sale.vat ?? 0);
-        setExtraCharges(sale.extraCharges ?? 0);
       } catch {
         toast.error("Failed to load sale for editing");
         router.replace("/dashboard/sales/create");
@@ -180,7 +176,7 @@ export function CreateSaleClient() {
     () => round2(voucherRows.reduce((s, r) => s + r.price * r.qty - (r.discount || 0), 0)),
     [voucherRows],
   );
-  const invoiceTotal = round2(Math.max(0, subtotal + vat + extraCharges));
+  const invoiceTotal = round2(Math.max(0, subtotal));
 
   // Reset auto-apply flag when customer changes
   useEffect(() => {
@@ -380,8 +376,6 @@ export function CreateSaleClient() {
     const tzoffset = (new Date()).getTimezoneOffset() * 60000;
     setInvoiceDate((new Date(Date.now() - tzoffset)).toISOString().split('T')[0]);
     setNarration("");
-    setVat(0);
-    setExtraCharges(0);
   }, [session]);
 
   // ── Context event listeners for global Command Palette ────────────────────
@@ -457,8 +451,6 @@ export function CreateSaleClient() {
           destination: destination || undefined,
           attention: attention || undefined,
           notes: narration || undefined,
-          vat: Number(vat) || 0,
-          extraCharges: Number(extraCharges) || 0,
         }),
       });
       toast.success("Draft saved!");
@@ -483,8 +475,6 @@ export function CreateSaleClient() {
     if (sale.destination) setDestination(sale.destination);
     if (sale.attention) setAttention(sale.attention);
     if (sale.notes) setNarration(sale.notes);
-    if (sale.vat) setVat(sale.vat);
-    if (sale.extraCharges) setExtraCharges(sale.extraCharges);
     try {
       await apiFetch(`/api/pos/held-sales?id=${id}`, { method: "DELETE" });
       refetchHeldSales();
@@ -580,8 +570,6 @@ export function CreateSaleClient() {
       destination: destination || undefined,
       attention: attention || undefined,
       notes: narration || undefined,
-      vat,
-      extraCharges,
       items: voucherRows.map((r) => ({
         productId: r.productId,
         qty: r.qty,
@@ -704,7 +692,6 @@ export function CreateSaleClient() {
                       const cartItems = (h.cart || []).filter((i: any) => !i._meta);
                       const draftTotal = round2(
                         cartItems.reduce((s: number, i: any) => s + i.price * i.qty - (i.discount || 0), 0)
-                        + (h.vat || 0) + (h.extraCharges || 0)
                       );
                       const itemCount = cartItems.reduce((s: number, i: any) => s + i.qty, 0);
                       const heldDate = new Date(h.heldAt);
@@ -965,8 +952,6 @@ export function CreateSaleClient() {
               <div className="lg:col-span-8 space-y-4">
                 <PaymentCollector
                   subtotal={subtotal}
-                  vat={vat}
-                  extraCharges={extraCharges}
                   payments={payments}
                   onAddPayment={(p) => setPayments((prev) => [...prev, p])}
                   onRemovePayment={(idx) => {

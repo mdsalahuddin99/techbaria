@@ -44,8 +44,7 @@ interface PaymentCollectorProps {
   customerId: string | null;
   customers: Customer[];
 
-  vat: number;
-  extraCharges: number;
+
 
   /** Quick customer inline form shown when there's credit with no customer */
   quickName: string;
@@ -56,8 +55,6 @@ interface PaymentCollectorProps {
 
 export function PaymentCollector({
   subtotal,
-  vat,
-  extraCharges,
   payments,
   onAddPayment,
   onRemovePayment,
@@ -68,7 +65,7 @@ export function PaymentCollector({
   onQuickNameChange,
   onQuickPhoneChange,
 }: PaymentCollectorProps) {
-  const afterDiscount = round2(Math.max(0, subtotal + vat + extraCharges));
+  const afterDiscount = round2(Math.max(0, subtotal));
   const paidNum = round2(payments.reduce((s, p) => s + p.amount, 0));
   const dueNum = round2(Math.max(0, afterDiscount - paidNum));
 

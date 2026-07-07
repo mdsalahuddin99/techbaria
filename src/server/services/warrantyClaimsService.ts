@@ -80,7 +80,7 @@ export const warrantyClaimsService = {
   async update(ctx: Ctx, id: string, data: WarrantyClaimUpdateInput) {
     const existing = await this.getById(ctx, id);
 
-    let statusUpdateData: any = {};
+    const statusUpdateData: any = {};
     if (data.status && data.status !== existing.status) {
       if (data.status === "SENT_TO_SUPPLIER") statusUpdateData.sentToSupplierAt = new Date();
       if (data.status === "RECEIVED_FROM_SUPPLIER") statusUpdateData.returnedAt = new Date();
