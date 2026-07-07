@@ -6,41 +6,117 @@ import type { Ctx } from "@/server/lib/ctx";
 import { auditLogService } from "../auditLogService";
 import { cache } from "@/lib/cache";
 
-/** Delete a purchase. Requires MANAGER+.
- *  Blocked if any items exist — the purchase has already affected inventory. */
+/** Delete a purchase. Requires ADMIN.
+ *  If the purchase has items that have already affected inventory,
+ *  this will REVERSE the stock changes (decrement stock, remove IN_STOCK serials)
+ *  to keep inventory consistent. */
 export async function remove(ctx: Ctx, id: string) {
   requireRole(ctx, "ADMIN");
 
+  // Fetch the purchase with all items and their associated serial numbers
   const purchase = await prisma.purchase.findFirst({
     where: { id },
-    select: {
-      id: true, invoiceNo: true, total: true,
-      _count: { select: { items: true } },
+    include: {
+      items: {
+        include: {
+          serialNumbers: { where: { status: "IN_STOCK" } },
+        },
+      },
+      tenders: true,
     },
   });
+
   if (!purchase) {
     throw new ServiceError("NOT_FOUND", "Purchase not found", 404);
   }
 
-  const p = purchase as any;
-  if (p._count.items > 0) {
-    throw new ServiceError(
-      "VALIDATION",
-      `Cannot delete purchase "${p.invoiceNo}" — ${p._count.items} টি item ইতিমধ্যে inventory-তে যোগ হয়েছে।`,
-      400,
+  const affectedProductIds = [...new Set(purchase.items.map((i) => i.productId))];
+
+  await prisma.$transaction(async (tx) => {
+    // ── 1. Reverse stock for each item ──────────────────────────────────────
+    await Promise.all(
+      purchase.items.map(async (item) => {
+        const qty = item.qty;
+
+        // Decrement global product stock (floor at 0)
+        const product = await tx.product.findUnique({
+          where: { id: item.productId },
+          select: { stock: true },
+        });
+        if (product) {
+          const newStock = Math.max(0, (product.stock ?? 0) - qty);
+          await tx.product.update({
+            where: { id: item.productId },
+            data: { stock: newStock },
+          });
+        }
+
+        // Decrement warehouse stock if applicable
+        if (purchase.warehouseId) {
+          const wStock = await tx.warehouseStock.findUnique({
+            where: {
+              warehouseId_productId: {
+                warehouseId: purchase.warehouseId,
+                productId: item.productId,
+              },
+            },
+            select: { qty: true },
+          });
+          if (wStock) {
+            await tx.warehouseStock.update({
+              where: {
+                warehouseId_productId: {
+                  warehouseId: purchase.warehouseId!,
+                  productId: item.productId,
+                },
+              },
+              data: { qty: { decrement: Math.min(qty, wStock.qty) } },
+            });
+          }
+        }
+
+        // ── 2. Delete IN_STOCK serial numbers that came from this purchase item ──
+        if (item.serialNumbers.length > 0) {
+          await tx.serialNumber.deleteMany({
+            where: {
+              purchaseItemId: item.id,
+              status: "IN_STOCK",
+            },
+          });
+        }
+      })
     );
-  }
 
-  await prisma.purchase.deleteMany({
-    where: { id },
-  });
+    // ── 3. Reverse supplier payable if due > 0 ───────────────────────────────
+    if (purchase.supplierId) {
+      const due = Number(purchase.due ?? 0);
+      if (due > 0) {
+        await tx.supplier.update({
+          where: { id: purchase.supplierId },
+          data: { payable: { decrement: due } },
+        });
+      }
+    }
 
+    // ── 4. Delete the purchase (cascades to items, tenders, supplierTransactions) ──
+    await tx.purchase.delete({ where: { id } });
+  }, { timeout: 30000 });
+
+  // ── 5. Invalidate caches ─────────────────────────────────────────────────
   await cache.invalidatePurchases();
+  if (affectedProductIds.length > 0) {
+    await cache.invalidateSpecificProducts(affectedProductIds);
+  }
 
   await auditLogService.log(ctx, {
     entity: "Purchase",
     entityId: id,
     action: "DELETE",
-    diff: { invoiceNo: purchase.invoiceNo, total: Number(purchase.total) },
+    diff: {
+      invoiceNo: purchase.invoiceNo,
+      total: Number(purchase.total),
+      itemsReversed: purchase.items.length,
+      productsAffected: affectedProductIds.length,
+    },
   });
 }

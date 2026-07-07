@@ -235,9 +235,30 @@ export function usePurchaseForm({
     const key = code.toLowerCase();
     
     const onDraftLine = lines.find((l) => l.serials.some((s) => s.toLowerCase() === key));
-    const inInventory = !onDraftLine && products.some((p) =>
-      p.serials?.some((u: any) => u.serialNumber?.toLowerCase() === key)
-    );
+    
+    // Find which product owns this serial in inventory
+    const ownerProduct = !onDraftLine
+      ? products.find((p) => p.serials?.some((u: any) => u.serialNumber?.toLowerCase() === key))
+      : null;
+    
+    // A serial is a REAL duplicate only if:
+    // 1. It's on the current draft (same PO), OR
+    // 2. It exists in inventory AND the owning product has stock > 0 (genuinely in stock)
+    //
+    // If ownerProduct.stock <= 0 but the serial exists → ORPHANED (from deleted purchase).
+    // In that case: clean it up silently and allow the scan.
+    const isOrphaned = ownerProduct && Number(ownerProduct.stock ?? 0) <= 0;
+    const inInventory = !!ownerProduct && !isOrphaned;
+    
+    if (isOrphaned) {
+      // Silently delete the orphaned serial from DB so inventory stays clean
+      fetch(`/api/serials/cleanup-orphaned`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ serial: code }),
+      }).catch(() => { /* non-critical */ });
+      // Fall through — allow adding this serial to the current PO
+    }
     
     if (onDraftLine || inInventory) {
       const now = Date.now();
@@ -260,6 +281,7 @@ export function usePurchaseForm({
       )
     );
   };
+
 
   const removeSerial = (productId: string, serial: string) => {
     setLines((prev) =>

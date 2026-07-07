@@ -581,7 +581,7 @@ model SerialNumber {
   saleItemId         String?
   saleItem           SaleItem?     @relation(fields: [saleItemId], references: [id])
   purchaseItemId     String?
-  purchaseItem       PurchaseItem? @relation(fields: [purchaseItemId], references: [id])
+  purchaseItem       PurchaseItem? @relation(fields: [purchaseItemId], references: [id], onDelete: SetNull)
   soldAt             DateTime?
   warrantyExpiryDate DateTime?
   warehouseId        String?

@@ -7,11 +7,13 @@ import { Card } from "@/shared/ui/card";
 import { formatCurrency, productDisplayName } from "@/shared/lib/format";
 import { categoryName } from "@/shared/lib/categoryName";
 import { useLocale } from "@/features/i18n";
-import { Plus, Pencil, Trash2, ShieldAlert, ShieldX, ShieldCheck, Printer, ShoppingCart } from "lucide-react";
+import { Plus, ShieldAlert, ShieldX, ShieldCheck, Printer, ShoppingCart, Eye, EyeOff, Sparkles } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
 import { getWarrantyStatus, formatWarrantyEnd } from "@/features/products/warranty";
 import type { Product } from "@/shared/lib/types";
 import { effectiveReorderPoint, suggestedPoQty } from "@/features/products/bundle";
+import { useUpdateProduct } from "@/features/products/hooks";
+import { useState } from "react";
 
 interface InventoryProductMobileListProps {
   products: Product[];
@@ -30,6 +32,16 @@ export function InventoryProductMobileList({
   onPrintLabel,
 }: InventoryProductMobileListProps) {
   const locale = useLocale();
+  const updateProduct = useUpdateProduct();
+  const [showPrices, setShowPrices] = useState<Set<string>>(new Set());
+
+  const showPrice = (id: string) => setShowPrices((prev) => new Set(prev).add(id));
+  const hidePrice = (id: string) => setShowPrices((prev) => {
+    const next = new Set(prev);
+    next.delete(id);
+    return next;
+  });
+
   return (
     <div className="md:hidden space-y-2">
       {products.map((p) => {
@@ -66,8 +78,25 @@ export function InventoryProductMobileList({
                   {p.sku} · {categoryName(p)}
                 </p>
                 <div className="flex items-center justify-between mt-1.5 text-xs">
-                  <span><span className="font-semibold text-foreground">{p.stock}</span> {p.unit} · reorder ≤ {reorderPoint}</span>
-                  <span className="text-muted-foreground">{formatCurrency(p.price, locale)}</span>
+                  <span><span className="font-semibold text-foreground">{p.stock}</span> {p.unit} · Min/Reord: {p.minStock}/{reorderPoint}</span>
+                  <div className="flex items-center gap-1.5">
+                    {showPrices.has(p.id) ? (
+                      <span className="text-slate-600 font-medium">
+                        {formatCurrency(p.costPrice, locale)} / {formatCurrency(p.price, locale)}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground italic tracking-widest opacity-50">••••••</span>
+                    )}
+                    <button
+                      className="p-1 -mr-1 text-muted-foreground active:scale-95 transition-transform cursor-pointer select-none touch-manipulation"
+                      onPointerDown={() => showPrice(p.id)}
+                      onPointerUp={() => hidePrice(p.id)}
+                      onPointerLeave={() => hidePrice(p.id)}
+                      onContextMenu={(e) => e.preventDefault()}
+                    >
+                      {showPrices.has(p.id) ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                    </button>
+                  </div>
                 </div>
                 {w.kind !== "none" && (
                   <div className="mt-1 text-[11px]">
@@ -87,16 +116,23 @@ export function InventoryProductMobileList({
                         Warranty: {formatWarrantyEnd(w.endDate)}
                       </span>
                     )}
+                    {p.warrantyStartDate && (
+                      <span className="ml-3 text-muted-foreground">
+                        (Pur: {new Date(p.warrantyStartDate).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: '2-digit' })})
+                      </span>
+                    )}
                   </div>
                 )}
               </div>
             </div>
             <div className="flex gap-1.5 mt-2.5">
-              <Button size="sm" variant="outline" className="flex-1 h-9" onClick={() => onQuickAdjust(p.id)}>
-                <Plus className="h-3.5 w-3.5 mr-1" />Adjust
+              <Button size="sm" variant="outline" className="flex-1 h-9" onClick={() => updateProduct.mutate({ id: p.id, patch: { active: !p.active } })}>
+                {p.active ? <EyeOff className="h-3.5 w-3.5 mr-1" /> : <Eye className="h-3.5 w-3.5 mr-1" />}
+                {p.active ? "Hide" : "Show"}
               </Button>
-              <Button size="sm" variant="outline" className="flex-1 h-9" onClick={() => onEdit(p)}>
-                <Pencil className="h-3.5 w-3.5 mr-1" />Edit
+              <Button size="sm" variant="outline" className="flex-1 h-9" onClick={() => updateProduct.mutate({ id: p.id, patch: { isTrending: !p.isTrending } })}>
+                <Sparkles className={cn("h-3.5 w-3.5 mr-1", p.isTrending && "text-amber-500")} />
+                {p.isTrending ? "Untrend" : "Trend"}
               </Button>
               {needsReorder && p.type !== "bundle" && (
                 <Button asChild size="icon" variant="outline" className="h-9 w-9 shrink-0 text-primary border-primary/40" title="Create PO">
@@ -112,9 +148,6 @@ export function InventoryProductMobileList({
                   <Printer className="h-4 w-4" />
                 </Button>
               )}
-              <Button size="icon" variant="ghost" className="h-9 w-9 text-destructive shrink-0" onClick={() => onDelete(p.id)}>
-                <Trash2 className="h-4 w-4" />
-              </Button>
             </div>
           </Card>
         );

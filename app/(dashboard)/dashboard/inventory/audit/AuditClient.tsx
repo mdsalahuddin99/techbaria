@@ -219,7 +219,7 @@ export function AuditClient() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>New Stock Audit</DialogTitle>
-            <DialogDescription>Branch + category নির্বাচন করুন。</DialogDescription>
+            <DialogDescription>Warehouse + category নির্বাচন করুন।</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <div>

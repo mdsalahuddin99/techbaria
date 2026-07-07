@@ -55,7 +55,22 @@ const navGroups: NavGroup[] = [
     icon: LayoutDashboard,
     items: [
       { to: "/dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard },
+    ],
+  },
+  {
+    labelKey: "nav.group.sales" as TranslationKey,
+    icon: ShoppingCart,
+    items: [
       { to: "/dashboard/sales/create", labelKey: "nav.pos", icon: ScanBarcode },
+      { to: "/dashboard/sales", labelKey: "nav.sales", icon: ShoppingCart },
+      { to: "/dashboard/returns", labelKey: "nav.returns", icon: Undo2 },
+    ],
+  },
+  {
+    labelKey: "nav.group.purchases" as TranslationKey,
+    icon: Truck,
+    items: [
+      { to: "/dashboard/purchases", labelKey: "nav.purchases", icon: Truck },
     ],
   },
   {
@@ -72,17 +87,13 @@ const navGroups: NavGroup[] = [
     items: [
       { to: "/dashboard/inventory", labelKey: "nav.inventory", icon: Boxes },
       { to: "/dashboard/inventory/transfers", labelKey: "nav.transfers", icon: ArrowLeftRight },
-      { to: "/dashboard/inventory/restock", labelKey: "nav.restock", icon: PackagePlus },
-      { to: "/dashboard/inventory/audit", labelKey: "nav.audit", icon: ClipboardCheck },
+      { to: "/dashboard/stock-audit", labelKey: "nav.stockAudit" as TranslationKey, icon: ShieldCheck },
     ],
   },
   {
-    labelKey: "nav.group.commerce" as TranslationKey,
-    icon: ShoppingCart,
+    labelKey: "nav.group.warranty" as TranslationKey,
+    icon: ShieldCheck,
     items: [
-      { to: "/dashboard/sales", labelKey: "nav.sales", icon: ShoppingCart },
-      { to: "/dashboard/returns", labelKey: "nav.returns", icon: Undo2 },
-      { to: "/dashboard/purchases", labelKey: "nav.purchases", icon: Truck },
       { to: "/dashboard/warranty-lookup", labelKey: "nav.warrantyLookup" as TranslationKey, icon: ShieldCheck },
       { to: "/dashboard/warranty-claims", labelKey: "nav.warrantyClaims" as TranslationKey, icon: ShieldAlert },
     ],
@@ -110,6 +121,12 @@ const navGroups: NavGroup[] = [
     items: [
       { to: "/dashboard/accounts", labelKey: "nav.accounts", icon: Wallet },
       { to: "/dashboard/expenses", labelKey: "nav.expenses", icon: Banknote },
+    ],
+  },
+  {
+    labelKey: "nav.group.reports" as TranslationKey,
+    icon: BarChart3,
+    items: [
       { to: "/dashboard/reports", labelKey: "nav.reports", icon: BarChart3 },
     ],
   },
@@ -118,7 +135,6 @@ const navGroups: NavGroup[] = [
     icon: Settings,
     items: [
       { to: "/dashboard/settings", labelKey: "nav.settings", icon: Settings },
-      { to: "/dashboard/stock-audit", labelKey: "nav.stockAudit" as TranslationKey, icon: ShieldCheck },
     ],
   },
 ];
@@ -212,15 +228,10 @@ export function AdminShell({
   }, [pathname]);
 
   const toggleGroup = (groupKey: string) => {
-    setExpandedGroups((prev) => {
-      const isAlreadyExpanded = !!prev[groupKey];
-      if (isAlreadyExpanded) {
-        return {};
-      }
-      return {
-        [groupKey]: true,
-      };
-    });
+    setExpandedGroups((prev) => ({
+      ...prev,
+      [groupKey]: !prev[groupKey],
+    }));
   };
 
   return (

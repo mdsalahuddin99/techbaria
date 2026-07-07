@@ -24,15 +24,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/shared/ui/dropdown-menu";
-import { formatCurrency, productDisplayName } from "@/shared/lib/format";
+import { productDisplayName } from "@/shared/lib/format";
 import { categoryName } from "@/shared/lib/categoryName";
-import { Plus, Search, Pencil, Trash2, Settings2, X, ScanLine, PackageOpen, Tag, Eye, EyeOff, MoreHorizontal, Sparkles, Star } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Settings2, X, ScanLine, PackageOpen, MoreHorizontal } from "lucide-react";
 import { Product, Category } from "@/shared/lib/types";
 import { toast } from "sonner";
 import Image from "next/image";
 import dynamic from "next/dynamic";
 const CameraScanner = dynamic(() => import("@/components/CameraScanner"), { ssr: false });
-const PrintLabelsDialog = dynamic(() => import("@/components/PrintLabelsDialog"), { ssr: false });
+
 import { PageHeader, EmptyState, ConfirmDialog } from "@/shared/components";
 import type { CategoryItem } from "@/shared/api-client/categories";
 import { listCategories } from "@/shared/api-client/categories";
@@ -53,6 +53,7 @@ export function ProductsClient({
   const updateMutation = useUpdateProduct();
   const bulkUpdateMutation = useBulkUpdateProducts();
   const bulkDeleteMutation = useBulkDeleteProducts();
+  // updateMutation kept for potential future use from inventory page
   
   const { data: storeCategories = initialCategories } = useQuery({
     queryKey: ["categories", "flat"],
@@ -121,14 +122,12 @@ export function ProductsClient({
   const [open, setOpen] = useState(false);
   const [prefillBarcode, setPrefillBarcode] = useState<string>("");
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [viewProduct, setViewProduct] = useState<Product | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkOpen, setBulkOpen] = useState(false);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [scanOpen, setScanOpen] = useState(false);
   const [scanTarget, setScanTarget] = useState<"new" | "form">("new");
   const [bulk, setBulk] = useState<BulkState>(initialBulkState);
-  const [labelProducts, setLabelProducts] = useState<Product[] | null>(null);
 
   // We no longer need local filtered calculation because it's handled on the server
   const filtered = products;
@@ -358,13 +357,6 @@ export function ProductsClient({
         <Card className="p-3 flex flex-wrap items-center gap-3 border-primary/40 bg-primary/5">
           <span className="text-sm font-medium">{selected.size} selected</span>
           <div className="flex items-center gap-2 ml-auto">
-            <Button size="sm" variant="outline" onClick={() => {
-              const sel = products.filter((p) => selected.has(p.id));
-              if (sel.length === 0) return;
-              setLabelProducts(sel);
-            }}>
-              <Tag className="h-4 w-4 mr-2" />Print labels
-            </Button>
             <Button size="sm" variant="outline" onClick={openBulk}>
               <Settings2 className="h-4 w-4 mr-2" />Bulk edit
             </Button>
@@ -418,36 +410,21 @@ export function ProductsClient({
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5">{p.sku}</p>
                       <div className="flex items-center gap-3 mt-2">
-                        <span className="text-sm font-bold">{formatCurrency(p.price)}</span>
-                        <span className="text-xs text-muted-foreground">Cost: {formatCurrency(p.costPrice)}</span>
-                        <Badge variant="outline"
-                          className={
-                            out ? "border-destructive text-destructive ml-auto"
-                            : low ? "border-warning text-warning ml-auto"
-                            : "border-accent text-accent ml-auto"
-                          }
-                        >
-                          {p.stock} {p.unit}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-1 mt-2">
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setViewProduct(p)}>
-                          <Eye className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setLabelProducts([p])}>
-                          <Tag className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEdit(p)}>
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => setDeleteId(p.id)}>
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                        <Checkbox
-                          checked={selected.has(p.id)}
-                          onCheckedChange={(c) => toggleOne(p.id, !!c)}
-                          className="ml-auto"
-                        />
+                        <div className="flex flex-col items-start gap-0.5">
+                          <span className="text-sm font-medium">{p.minStock} {p.unit}</span>
+                        </div>
+                        <div className="flex items-center gap-1 ml-auto">
+                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEdit(p)}>
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => setDeleteId(p.id)}>
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                          <Checkbox
+                            checked={selected.has(p.id)}
+                            onCheckedChange={(c) => toggleOne(p.id, !!c)}
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -471,13 +448,7 @@ export function ProductsClient({
                     <TableHead>SKU</TableHead>
                     <TableHead>Category</TableHead>
                     <TableHead className="hidden sm:table-cell">Sub-category</TableHead>
-                    <TableHead className="text-right">S. Price</TableHead>
-                    <TableHead className="text-right">D. Price</TableHead>
-                    <TableHead className="text-right">Stock</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-center w-[1%] whitespace-nowrap" title="Trending">
-                      <Star className="h-4 w-4 mx-auto text-white" />
-                    </TableHead>
+                    <TableHead className="text-right">M. Stock</TableHead>
                     <TableHead className="text-right w-[1%] whitespace-nowrap" title="Actions">
                       <Settings2 className="h-4 w-4 ml-auto text-white" />
                     </TableHead>
@@ -510,33 +481,8 @@ export function ProductsClient({
                         <TableCell className="text-muted-foreground text-sm">{p.sku}</TableCell>
                         <TableCell><Badge variant="secondary">{categoryName(p)}</Badge></TableCell>
                         <TableCell className="hidden sm:table-cell text-muted-foreground text-sm">{p.subcategory || "—"}</TableCell>
-                        <TableCell className="text-right font-medium">{formatCurrency(p.price)}</TableCell>
-                        <TableCell className="text-right text-muted-foreground">{formatCurrency(p.costPrice)}</TableCell>
                         <TableCell className="text-right">
-                          <Badge
-                            variant="outline"
-                            className={
-                              out ? "border-destructive text-destructive"
-                              : low ? "border-warning text-warning"
-                              : "border-accent text-accent"
-                            }
-                          >
-                            {p.stock} {p.unit === "pcs" ? "p" : p.unit}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {p.active ? (
-                            <Badge className="bg-emerald-500 text-white hover:bg-emerald-600 border-transparent">Active</Badge>
-                          ) : (
-                            <Badge className="bg-destructive text-white hover:bg-destructive/90 border-transparent">Inactive</Badge>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {p.isTrending ? (
-                            <Star className="h-5 w-5 fill-amber-500 text-amber-500 mx-auto" aria-label="Trending" />
-                          ) : (
-                            <span className="text-xs text-muted-foreground">—</span>
-                          )}
+                          <span className="font-medium">{p.minStock} {p.unit === "pcs" ? "p" : p.unit}</span>
                         </TableCell>
                         <TableCell className="text-right">
                           <DropdownMenu>
@@ -547,26 +493,8 @@ export function ProductsClient({
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => setViewProduct(p)}>
-                                <Eye className="mr-2 h-4 w-4" /> View Details
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => setLabelProducts([p])}>
-                                <Tag className="mr-2 h-4 w-4" /> Print Label
-                              </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => openEdit(p)}>
                                 <Pencil className="mr-2 h-4 w-4" /> Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => updateMutation.mutate({ id: p.id, patch: { isTrending: !p.isTrending } })}
-                              >
-                                <Sparkles className="mr-2 h-4 w-4" />
-                                {p.isTrending ? "Remove Trending" : "Mark as Trending"}
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => updateMutation.mutate({ id: p.id, patch: { active: !p.active } })}
-                              >
-                                {p.active ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
-                                {p.active ? "Hide from E-commerce" : "Show on E-commerce"}
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => setDeleteId(p.id)}>
@@ -606,17 +534,6 @@ export function ProductsClient({
         onScanRequest={openScanForForm}
       />
 
-      <ProductDetailsDialog
-        product={viewProduct}
-        onClose={() => setViewProduct(null)}
-      />
-
-      <PrintLabelsDialog
-        open={!!labelProducts}
-        onOpenChange={(o) => !o && setLabelProducts(null)}
-        products={labelProducts ?? []}
-      />
-
       <ConfirmDialog
         open={!!deleteId}
         onOpenChange={(o) => !o && setDeleteId(null)}
@@ -637,28 +554,6 @@ export function ProductsClient({
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <RelativeField
-              label="Sale Price"
-              mode={bulk.priceMode} value={bulk.priceValue} unit={bulk.priceUnit}
-              onMode={(v) => setBulk({ ...bulk, priceMode: v })}
-              onValue={(v) => setBulk({ ...bulk, priceValue: v })}
-              onUnit={(v) => setBulk({ ...bulk, priceUnit: v })}
-            />
-            <RelativeField
-              label="Cost Price"
-              mode={bulk.costMode} value={bulk.costValue} unit={bulk.costUnit}
-              onMode={(v) => setBulk({ ...bulk, costMode: v })}
-              onValue={(v) => setBulk({ ...bulk, costValue: v })}
-              onUnit={(v) => setBulk({ ...bulk, costUnit: v })}
-            />
-            <RelativeField
-              label="Wholesale Price"
-              mode={bulk.wholesaleMode} value={bulk.wholesaleValue} unit={bulk.wholesaleUnit}
-              onMode={(v) => setBulk({ ...bulk, wholesaleMode: v })}
-              onValue={(v) => setBulk({ ...bulk, wholesaleValue: v })}
-              onUnit={(v) => setBulk({ ...bulk, wholesaleUnit: v })}
-            />
-
             <div className="rounded-md border p-3 space-y-2">
               <p className="text-sm font-semibold">Stock</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -697,18 +592,6 @@ export function ProductsClient({
                   disabled={bulk.minStockMode === "none"}
                 />
               </div>
-            </div>
-
-            <div className="rounded-md border p-3 space-y-2">
-              <p className="text-sm font-semibold">Status</p>
-              <Select value={bulk.statusMode} onValueChange={(v) => setBulk({ ...bulk, statusMode: v as BulkState["statusMode"] })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No change</SelectItem>
-                  <SelectItem value="active">Set Active</SelectItem>
-                  <SelectItem value="inactive">Set Inactive</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
 
             <div className="rounded-md border p-3 space-y-2">

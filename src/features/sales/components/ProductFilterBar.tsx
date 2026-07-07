@@ -125,10 +125,12 @@ export function ProductFilterBar({
     let availableStock = Number(p.stock ?? 0);
     if (warehouseId && p.warehouseStocks) {
       const wStock = p.warehouseStocks.find((ws: any) => ws.warehouseId === warehouseId);
-      availableStock = wStock ? Number(wStock.qty ?? 0) : 0;
-    } else if (warehouseId) {
-      availableStock = 0;
+      // Fallback to global stock if no warehouse-specific record exists yet
+      // (e.g. product was just purchased and cache hasn't refreshed)
+      availableStock = wStock ? Number(wStock.qty ?? 0) : Number(p.stock ?? 0);
     }
+    // Note: if warehouseId is set but warehouseStocks is undefined (stale cache),
+    // we keep the global stock so the product remains searchable.
 
     if (availableStock - inInvoice <= 0) return false;
     return true;
@@ -209,9 +211,8 @@ export function ProductFilterBar({
                   let availableStock = Number(p.stock ?? 0);
                   if (warehouseId && p.warehouseStocks) {
                     const wStock = p.warehouseStocks.find((ws: any) => ws.warehouseId === warehouseId);
-                    availableStock = wStock ? Number(wStock.qty ?? 0) : 0;
-                  } else if (warehouseId) {
-                    availableStock = 0;
+                    // Fallback to global stock if no warehouse-specific record found
+                    availableStock = wStock ? Number(wStock.qty ?? 0) : Number(p.stock ?? 0);
                   }
 
                   const available = availableStock - inInvoice;

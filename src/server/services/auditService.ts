@@ -27,8 +27,8 @@ async function buildAuditLines(
   ctx: Ctx,
   categoryFilter?: string | null,
 ): Promise<AuditLine[]> {
-  const where: Record<string, unknown> = {};
-  if (categoryFilter) where.categoryId = categoryFilter;
+  const where: any = {};
+  if (categoryFilter) where.category = { name: categoryFilter };
 
   const products = await prisma.product.findMany({
     where,

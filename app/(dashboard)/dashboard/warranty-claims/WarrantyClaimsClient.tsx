@@ -18,16 +18,14 @@ import type { WarrantyClaim } from "@/shared/api-client/warrantyClaims";
 import { warrantyClaimsService } from "@/shared/api-client/warrantyClaims";
 import { useWarrantyClaims, useCreateWarrantyClaim, useUpdateWarrantyClaim } from "@/features/warranty/hooks";
 
+import { useProductsQuery } from "@/features/products/hooks";
+import { useCustomers } from "@/features/customers/hooks";
+import { useSuppliers } from "@/features/suppliers/hooks";
+
 export function WarrantyClaimsClient({
   initialClaims,
-  products,
-  customers,
-  suppliers
 }: {
   initialClaims: WarrantyClaim[];
-  products: any[];
-  customers: any[];
-  suppliers: any[];
 }) {
   usePageTitle("Warranty Claims (RMA)");
   
@@ -125,9 +123,6 @@ export function WarrantyClaimsClient({
       <CreateClaimModal 
         open={openCreate} 
         onClose={() => setOpenCreate(false)}
-        products={products}
-        customers={customers}
-        suppliers={suppliers}
       />
 
       {openUpdate && (
@@ -155,9 +150,13 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-function CreateClaimModal({ open, onClose, products, customers, suppliers }: any) {
+function CreateClaimModal({ open, onClose }: any) {
   const { mutateAsync: createClaim } = useCreateWarrantyClaim();
   const [loading, setLoading] = useState(false);
+  
+  const products = (useProductsQuery().data?.items ?? []) as any[];
+  const { data: customers = [] } = useCustomers() as any;
+  const { data: suppliers = [] } = useSuppliers() as any;
   
   const [type, setType] = useState<any>("CUSTOMER_CLAIM");
   
