@@ -16,6 +16,17 @@ import {
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from "@/shared/ui/sheet";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/shared/ui/alert-dialog";
 import { formatCurrency, formatDateTime } from "@/shared/lib/format";
 import { toast } from "sonner";
 import { Search, Eye, FileText, Receipt, ArrowUpDown, Trash2, Pencil, Plus } from "lucide-react";
@@ -176,6 +187,27 @@ export function SalesClient() {
                     <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => { setInvoice(s); }} title="Invoice">
                       <FileText className="h-3.5 w-3.5" />
                     </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button size="icon" variant="ghost" className="h-8 w-8" title="Delete">
+                          <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete Invoice {s.invoiceNo}?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This action will permanently delete this invoice, restore stock quantities, and revert any customer balances.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => deleteSale(s.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                            Yes, delete it
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </div>
               </div>
@@ -219,13 +251,27 @@ export function SalesClient() {
                       <Button size="icon" variant="ghost" onClick={() => router.push(`/dashboard/sales/create?saleId=${s.id}`)} title="Edit sale">
                         <Pencil className="h-4 w-4" />
                       </Button>
-                      <Button size="icon" variant="ghost" title="Delete" onClick={() => {
-                        if (confirm(`Delete invoice ${s.invoiceNo}? This will restore stock and cannot be undone.`)) {
-                          deleteSale(s.id);
-                        }
-                      }}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button size="icon" variant="ghost" title="Delete">
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Invoice {s.invoiceNo}?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This action will permanently delete this invoice, restore stock quantities, and revert any customer balances. This cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => deleteSale(s.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                              Yes, delete it
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   </TableCell>
                 </TableRow>

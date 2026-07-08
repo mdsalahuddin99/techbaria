@@ -1,3 +1,5 @@
+"use client";
+
 import dynamic from "next/dynamic";
 const Invoice = dynamic(() => import("@/components/Invoice"), { ssr: false });
 const ThermalReceipt = dynamic(() => import("@/components/ThermalReceipt"), { ssr: false });

@@ -2,30 +2,16 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-async function main() {
-  console.log("Connecting to database...");
+async function testConnection() {
   try {
-    const products = await prisma.product.findMany({
-      select: {
-        id: true,
-        name: true,
-        sku: true,
-        warrantyMonths: true,
-        warrantyStartDate: true,
-      }
-    });
-    console.log("Products in database:");
-    for (const p of products) {
-      console.log(`- Name: ${p.name}`);
-      console.log(`  SKU: ${p.sku}`);
-      console.log(`  Warranty Months: ${p.warrantyMonths} (${typeof p.warrantyMonths})`);
-      console.log(`  Warranty Start Date: ${p.warrantyStartDate}`);
-    }
-  } catch (err) {
-    console.error("Error:", err);
+    console.log("Connecting to the database...");
+    const result = await prisma.$queryRaw`SELECT 1 as result`;
+    console.log("Connection successful!", result);
+  } catch (error) {
+    console.error("Connection failed:", error);
   } finally {
     await prisma.$disconnect();
   }
 }
 
-main();
+testConnection();

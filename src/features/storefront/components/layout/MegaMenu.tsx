@@ -53,7 +53,7 @@ export function MegaMenu() {
 
         {/* ── Level 1: Main categories list ── */}
         {activeCat !== null && (
-          <div className="absolute top-full left-0 mt-0 bg-white border border-[#DBEAFE] rounded-xl shadow-xl z-50 py-2 min-w-[200px]">
+          <div className="absolute top-full left-0 mt-0 bg-white border border-[#DBEAFE] rounded-md shadow-xl z-50 py-2 min-w-[200px]">
             {tree.map((cat) => (
               <div
                 key={cat.category}
@@ -76,7 +76,7 @@ export function MegaMenu() {
                 {/* ── Level 2: Sub-categories ── */}
                 {activeCat === cat.category && cat.subcategories.length > 0 && (
                   <div
-                    className="absolute top-0 left-full bg-white border border-[#DBEAFE] rounded-xl shadow-xl z-50 py-2 min-w-[190px]"
+                    className="absolute top-0 left-full bg-white border border-[#DBEAFE] rounded-md shadow-xl z-50 py-2 min-w-[190px]"
                     style={{ marginLeft: "4px" }}
                   >
                     {cat.subcategories.map((sub) => (
@@ -101,7 +101,7 @@ export function MegaMenu() {
                         {/* ── Level 3: Brands ── */}
                         {activeSub === sub.subcategory && sub.brands.length > 0 && (
                           <div
-                            className="absolute top-0 left-full bg-white border border-[#DBEAFE] rounded-xl shadow-xl z-50 py-2 min-w-[160px]"
+                            className="absolute top-0 left-full bg-white border border-[#DBEAFE] rounded-md shadow-xl z-50 py-2 min-w-[160px]"
                             style={{ marginLeft: "4px" }}
                           >
                             {sub.brands.map((brand) => (

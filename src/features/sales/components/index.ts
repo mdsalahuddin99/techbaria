@@ -5,6 +5,6 @@ export { DraftInvoicePreview, type HeldSaleForPrint } from "./DraftInvoicePrevie
 export { InvoiceHeader } from "./InvoiceHeader";
 export { ProductFilterBar } from "./ProductFilterBar";
 export { InvoiceLineItems, type VoucherRow } from "./InvoiceLineItems";
+export { QuotationsClient } from "./QuotationsClient";
 export { PaymentCollector } from "./PaymentCollector";
 export { CustomerSidebar } from "./CustomerSidebar";
-

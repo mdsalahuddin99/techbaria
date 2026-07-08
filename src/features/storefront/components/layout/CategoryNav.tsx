@@ -43,7 +43,7 @@ export function CategoryNav() {
             >
               <Link
                 href={`/shop/${encodeURIComponent(cat.category)}`}
-                className={`block px-3 py-2 text-[13px] font-bold rounded-lg transition-colors whitespace-nowrap
+                className={`block px-3 py-2 text-[13px] font-bold rounded-md transition-colors whitespace-nowrap
                   ${activeCat === cat.category
                     ? "text-[#16A34A] bg-[#F0FDF4]"
                     : "text-slate-700 hover:text-[#16A34A] hover:bg-[#F0FDF4]"}`}
@@ -54,7 +54,7 @@ export function CategoryNav() {
               {/* ── Level 2: Sub-categories ── */}
               {activeCat === cat.category && cat.subcategories.length > 0 && (
                 <div
-                  className="absolute top-full left-0 mt-1 bg-white border border-[#DBEAFE] rounded-xl shadow-xl z-50 py-2 min-w-[220px]"
+                  className="absolute top-full left-0 mt-1 bg-white border border-[#DBEAFE] rounded-md shadow-xl z-50 py-2 min-w-[220px]"
                   onMouseEnter={clearClose}
                   onMouseLeave={scheduleClose}
                 >
@@ -80,7 +80,7 @@ export function CategoryNav() {
                       {/* ── Level 3: Brands ── */}
                       {activeSub === sub.subcategory && sub.brands.length > 0 && (
                         <div
-                          className="absolute top-0 left-full bg-white border border-[#DBEAFE] rounded-xl shadow-xl z-50 py-2 min-w-[180px]"
+                          className="absolute top-0 left-full bg-white border border-[#DBEAFE] rounded-md shadow-xl z-50 py-2 min-w-[180px]"
                           style={{ marginLeft: "4px" }}
                         >
                           {sub.brands.map((brand) => (

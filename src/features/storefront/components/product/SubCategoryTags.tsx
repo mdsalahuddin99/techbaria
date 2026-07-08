@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import { useMegaMenuTree } from "../../hooks/useStorefrontCategories";
 import type { StorefrontProduct } from "../../types";
 
@@ -10,12 +11,17 @@ interface Props {
   initialProducts?: StorefrontProduct[];
 }
 
-export function SubCategoryTags({ category, initialProducts }: Props) {
-  const tree = useMegaMenuTree({ initialData: initialProducts });
+export function SubCategoryTags({ category }: Props) {
+  const [mounted, setMounted] = useState(false);
+  const tree = useMegaMenuTree();
   const searchParams = useSearchParams();
   const activeSub = searchParams.get("sub");
 
-  if (!category) return null;
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted || !category) return null;
 
   const currentCat = tree.find((c) => c.category === category);
   if (!currentCat) return null;

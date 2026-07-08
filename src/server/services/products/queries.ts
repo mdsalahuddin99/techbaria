@@ -177,23 +177,13 @@ export async function publicStorefrontList(
     onSaleOnly?: boolean;
   }
 ) {
-  const isUnfiltered = !filter?.category && !filter?.search && !filter?.excludeId && !filter?.page && !filter?.minPrice && !filter?.maxPrice && !filter?.brands?.length && !filter?.inStockOnly && !filter?.onSaleOnly;
+  // Use a deterministic cache key based on the filter string
+  const filterStr = filter ? JSON.stringify(filter) : "empty";
+  const cacheKey = `products:storefront:list:${filterStr}`;
 
-  if (isUnfiltered && filter?.limit === 50) {
-    // Only cache the homepage default query (Disabled for real-time updates)
-    // const cacheKey = `products:storefront:v2:unfiltered:50`;
-    // return cache.fetch(cacheKey, TTL.CATALOG, () => runPublicStorefrontQuery(filter));
-    return runPublicStorefrontQuery(filter);
-  }
-
-  // Cache related products query (Disabled for real-time updates)
-  if (filter?.category && filter?.excludeId && !filter?.search) {
-    // const cacheKey = `products:storefront:related:${filter.category}:${filter.excludeId}`;
-    // return cache.fetch(cacheKey, TTL.CATALOG, () => runPublicStorefrontQuery(filter));
-    return runPublicStorefrontQuery(filter);
-  }
-
-  return runPublicStorefrontQuery(filter);
+  // Cache all storefront queries for 60 seconds to guarantee instant page loads 
+  // while maintaining reasonably real-time stock and prices.
+  return cache.fetch(cacheKey, 60, () => runPublicStorefrontQuery(filter));
 }
 
 async function runPublicStorefrontQuery(
@@ -293,6 +283,7 @@ async function runPublicStorefrontQuery(
         isPublished: true,
         sku: true,
         description: true,
+        shortDescription: true,
         condition: true,
         warrantyMonths: true,
         isTrending: true,

@@ -298,6 +298,12 @@ export function ProductDetailClient({ product, related = [], children }: Props) 
               )}
             </div>
           </div>
+          
+          {product.shortDescription && (
+            <div className="text-slate-600 text-sm leading-relaxed whitespace-pre-line bg-white/50 border border-slate-100 p-4 rounded-xl">
+              {product.shortDescription}
+            </div>
+          )}
 
           {/* Key Features (Specs) */}
           <div className="bg-slate-50 border border-slate-100 rounded-xl p-5">
@@ -311,7 +317,17 @@ export function ProductDetailClient({ product, related = [], children }: Props) 
                 <li><span className="font-medium text-slate-800">Warranty:</span> {product.warrantyMonths} Months</li>
               ) : null}
             </ul>
-            <a href="#specification" className="inline-block mt-3 text-indigo-600 hover:underline text-sm font-medium">View More Info</a>
+            <a 
+              href="#specification" 
+              onClick={(e) => {
+                e.preventDefault();
+                setActiveTab("specification");
+                document.getElementById('specification')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="inline-block mt-3 text-indigo-600 hover:underline text-sm font-medium"
+            >
+              View More Info
+            </a>
           </div>
 
           {/* Buy Box */}
@@ -384,7 +400,7 @@ export function ProductDetailClient({ product, related = [], children }: Props) 
     </div>
 
     {/* === Tabbed Sections === */}
-      <div className="mt-12">
+      <div id="specification" className="mt-12 scroll-mt-24">
         <div className="flex overflow-x-auto border-b border-slate-200 mb-8 scrollbar-hide">
           <button
             onClick={() => setActiveTab("specification")}
@@ -464,25 +480,8 @@ export function ProductDetailClient({ product, related = [], children }: Props) 
                   <p className="whitespace-pre-line">{product.description}</p>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  <p>
-                    <span className="text-slate-900 font-bold">{product.name}</span> is a premium choice
-                    {product.brand ? ` from ${product.brand}` : ""}, crafted for everyday excellence.
-                    Built with quality materials and modern design to deliver a reliable experience.
-                  </p>
-                  <ul className="space-y-2 pt-2">
-                    {[
-                      "Premium build quality and finish",
-                      "Modern, ergonomic design for everyday use",
-                      "Trusted seller with verified stock",
-                      "Backed by our dedicated customer care team",
-                    ].map((x) => (
-                      <li key={x} className="flex items-start gap-2">
-                        <Check className="h-5 w-5 text-emerald-500 shrink-0" />
-                        <span>{x}</span>
-                      </li>
-                    ))}
-                  </ul>
+                <div className="text-center py-8 text-slate-500 italic">
+                  No detailed description available for this product.
                 </div>
               )}
             </div>

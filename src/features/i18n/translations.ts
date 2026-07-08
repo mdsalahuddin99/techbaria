@@ -30,6 +30,7 @@ export const translations = {
   // Sidebar items
   "nav.dashboard": { en: "Dashboard", bn: "ড্যাশবোর্ড" },
   "nav.pos": { en: "Create Sale", bn: "সেল তৈরি করুন" },
+  "nav.quotations": { en: "Quotations", bn: "কোটেশন" },
   "nav.products": { en: "Products", bn: "পণ্য" },
   "nav.categories": { en: "Categories", bn: "ক্যাটাগরি" },
   "nav.inventory": { en: "Inventory", bn: "ইনভেন্টরি" },

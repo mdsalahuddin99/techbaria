@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { Heart, Star, ShoppingBag, Eye, GitCompareArrows } from "lucide-react";
 import type { StorefrontProduct } from "@/features/storefront/types";
 import { formatPrice, calcDiscountPct } from "../../lib/formatPrice";
@@ -34,6 +35,7 @@ export function ProductCard({ product, allProducts }: Props) {
   const cmpHas = useCompareStore((s) => s.has);
   const cmpToggle = useCompareStore((s) => s.toggle);
   const openQuick = useQuickViewStore((s) => s.open);
+  const router = useRouter();
 
   const stock = publicStock(product, allProducts);
   const oldPrice =
@@ -60,6 +62,21 @@ export function ProductCard({ product, allProducts }: Props) {
       maxStock: stock,
     });
     toast({ title: "Cart-এ যোগ হয়েছে ✓", description: productDisplayName(product) });
+  };
+
+  const handleBuyNow = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (outOfStock) return;
+    add({
+      productId: product.id,
+      name: productDisplayName(product),
+      price: product.price,
+      emoji: product.emoji,
+      imageUrl: product.imageUrl,
+      maxStock: stock,
+    });
+    router.push("/checkout");
   };
 
   const stopAnd = (fn: () => void) => (e: React.MouseEvent) => {
@@ -229,16 +246,26 @@ export function ProductCard({ product, allProducts }: Props) {
         {/* Spacer to push button to bottom */}
         <div className="flex-1" />
 
-        {/* Full-width Add to Cart button */}
-        <button
-          onClick={handleAdd}
-          disabled={outOfStock}
-          aria-label="Add to cart"
-          className="sf-btn-cart mt-1"
-        >
-          <ShoppingBag className="h-4 w-4 shrink-0" />
-          <span>Add to Cart</span>
-        </button>
+        {/* Buttons */}
+        <div className="flex gap-2 mt-1">
+          <button
+            onClick={handleAdd}
+            disabled={outOfStock}
+            aria-label="Add to cart"
+            className="flex-1 flex items-center justify-center gap-1.5 bg-[#16A34A] text-white font-bold text-[13px] sm:text-sm py-2.5 rounded-xl transition-colors hover:bg-[#15803D] disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <ShoppingBag className="h-4 w-4 shrink-0" />
+            <span className="hidden sm:inline">Add</span>
+          </button>
+          <button
+            onClick={handleBuyNow}
+            disabled={outOfStock}
+            aria-label="Buy now"
+            className="flex-[2] flex items-center justify-center bg-[#F97316] text-white font-bold text-[13px] sm:text-sm py-2.5 rounded-xl transition-colors hover:bg-[#EA580C] shadow-sm hover:shadow disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Buy Now
+          </button>
+        </div>
       </div>
     </Link>
   );

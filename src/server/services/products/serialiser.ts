@@ -101,6 +101,7 @@ export interface StorefrontProduct {
   active: boolean;
   sku: string | null;
   description: string;
+  shortDescription: string;
   condition: string | undefined;
   warrantyMonths: number | undefined;
   defaultDiscount: { mode: "percent" | "amount"; value: number } | undefined;
@@ -140,6 +141,7 @@ function serialiseStorefrontOne(p: any): StorefrontProduct {
     active: p.isPublished ?? true,
     sku: p.sku ?? null,
     description: p.description ?? "",
+    shortDescription: p.shortDescription ?? "",
     condition: p.condition ?? undefined,
     warrantyMonths: p.warrantyMonths ?? undefined,
     defaultDiscount,

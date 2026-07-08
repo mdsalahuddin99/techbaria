@@ -171,6 +171,25 @@ export function CreateSaleClient() {
     };
   }, [editingSaleId, router]);
 
+  // ── Load draft from URL ─────────────────────────────────────────────────
+  const loadDraftId = searchParams.get("loadDraft") ?? null;
+  useEffect(() => {
+    if (!loadDraftId || heldSales.length === 0) return;
+    const sale = heldSales.find((h: any) => h.id === loadDraftId);
+    if (sale) {
+      setVoucherRows(sale.cart || []);
+      setVoucherCustomerId(sale.customerId || null);
+      if (sale.salesPerson) setSalesPerson(sale.salesPerson);
+      if (sale.destination) setDestination(sale.destination);
+      if (sale.attention) setAttention(sale.attention);
+      if (sale.notes) setNarration(sale.notes);
+      
+      // Remove query param to prevent reload
+      router.replace("/dashboard/sales/create");
+    }
+  }, [loadDraftId, heldSales, router]);
+
+
   // ── Computed totals ─────────────────────────────────────────────────────
   const subtotal = useMemo(
     () => round2(voucherRows.reduce((s, r) => s + r.price * r.qty - (r.discount || 0), 0)),

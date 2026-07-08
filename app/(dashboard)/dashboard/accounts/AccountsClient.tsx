@@ -478,29 +478,6 @@ export function AccountsClient({
               <p className="text-2xl font-bold text-accent">{formatCurrency(totalReceivable)}</p>
             </div>
           </Card>
-          <Card>
-            <div className="p-3 border-b font-semibold text-sm">Top Customers (lifetime spend)</div>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Group</TableHead>
-                  <TableHead className="text-right">Total Spent</TableHead>
-                  <TableHead className="text-right">Loyalty</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {[...customers].sort((a, b) => b.totalSpent - a.totalSpent).slice(0, 10).map((c) => (
-                  <TableRow key={c.id}>
-                    <TableCell className="font-medium">{c.name}</TableCell>
-                    <TableCell><Badge variant="secondary">{c.group}</Badge></TableCell>
-                    <TableCell className="text-right font-semibold">{formatCurrency(c.totalSpent)}</TableCell>
-                    <TableCell className="text-right">{c.loyaltyPoints} pts</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </Card>
         </TabsContent>
 
         {/* PAYABLE */}

@@ -152,22 +152,34 @@ export function useSaleMutations() {
   const voidMutation = useMutation({
     mutationFn: ({ saleId, reason }: { saleId: string; reason: string }) =>
       salesService.void(saleId, reason),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      invalidate();
+      toast.success("Sale voided");
+    },
   });
   const refundMutation = useMutation({
     mutationFn: (input: Parameters<typeof salesService.refund>[0]) =>
       salesService.refund(input),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      invalidate();
+      toast.success("Refund processed");
+    },
   });
   const deleteMutation = useMutation({
     mutationFn: (id: string) => salesService.remove(id),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      invalidate();
+      toast.success("Sale deleted successfully");
+    },
     onError: (e: Error) => toast.error(e.message),
   });
   const updateMutation = useMutation({
     mutationFn: ({ id, input }: { id: string; input: Record<string, unknown> }) =>
       salesService.update(id, input),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      invalidate();
+      toast.success("Sale updated");
+    },
     onError: (e: Error) => toast.error(e.message),
   });
   return {

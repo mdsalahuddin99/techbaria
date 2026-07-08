@@ -32,6 +32,7 @@ import {
   ChevronRight,
   LayoutTemplate,
   ShieldAlert,
+  FileText,
 } from "lucide-react";
 import type { UserRole } from "@/features/auth/types";
 import { cn } from "@/shared/lib/utils";
@@ -63,6 +64,7 @@ const navGroups: NavGroup[] = [
     items: [
       { to: "/dashboard/sales/create", labelKey: "nav.pos", icon: ScanBarcode },
       { to: "/dashboard/sales", labelKey: "nav.sales", icon: ShoppingCart },
+      { to: "/dashboard/quotations", labelKey: "nav.quotations", icon: FileText },
       { to: "/dashboard/returns", labelKey: "nav.returns", icon: Undo2 },
     ],
   },
@@ -148,6 +150,7 @@ function getThemeClass(pathname: string) {
   }
   if (
     pathname.includes("/dashboard/sales") ||
+    pathname.includes("/dashboard/quotations") ||
     pathname.includes("/dashboard/returns") ||
     pathname.includes("/dashboard/purchases") ||
     pathname.includes("/dashboard/warranty-lookup") ||

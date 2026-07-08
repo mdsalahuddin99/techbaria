@@ -89,7 +89,6 @@ export function useHeldSales() {
     const sale = heldSales.find((h) => h.id === id);
     if (!sale) return;
     restoreCart({ cart: sale.cart, discount: sale.discount, selectedCustomerId: sale.customerId });
-    await deleteMutation.mutateAsync(id);
   };
 
   return {

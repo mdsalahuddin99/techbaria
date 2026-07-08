@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useRef } from "react";
 import { Sale, ShopSettings } from "@/shared/lib/types";
 import { Button } from "@/shared/ui/button";

@@ -211,9 +211,9 @@ export async function create(ctx: Ctx, input: SaleCreateInput) {
     return sale;
   }, { timeout: 30000 });
 
-  // Post-process (audit + cache)
+  // Post-process (audit + cache) - run in background so it doesn't block response
   const productIds = [...new Set(input.items.map(item => item.productId))];
-  await __postProcess(ctx, raw, productIds);
+  __postProcess(ctx, raw, productIds).catch(err => console.error("[create sale post-process error]", err));
 
   return serializeSale(raw);
 }
