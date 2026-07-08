@@ -10,6 +10,6 @@ export default async function WarrantyClaimsPage() {
   const claims = await warrantyClaimsService.list(ctx);
 
   return (
-    <WarrantyClaimsClient initialClaims={claims as any} />
+    <WarrantyClaimsClient initialClaims={JSON.parse(JSON.stringify(claims))} />
   );
 }

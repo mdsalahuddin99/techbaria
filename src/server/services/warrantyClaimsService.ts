@@ -8,7 +8,18 @@ export const warrantyClaimsService = {
     const claims = await prisma.warrantyClaim.findMany({
       orderBy: { createdAt: "desc" },
       include: {
-        product: { select: { id: true, name: true, sku: true, images: { take: 1 } } },
+        product: { 
+          select: { 
+            name: true, 
+            supplierId: true, 
+            supplier: { select: { name: true } },
+            purchaseItems: {
+              take: 1,
+              orderBy: { purchase: { createdAt: 'desc' } },
+              include: { purchase: { include: { supplier: true } } }
+            }
+          } 
+        },
         customer: { select: { id: true, name: true, phone: true } },
         sale: { select: { id: true, createdAt: true, data: true } },
         supplier: { select: { id: true, name: true } },
@@ -141,6 +152,7 @@ export const warrantyClaimsService = {
     const serialDoc = await prisma.serialNumber.findUnique({
       where: { serial: q },
       include: {
+        purchaseItem: { include: { purchase: { include: { supplier: true } } } },
         saleItem: {
           include: {
             sale: {
@@ -148,8 +160,19 @@ export const warrantyClaimsService = {
                 customer: true,
                 items: {
                   include: {
-                    product: { select: { name: true } },
-                    serialNumbers: true,
+                    product: { 
+                      select: { 
+                        name: true, 
+                        supplierId: true, 
+                        supplier: { select: { name: true } },
+                        purchaseItems: {
+                          take: 1,
+                          orderBy: { purchase: { createdAt: 'desc' } },
+                          include: { purchase: { include: { supplier: true } } }
+                        }
+                      } 
+                    },
+                    serialNumbers: { include: { purchaseItem: { include: { purchase: { include: { supplier: true } } } } } },
                   }
                 }
               }
@@ -174,6 +197,8 @@ export const warrantyClaimsService = {
             id: item.id,
             productId: item.productId,
             productName: item.product.name,
+            supplierId: item.serialNumbers.find((s: any) => s.purchaseItem?.purchase?.supplierId)?.purchaseItem?.purchase?.supplierId || item.product.supplierId || item.product.purchaseItems?.[0]?.purchase?.supplierId,
+            supplierName: item.serialNumbers.find((s: any) => s.purchaseItem?.purchase?.supplierId)?.purchaseItem?.purchase?.supplier?.name || item.product.supplier?.name || item.product.purchaseItems?.[0]?.purchase?.supplier?.name,
             qty: item.qty,
             warrantyMonths: item.warrantyMonths,
             serialNumbers: item.serialNumbers.map((s: any) => ({
@@ -195,8 +220,19 @@ export const warrantyClaimsService = {
         customer: true,
         items: {
           include: {
-            product: { select: { name: true } },
-            serialNumbers: true,
+            product: { 
+              select: { 
+                name: true, 
+                supplierId: true, 
+                supplier: { select: { name: true } },
+                purchaseItems: {
+                  take: 1,
+                  orderBy: { purchase: { createdAt: 'desc' } },
+                  include: { purchase: { include: { supplier: true } } }
+                }
+              } 
+            },
+            serialNumbers: { include: { purchaseItem: { include: { purchase: { include: { supplier: true } } } } } },
           }
         }
       },
@@ -217,6 +253,8 @@ export const warrantyClaimsService = {
             id: item.id,
             productId: item.productId,
             productName: item.product.name,
+            supplierId: item.serialNumbers.find((s: any) => s.purchaseItem?.purchase?.supplierId)?.purchaseItem?.purchase?.supplierId || item.product.supplierId || item.product.purchaseItems?.[0]?.purchase?.supplierId,
+            supplierName: item.serialNumbers.find((s: any) => s.purchaseItem?.purchase?.supplierId)?.purchaseItem?.purchase?.supplier?.name || item.product.supplier?.name || item.product.purchaseItems?.[0]?.purchase?.supplier?.name,
             qty: item.qty,
             warrantyMonths: item.warrantyMonths,
             serialNumbers: item.serialNumbers.map((s: any) => ({

@@ -12,11 +12,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/shared/ui/textarea";
 import { Label } from "@/shared/ui/label";
 import { formatDateTime, formatCurrency } from "@/shared/lib/format";
-import { Plus, Search, ShieldAlert, Edit2 } from "lucide-react";
+import { Plus, Search, ShieldAlert, Edit2, Trash2 } from "lucide-react";
 import { PageHeader, EmptyState } from "@/shared/components";
+import { PrintChallanButton } from "@/components/WarrantyClaimChallan";
 import type { WarrantyClaim } from "@/shared/api-client/warrantyClaims";
 import { warrantyClaimsService } from "@/shared/api-client/warrantyClaims";
-import { useWarrantyClaims, useCreateWarrantyClaim, useUpdateWarrantyClaim } from "@/features/warranty/hooks";
+import { useWarrantyClaims, useCreateWarrantyClaim, useUpdateWarrantyClaim, useDeleteWarrantyClaim } from "@/features/warranty/hooks";
 
 import { useProductsQuery } from "@/features/products/hooks";
 import { useCustomers } from "@/features/customers/hooks";
@@ -34,6 +35,14 @@ export function WarrantyClaimsClient({
   
   const [openCreate, setOpenCreate] = useState(false);
   const [openUpdate, setOpenUpdate] = useState<WarrantyClaim | null>(null);
+
+  const { mutate: deleteClaim } = useDeleteWarrantyClaim();
+
+  const handleDelete = (id: string) => {
+    if (confirm("Are you sure you want to delete this warranty claim? This action cannot be undone.")) {
+      deleteClaim(id);
+    }
+  };
 
   const filteredClaims = claims.filter(c => 
     c.claimNo.toLowerCase().includes(search.toLowerCase()) || 
@@ -96,9 +105,15 @@ export function WarrantyClaimsClient({
                     <StatusBadge status={claim.status} />
                   </TableCell>
                   <TableCell>
-                    <Button variant="ghost" size="icon" onClick={() => setOpenUpdate(claim)}>
-                      <Edit2 className="h-4 w-4" />
-                    </Button>
+                    <div className="flex gap-1 justify-end">
+                      <PrintChallanButton claim={claim} iconOnly />
+                      <Button variant="ghost" size="icon" onClick={() => setOpenUpdate(claim)}>
+                        <Edit2 className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => handleDelete(claim.id)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -172,6 +187,7 @@ function CreateClaimModal({ open, onClose }: any) {
   const [serialNumber, setSerialNumber] = useState("");
   const [customerId, setCustomerId] = useState("");
   const [supplierId, setSupplierId] = useState("");
+  const [supplierName, setSupplierName] = useState("");
   const [issueDescription, setIssueDescription] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
 
@@ -188,7 +204,8 @@ function CreateClaimModal({ open, onClose }: any) {
       } else {
         setFetchedSale(result.sale);
         if (result.type === "SERIAL" && result.preSelectedProductId) {
-           handleSelectItem(result.sale.id, result.preSelectedProductId, result.preSelectedSerial, result.sale.customer?.id);
+           const item = result.sale.items.find((i: any) => i.productId === result.preSelectedProductId);
+           handleSelectItem(result.sale.id, result.preSelectedProductId, result.preSelectedSerial, result.sale.customer?.id, item?.supplierId, item?.supplierName);
         }
       }
     } catch (err: any) {
@@ -198,11 +215,13 @@ function CreateClaimModal({ open, onClose }: any) {
     }
   };
 
-  const handleSelectItem = (sId: string, pId: string, sNumber?: string, cId?: string) => {
+  const handleSelectItem = (sId: string, pId: string, sNumber?: string, cId?: string, supId?: string, supName?: string) => {
     setSaleId(sId);
     setProductId(pId);
     setSerialNumber(sNumber || "");
-    if (cId) setCustomerId(cId);
+    setCustomerId(cId || "none");
+    setSupplierId(supId || "");
+    setSupplierName(supName || "");
   };
 
   const handleSubmit = async () => {
@@ -237,6 +256,7 @@ function CreateClaimModal({ open, onClose }: any) {
         setSerialNumber("");
         setCustomerId("");
         setSupplierId("");
+        setSupplierName("");
         setIssueDescription("");
         setErrorMsg("");
       }
@@ -309,7 +329,7 @@ function CreateClaimModal({ open, onClose }: any) {
                             <Button 
                               size="sm" 
                               variant={isSelected ? "default" : "outline"}
-                              onClick={() => handleSelectItem(fetchedSale.id, item.productId, undefined, fetchedSale.customer?.id)}
+                              onClick={() => handleSelectItem(fetchedSale.id, item.productId, undefined, fetchedSale.customer?.id, item.supplierId, item.supplierName)}
                             >
                               {isSelected ? "Selected" : "Select"}
                             </Button>
@@ -372,16 +392,26 @@ function CreateClaimModal({ open, onClose }: any) {
           </div>
 
           <div className="space-y-1">
-            <Label>Supplier (optional)</Label>
-            <Select value={supplierId} onValueChange={setSupplierId}>
-              <SelectTrigger><SelectValue placeholder="Select supplier" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">None</SelectItem>
-                {suppliers.map((s: any) => (
-                  <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label>Supplier</Label>
+            {!manualMode && type === "CUSTOMER_CLAIM" ? (
+              <Input 
+                value={supplierName || (supplierId ? "Loading..." : "No supplier found")} 
+                disabled 
+                className="bg-slate-50 text-slate-700" 
+              />
+            ) : (
+              <Select value={supplierId} onValueChange={setSupplierId}>
+                <SelectTrigger><SelectValue placeholder="Select supplier" /></SelectTrigger>
+                <SelectContent>
+                  {!suppliers.find((s: any) => s.id === supplierId) && supplierId && supplierName && (
+                    <SelectItem value={supplierId}>{supplierName}</SelectItem>
+                  )}
+                  {suppliers.map((s: any) => (
+                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
           <div className="space-y-1">
@@ -470,8 +500,13 @@ function UpdateClaimModal({ claim, onClose }: { claim: WarrantyClaim; onClose: (
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleSubmit} disabled={loading}>Update Claim</Button>
+          <div className="flex w-full justify-between items-center">
+            <PrintChallanButton claim={claim} />
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={onClose}>Cancel</Button>
+              <Button onClick={handleSubmit} disabled={loading}>Update Claim</Button>
+            </div>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

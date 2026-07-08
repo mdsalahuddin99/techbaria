@@ -183,7 +183,7 @@ export function AccountsClient({
             </div>
           </div>
         </div>
-        <div className="text-2xl font-bold text-primary">{formatCurrency(bal)}</div>
+        <div className={`text-2xl font-bold ${bal < 0 ? "text-destructive" : "text-primary"}`}>{formatCurrency(bal)}</div>
         <div className="flex flex-wrap gap-1">
           {!a.isDefault && (
             <Button size="sm" variant="ghost" onClick={() => { setDefaultAccount(a.id); toast.success("Default updated"); }}>
@@ -234,13 +234,13 @@ export function AccountsClient({
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">{ACCOUNT_TYPE_LABEL[t]}</p>
-                      <p className="text-2xl font-bold">{formatCurrency(totals[t])}</p>
+                      <p className={`text-2xl font-bold ${totals[t] < 0 ? "text-destructive" : ""}`}>{formatCurrency(totals[t])}</p>
                     </div>
                   </div>
                 </Card>
               );
             })}
-            <Card className="p-4 bg-primary text-primary-foreground hover:bg-primary/90">
+            <Card className={`p-4 text-primary-foreground ${grandTotal < 0 ? "bg-destructive hover:bg-destructive/90" : "bg-primary hover:bg-primary/90"}`}>
               <p className="text-xs opacity-80">Grand Total</p>
               <p className="text-2xl font-bold">{formatCurrency(grandTotal)}</p>
             </Card>

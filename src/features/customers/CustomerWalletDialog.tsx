@@ -29,6 +29,7 @@ import {
   SelectValue,
 } from "@/shared/ui/select";
 import { useCollectPayment, useWithdrawPayment, useDepositAdvance } from "./ledgerHooks";
+import { useAccountBalances } from "@/features/accounts/hooks";
 import { formatCurrency } from "@/shared/lib/format";
 import { ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
 
@@ -59,6 +60,7 @@ export function CustomerWalletDialog({
   const [notes, setNotes] = useState("");
 
   const filteredAccounts = method ? accounts.filter((a) => a.type === method) : [];
+  const balances = useAccountBalances(accounts);
 
   const deposit = useDepositAdvance();
   const withdraw = useWithdrawPayment();
@@ -172,9 +174,9 @@ export function CustomerWalletDialog({
             />
           </div>
 
-          {/* ── Method ── */}
+          {/* ── Method (Account) ── */}
           <div className="space-y-2">
-            <Label htmlFor="method">Payment Method *</Label>
+            <Label htmlFor="method">Account *</Label>
             <Select
               value={method}
               onValueChange={(v) => {
@@ -183,7 +185,7 @@ export function CustomerWalletDialog({
               }}
             >
               <SelectTrigger id="method">
-                <SelectValue placeholder="Select method" />
+                <SelectValue placeholder="Select Account (e.g. Bank)" />
               </SelectTrigger>
               <SelectContent>
                 {Object.entries(ACCOUNT_TYPE_LABEL).map(([key, label]) => (
@@ -195,22 +197,31 @@ export function CustomerWalletDialog({
             </Select>
           </div>
 
-          {/* ── Account ── */}
-          <div className="space-y-2">
-            <Label htmlFor="account">
-              {action === "deposit" ? "Deposit to Account *" : "Withdraw from Account *"}
-            </Label>
-            <Select value={accountId} onValueChange={setAccountId} disabled={!method}>
-              <SelectTrigger id="account">
-                <SelectValue placeholder="Select account" />
-              </SelectTrigger>
-              <SelectContent>
-                {filteredAccounts.map((a) => (
-                  <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {/* ── Ledger (Account specific) ── */}
+          {method && (
+            <div className="space-y-2">
+              <Label htmlFor="account">
+                {action === "deposit" ? "Deposit to Ledger *" : "Withdraw from Ledger *"}
+              </Label>
+              <Select value={accountId} onValueChange={setAccountId}>
+                <SelectTrigger id="account">
+                  <SelectValue placeholder="Select Ledger" />
+                </SelectTrigger>
+                <SelectContent>
+                  {filteredAccounts.map((a) => (
+                    <SelectItem key={a.id} value={a.id}>
+                      {a.name} {balances[a.id] !== undefined ? `(${formatCurrency(balances[a.id])})` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {accountId && balances[accountId] !== undefined && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Ledger Balance: <span className="font-medium text-foreground">{formatCurrency(balances[accountId])}</span>
+                </p>
+              )}
+            </div>
+          )}
 
           {/* ── Reference ── */}
           <div className="space-y-2">
