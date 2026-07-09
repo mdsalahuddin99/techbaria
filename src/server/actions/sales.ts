@@ -49,6 +49,11 @@ export async function updateSaleAction(id: string, input: any) {
   return salesService.update(ctx, id, input);
 }
 
+export async function collectSaleDueAction(id: string, input: any) {
+  const ctx = await getActionCtx();
+  return salesService.collectDue(ctx, id, input);
+}
+
 export async function deleteSaleAction(id: string) {
   const ctx = await getActionCtx();
   await salesService.remove(ctx, id);

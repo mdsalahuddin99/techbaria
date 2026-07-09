@@ -355,6 +355,8 @@ export function serializeCustomer(raw: PrismaCustomer): any {
     due: toNumber(raw.due),
     balance: toNumber(raw.balance),
     creditLimit: toNumber(raw.creditLimit),
+    totalSpent: toNumber(raw.totalSpent),
+    loyaltyPoints: raw.loyaltyPoints ?? 0,
     group: raw.group ?? undefined,
     referencePerson: raw.referencePerson ?? undefined,
     notes: raw.notes ?? undefined,

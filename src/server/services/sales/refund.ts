@@ -79,6 +79,7 @@ export async function refund(ctx: Ctx, id: string, input: RefundInput) {
     // Record refund CustomerTransaction if sale had a customer
     if (sale.customerId && refundAmount > 0) {
       await salesAccounting.applyRefundBalance(tx, ctx, sale.id, sale.customerId, refundAmount);
+      await salesAccounting.recordCustomerSpent(tx, sale.customerId, refundAmount, true);
     }
 
     const updatedSale = await tx.sale.update({

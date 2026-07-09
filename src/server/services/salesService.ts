@@ -13,6 +13,7 @@ import { voidSale } from "./sales/void";
 import { refund } from "./sales/refund";
 import { remove } from "./sales/remove";
 import { update } from "./sales/update";
+import { collectDue } from "./sales/collectDue";
 import {
   createStorefrontOrder,
   listStorefrontOrders,
@@ -55,6 +56,9 @@ export const salesService = {
 
   /** Update a completed sale — replaces items, tenders, and syncs stock/serials. Requires MANAGER+. */
   update,
+
+  /** Collect due for a specific sale. */
+  collectDue,
 
   /** Get sales for a specific customer. */
   byCustomer,

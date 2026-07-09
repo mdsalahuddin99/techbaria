@@ -154,6 +154,21 @@ export async function update(ctx: Ctx, id: string, input: SaleUpdateInput) {
       await salesAccounting.applyCustomerDue(tx, ctx, updated, input.customerId, due, true, Number(sale.due));
       await salesAccounting.applyWalletTenders(tx, ctx, id, input.customerId, input.tenders, true);
     }
+    
+    // Update total spent
+    if (sale.customerId && sale.customerId !== input.customerId) {
+      await salesAccounting.recordCustomerSpent(tx, sale.customerId, Number(sale.total), true); // revert old
+    }
+    if (input.customerId) {
+      if (sale.customerId === input.customerId) {
+        const diff = Number(total) - Number(sale.total);
+        if (diff !== 0) {
+          await salesAccounting.recordCustomerSpent(tx, input.customerId, Math.abs(diff), diff < 0);
+        }
+      } else {
+        await salesAccounting.recordCustomerSpent(tx, input.customerId, Number(total), false);
+      }
+    }
 
     await auditLogService.log(ctx, {
       entity: "Sale",

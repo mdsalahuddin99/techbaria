@@ -70,6 +70,7 @@ export async function voidSale(ctx: Ctx, id: string, reason: string) {
       if (dueAmount > 0) {
         await salesAccounting.revertCustomerDue(tx, ctx, sale.id, sale.customerId, dueAmount, false);
       }
+      await salesAccounting.recordCustomerSpent(tx, sale.customerId, Number(sale.total), true);
     }
 
     const updatedSale = await tx.sale.update({

@@ -183,17 +183,14 @@ export function useCreateSale() {
   useEffect(() => {
     if (!walletAutoApplied) return;
 
-    if (!voucherCustomerId) {
+    if (!voucherCustomerId || !currentCustomer) {
       if (payments.some((p) => p.method === "Wallet")) {
         setPayments((prev) => prev.filter((p) => p.method !== "Wallet"));
       }
       return;
     }
 
-    // Wallet balance auto-apply disabled temporarily without full customer loading
-    // The CustomerSidebar now fetches the customer, so we might need to rely on customer lookup
-    // or we can remove the auto-apply feature, or fetch customer here.
-    const walletBalance = 0; // TODO: Implement if needed for async
+    const walletBalance = Number(currentCustomer?.balance || 0);
 
     const nonWalletPayments = payments.filter((p) => p.method !== "Wallet");
     const nonWalletPaid = nonWalletPayments.reduce((sum, p) => sum + p.amount, 0);
@@ -212,7 +209,7 @@ export function useCreateSale() {
         setPayments(nonWalletPayments);
       }
     }
-  }, [voucherCustomerId, invoiceTotal, payments, walletAutoApplied]);
+  }, [voucherCustomerId, invoiceTotal, payments, walletAutoApplied, currentCustomer?.balance]);
 
   // Removed effectiveStockOf since products aren't loaded upfront
 
@@ -568,6 +565,7 @@ export function useCreateSale() {
       notes: narration || undefined,
       items: voucherRows.map((r) => ({
         productId: r.productId,
+        name: r.name,
         qty: r.qty,
         price: r.price,
         discount: r.discount ?? 0,

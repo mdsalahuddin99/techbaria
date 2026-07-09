@@ -59,9 +59,12 @@ export async function remove(ctx: Ctx, id: string) {
     await salesSerial.releaseSerials(tx, "default", sale.warehouseId, saleItemIds, productIds);
 
     // Reverse customer due + record ledger (delete)
-    if (sale.customerId && Number(sale.due) > 0) {
-      const dueAmount = Number(sale.due);
-      await salesAccounting.revertCustomerDue(tx, ctx, sale.id, sale.customerId, dueAmount, true);
+    if (sale.customerId) {
+      if (Number(sale.due) > 0) {
+        const dueAmount = Number(sale.due);
+        await salesAccounting.revertCustomerDue(tx, ctx, sale.id, sale.customerId, dueAmount, true);
+      }
+      await salesAccounting.recordCustomerSpent(tx, sale.customerId, Number(sale.total), true);
     }
 
     // Delete sale (cascade deletes items + tenders)

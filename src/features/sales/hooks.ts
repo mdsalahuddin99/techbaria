@@ -182,6 +182,17 @@ export function useSaleMutations() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
+  const collectDueMutation = useMutation({
+    mutationFn: ({ id, input }: { id: string; input: Record<string, unknown> }) =>
+      salesService.collectDue(id, input),
+    onSuccess: () => {
+      invalidate();
+      qc.invalidateQueries({ queryKey: ["customer-ledger"] }); // also refresh customer ledger balances
+      toast.success("Due collected successfully");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   return {
     void: (saleId: string, reason: string) =>
       voidMutation.mutateAsync({ saleId, reason }),
@@ -189,5 +200,6 @@ export function useSaleMutations() {
       refundMutation.mutateAsync(input),
     delete: (id: string) => deleteMutation.mutateAsync(id),
     update: (id: string, input: Record<string, unknown>) => updateMutation.mutateAsync({ id, input }),
+    collectDue: (id: string, input: Record<string, unknown>) => collectDueMutation.mutateAsync({ id, input }),
   };
 }

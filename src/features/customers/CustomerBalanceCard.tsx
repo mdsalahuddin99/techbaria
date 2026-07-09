@@ -30,7 +30,7 @@ export function CustomerBalanceCard({ customerId }: Props) {
   if (!data) return null;
 
   return (
-    <Card className="p-4">
+    <Card className="p-4 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] border-border/60">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 space-y-2">
           {/* Advance balance */}

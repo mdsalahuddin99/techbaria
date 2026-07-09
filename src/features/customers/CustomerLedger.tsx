@@ -24,12 +24,12 @@ interface Props {
   customerId: string;
 }
 
-const typeMeta: Record<string, { label: string; color: "default" | "secondary" | "destructive" | "outline"; icon: typeof Receipt }> = {
-  SALE:       { label: "Sale (Credit)",    color: "default",     icon: Receipt },
-  PAYMENT:    { label: "Due Collection",   color: "secondary",   icon: Wallet },
-  REFUND:     { label: "Refund",           color: "destructive", icon: Undo2 },
-  ADJUSTMENT: { label: "Advance Deposit",  color: "outline",     icon: ArrowDownToLine },
-  WRITE_OFF:  { label: "Write Off",        color: "destructive", icon: FileX },
+const typeMeta: Record<string, { label: string; className: string; icon: typeof Receipt }> = {
+  SALE:       { label: "Sale (Credit)",    className: "bg-blue-50 text-blue-600 border-blue-100",     icon: Receipt },
+  PAYMENT:    { label: "Due Collection",   className: "bg-emerald-50 text-emerald-600 border-emerald-100",   icon: Wallet },
+  REFUND:     { label: "Refund",           className: "bg-orange-50 text-orange-600 border-orange-100", icon: Undo2 },
+  ADJUSTMENT: { label: "Advance Deposit",  className: "bg-purple-50 text-purple-600 border-purple-100",     icon: ArrowDownToLine },
+  WRITE_OFF:  { label: "Write Off",        className: "bg-red-50 text-red-600 border-red-100", icon: FileX },
 };
 
 export function CustomerLedger({ customerId }: Props) {
@@ -90,7 +90,7 @@ export function CustomerLedger({ customerId }: Props) {
 
               const meta =
                 typeMeta[effectiveType] ??
-                { label: entry.type, color: "outline" as const, icon: Receipt };
+                { label: entry.type, className: "bg-slate-50 text-slate-600 border-slate-200", icon: Receipt };
               const Icon = isSaleReversal ? Undo2 : meta.icon;
               const effectiveLabel = isSaleReversal ? "Sale Reversal" : meta.label;
 
@@ -110,7 +110,7 @@ export function CustomerLedger({ customerId }: Props) {
                     {formatDateTime(entry.createdAt)}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={meta.color} className="gap-1 text-[10px]">
+                    <Badge variant="outline" className={`gap-1 text-[10px] shadow-none ${meta.className}`}>
                       <Icon className="h-3 w-3" />
                       {effectiveLabel}
                     </Badge>

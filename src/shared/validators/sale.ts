@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export const saleItemSchema = z.object({
   productId: z.string(),
+  name: z.string().optional(),
   qty: z.number().positive(),
   price: z.number().min(0),
   discount: z.number().min(0).optional(),

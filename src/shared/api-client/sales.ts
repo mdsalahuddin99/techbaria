@@ -12,6 +12,7 @@ import {
   updateSaleAction,
   deleteSaleAction,
   deleteReturnAction,
+  collectSaleDueAction,
 } from "@/server/actions/sales";
 
 export interface PaginatedResponse<T> {
@@ -69,5 +70,9 @@ export const salesApi = {
 
   update(id: string, input: Record<string, unknown>): Promise<Sale> {
     return updateSaleAction(id, input) as unknown as Promise<Sale>;
+  },
+
+  collectDue(id: string, input: Record<string, unknown>): Promise<Sale> {
+    return collectSaleDueAction(id, input) as unknown as Promise<Sale>;
   },
 };

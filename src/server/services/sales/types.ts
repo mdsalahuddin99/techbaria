@@ -15,6 +15,7 @@ export interface SaleCreateInput {
 
   items: Array<{
     productId: string;
+    name?: string;
     qty: number;
     price: number;
     discount?: number;

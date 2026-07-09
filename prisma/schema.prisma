@@ -251,6 +251,8 @@ model Customer {
   due            Decimal               @default(0) @db.Decimal(12, 2)
   balance        Decimal               @default(0) @db.Decimal(14, 2)
   creditLimit    Decimal               @default(0) @db.Decimal(14, 2)
+  totalSpent     Decimal               @default(0) @db.Decimal(14, 2)
+  loyaltyPoints  Int                   @default(0)
   group          String?
   referencePerson String?
   notes          String?

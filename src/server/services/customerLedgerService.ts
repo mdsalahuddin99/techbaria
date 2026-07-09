@@ -323,7 +323,7 @@ export const customerLedgerService = {
 
       // balanceBefore/After tracks wallet balance (not due) — consistent with ledger convention.
       // notes field carries the due change context.
-      return tx.customerTransaction.create({
+      const transaction = await tx.customerTransaction.create({
         data: {
           customerId,
           type: "PAYMENT",
@@ -336,6 +336,14 @@ export const customerLedgerService = {
           createdById: ctx.userId,
         },
       });
+
+      return {
+        id: transaction.id,
+        type: transaction.type,
+        amount: Number(transaction.amount),
+        balanceBefore: Number(transaction.balanceBefore),
+        balanceAfter: Number(transaction.balanceAfter),
+      };
     });
   },
 
@@ -393,7 +401,17 @@ export const customerLedgerService = {
         },
       });
 
-      return { transaction, customerId, newBalance };
+      return { 
+        transaction: {
+          id: transaction.id,
+          type: transaction.type,
+          amount: Number(transaction.amount),
+          balanceBefore: Number(transaction.balanceBefore),
+          balanceAfter: Number(transaction.balanceAfter),
+        }, 
+        customerId, 
+        newBalance 
+      };
     });
   },
 
@@ -439,7 +457,7 @@ export const customerLedgerService = {
         });
       }
 
-      return tx.customerTransaction.create({
+      const transaction = await tx.customerTransaction.create({
         data: {
           customerId,
           type: "REFUND",
@@ -452,6 +470,14 @@ export const customerLedgerService = {
           createdById: ctx.userId,
         },
       });
+
+      return {
+        id: transaction.id,
+        type: transaction.type,
+        amount: Number(transaction.amount),
+        balanceBefore: Number(transaction.balanceBefore),
+        balanceAfter: Number(transaction.balanceAfter),
+      };
     });
   },
 };

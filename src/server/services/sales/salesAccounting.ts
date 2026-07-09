@@ -324,5 +324,24 @@ export const salesAccounting = {
         createdById: ctx.userId,
       },
     });
+  },
+
+  /** Increment or decrement a customer's total spent and loyalty points */
+  async recordCustomerSpent(
+    tx: any,
+    customerId: string,
+    amount: number,
+    isRevert = false
+  ): Promise<void> {
+    const change = isRevert ? -amount : amount;
+    const pointsChange = Math.floor(change / 100); // 1 point per 100 BDT (example)
+    
+    await tx.customer.update({
+      where: { id: customerId },
+      data: {
+        totalSpent: { increment: change },
+        loyaltyPoints: { increment: pointsChange }
+      }
+    });
   }
 };

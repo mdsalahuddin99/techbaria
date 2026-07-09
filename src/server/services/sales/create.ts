@@ -152,7 +152,7 @@ export async function create(ctx: Ctx, input: SaleCreateInput) {
           create: input.items.map((item) => {
             const snap = productSnapshots.get(item.productId);
             return {
-              productId: item.productId, name: snap?.name ?? "", qty: item.qty,
+              productId: item.productId, name: item.name || snap?.name || "", qty: item.qty,
               price: item.price, cost: snap?.cost ?? 0, discount: item.discount ?? 0,
               warrantyMonths: item.warrantyMonths ?? null,
             };
@@ -192,6 +192,7 @@ export async function create(ctx: Ctx, input: SaleCreateInput) {
     // Update customer due + record ledger transaction
     if (input.customerId) {
       await salesAccounting.applyCustomerDue(tx, ctx, sale, input.customerId, due, false);
+      await salesAccounting.recordCustomerSpent(tx, input.customerId, Number(total), false);
     }
 
     // Handle Wallet/Advance tenders — customer pays from advance balance
