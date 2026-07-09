@@ -25,7 +25,7 @@ import { toast } from "sonner";
 import { PageHeader, EmptyState, ConfirmDialog } from "@/shared/components";
 import { useInfiniteCustomersQuery, useDeleteCustomer } from "@/features/customers/hooks";
 import { CustomerFormDialog } from "@/features/customers/CustomerFormDialog";
-import { useSales } from "@/features/sales/hooks";
+import { useSales, useCustomerSales } from "@/features/sales/hooks";
 import { useSettings } from "@/features/settings/hooks";
 import { useActiveAccounts } from "@/features/accounts/hooks";
 import { CustomerBalanceCard } from "@/features/customers/CustomerBalanceCard";
@@ -111,10 +111,7 @@ export function CustomersClient({
     }
   }, [historyFor]);
 
-  const customerHistory = useMemo(() => {
-    if (!historyFor) return [];
-    return allSales.filter((s) => s.customerId === historyFor.id);
-  }, [allSales, historyFor]);
+  const customerHistory = useCustomerSales(historyFor?.id);
 
   const filteredHistory = useMemo(() => {
     const q = historySearch.trim().toLowerCase();
@@ -153,11 +150,7 @@ export function CustomersClient({
     return list;
   }, [customerHistory, historySearch, historySort]);
 
-  const historyTotals = useMemo(() => {
-    const totalSpent = customerHistory.reduce((s, x) => s + x.total, 0);
-    const totalPaid = customerHistory.reduce((s, x) => s + Math.min(x.amountPaid, x.total), 0);
-    return { totalSpent, totalDue: Math.max(0, totalSpent - totalPaid) };
-  }, [customerHistory]);
+
 
   const filtered = customers;
 
@@ -521,16 +514,16 @@ export function CustomersClient({
                   <div className="grid grid-cols-4 gap-2 mt-4 text-center divide-x divide-border/50 border-t border-border/50 pt-4">
                     <div>
                       <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Orders</p>
-                      <p className="font-bold text-slate-700">{customerHistory.length}</p>
+                      <p className="font-bold text-slate-700">{customerHistory.length}{customerHistory.length >= 50 ? "+" : ""}</p>
                     </div>
                     <div>
                       <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Spent</p>
-                      <p className="font-bold text-emerald-600 text-sm">{formatCurrency(historyTotals.totalSpent)}</p>
+                      <p className="font-bold text-emerald-600 text-sm">{formatCurrency(historyFor.totalSpent ?? 0)}</p>
                     </div>
                     <div>
                       <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Due</p>
-                      <p className={`font-bold text-sm ${historyTotals.totalDue > 0 ? "text-orange-600" : "text-slate-700"}`}>
-                        {formatCurrency(historyTotals.totalDue)}
+                      <p className={`font-bold text-sm ${(historyFor.due ?? 0) > 0 ? "text-orange-600" : "text-slate-700"}`}>
+                        {formatCurrency(historyFor.due ?? 0)}
                       </p>
                     </div>
                     <div>

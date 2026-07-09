@@ -4,8 +4,10 @@ import { StorefrontHeader } from "./StorefrontHeader";
 import { StorefrontFooter } from "./StorefrontFooter";
 import { MobileBottomBar } from "./MobileBottomBar";
 
-import { QuickViewDialog } from "../product/QuickViewDialog";
-import { CompareTray } from "../compare/CompareTray";
+import dynamic from "next/dynamic";
+
+const QuickViewDialog = dynamic(() => import("../product/QuickViewDialog").then(mod => mod.QuickViewDialog), { ssr: false });
+const CompareTray = dynamic(() => import("../compare/CompareTray").then(mod => mod.CompareTray), { ssr: false });
 
 /** Shared chrome for every public storefront page. */
 export function StorefrontLayout({ children }: { children: ReactNode }) {

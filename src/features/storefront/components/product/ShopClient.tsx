@@ -2,7 +2,7 @@
 
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { LayoutGrid, List, ChevronRight, ChevronLeft, Filter } from "lucide-react";
 import { useStorefrontProducts, useSeo } from "@/features/storefront";
 import { ProductGrid } from "@/features/storefront/components/product/ProductGrid";
@@ -26,7 +26,9 @@ export function ShopClient({ initialProducts, totalCount }: Props) {
   const params = useParams();
   const nextSearchParams = useSearchParams();
   // Fallback to window.location if useSearchParams is null (rare but possible in some setups)
-  const searchParams = nextSearchParams ?? (typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null);
+  const searchParams = useMemo(() => {
+    return nextSearchParams ?? (typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null);
+  }, [nextSearchParams]);
   const categoryParam = params.category 
     ? (Array.isArray(params.category) ? params.category[0] : params.category) 
     : undefined;
@@ -53,6 +55,7 @@ export function ShopClient({ initialProducts, totalCount }: Props) {
   const [sort, setSort] = useState<SortKey>((searchParams?.get("sort") as SortKey) || "popular");
   const [view, setView] = useState<"grid" | "list">("grid");
   const page = searchParams?.has("page") ? Number(searchParams.get("page")) : 1;
+  const [isPending, startTransition] = useTransition();
 
   // Sync state to URL
   const updateUrl = (newFilters: ShopFilterState, newSort: SortKey, newPage: number) => {
@@ -70,7 +73,9 @@ export function ShopClient({ initialProducts, totalCount }: Props) {
 
     const queryString = sp.toString();
     const url = `/storefront/shop${decoded ? `/${encodeURIComponent(decoded)}` : ""}${queryString ? `?${queryString}` : ""}`;
-    router.push(url);
+    startTransition(() => {
+      router.push(url);
+    });
   };
 
   const handleFilterChange = (v: ShopFilterState) => {
@@ -101,8 +106,10 @@ export function ShopClient({ initialProducts, totalCount }: Props) {
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
   const onCategoryNav = (cat: string | null) => {
-    if (cat) router.push(`/storefront/shop/${encodeURIComponent(cat)}`);
-    else router.push("/storefront/shop");
+    startTransition(() => {
+      if (cat) router.push(`/storefront/shop/${encodeURIComponent(cat)}`);
+      else router.push("/storefront/shop");
+    });
   };
 
   const reset = () => {

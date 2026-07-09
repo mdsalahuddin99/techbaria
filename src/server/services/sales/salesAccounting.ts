@@ -334,7 +334,7 @@ export const salesAccounting = {
     isRevert = false
   ): Promise<void> {
     const change = isRevert ? -amount : amount;
-    const pointsChange = Math.floor(change / 100); // 1 point per 100 BDT (example)
+    const pointsChange = Math.trunc(change / 100); // 1 point per 100 BDT (example)
     
     await tx.customer.update({
       where: { id: customerId },

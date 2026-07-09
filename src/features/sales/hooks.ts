@@ -79,14 +79,14 @@ export function useFilteredSales({ search = "", paymentMethod = "All" }: SalesFi
 
 /** Sales for a specific customer — used by Customers history sheet. */
 export function useCustomerSales(customerId: string | null | undefined) {
-  const { data } = useSalesQuery();
-  return useMemo(
-    () =>
-      customerId
-        ? ((data as any)?.items ?? []).filter((s) => s.customerId === customerId)
-        : [],
-    [data, customerId],
-  );
+  const { session, status } = useAuth();
+  const query = useQuery({
+    queryKey: [...saleKeys.list(), "customer", customerId],
+    queryFn: () => salesService.byCustomer(customerId!),
+    enabled: status !== "loading" && !!session && !!customerId,
+  });
+
+  return query.data ?? [];
 }
 
 // ---------- Returns ----------

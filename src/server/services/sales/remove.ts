@@ -15,7 +15,7 @@ export async function remove(ctx: Ctx, id: string) {
   const productIds = await prisma.$transaction(async (tx) => {
     const sale = await tx.sale.findFirst({
       where: { id },
-      include: { items: true },
+      include: { items: true, tenders: true },
     });
     if (!sale) throw new ServiceError("NOT_FOUND", "Sale not found", 404);
     if (sale.status !== "COMPLETED") {
@@ -58,8 +58,9 @@ export async function remove(ctx: Ctx, id: string) {
     const productIds = [...new Set(sale.items.map(item => item.productId))];
     await salesSerial.releaseSerials(tx, "default", sale.warehouseId, saleItemIds, productIds);
 
-    // Reverse customer due + record ledger (delete)
+    // Reverse customer due + restore wallet balance + record ledger (delete)
     if (sale.customerId) {
+      await salesAccounting.restoreWalletTenders(tx, ctx, sale.id, sale.customerId, sale.tenders, "Sale deleted");
       if (Number(sale.due) > 0) {
         const dueAmount = Number(sale.due);
         await salesAccounting.revertCustomerDue(tx, ctx, sale.id, sale.customerId, dueAmount, true);

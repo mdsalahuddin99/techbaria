@@ -26,7 +26,7 @@ export async function update(ctx: Ctx, id: string, input: SaleUpdateInput) {
   await prisma.$transaction(async (tx) => {
     const sale = await tx.sale.findFirst({
       where: { id },
-      include: { items: true },
+      include: { items: true, tenders: true },
     });
     if (!sale) throw new ServiceError("NOT_FOUND", "Sale not found", 404);
     if (sale.status !== "COMPLETED") {
@@ -150,22 +150,28 @@ export async function update(ctx: Ctx, id: string, input: SaleUpdateInput) {
     }
 
     // Step 9: Update customer due & Wallet/Advance tenders
-    if (input.customerId) {
-      await salesAccounting.applyCustomerDue(tx, ctx, updated, input.customerId, due, true, Number(sale.due));
-      await salesAccounting.applyWalletTenders(tx, ctx, id, input.customerId, input.tenders, true);
-    }
-    
-    // Update total spent
-    if (sale.customerId && sale.customerId !== input.customerId) {
-      await salesAccounting.recordCustomerSpent(tx, sale.customerId, Number(sale.total), true); // revert old
-    }
-    if (input.customerId) {
-      if (sale.customerId === input.customerId) {
+    if (sale.customerId === input.customerId) {
+      // Same customer: restore old wallet, then apply update
+      if (input.customerId) {
+        await salesAccounting.restoreWalletTenders(tx, ctx, id, input.customerId, sale.tenders, "Sale edited (revert old)");
+        await salesAccounting.applyCustomerDue(tx, ctx, updated, input.customerId, due, true, Number(sale.due));
+        await salesAccounting.applyWalletTenders(tx, ctx, id, input.customerId, input.tenders, true);
+        
         const diff = Number(total) - Number(sale.total);
         if (diff !== 0) {
           await salesAccounting.recordCustomerSpent(tx, input.customerId, Math.abs(diff), diff < 0);
         }
-      } else {
+      }
+    } else {
+      // Customer changed: completely revert old customer, completely apply to new customer
+      if (sale.customerId) {
+        await salesAccounting.applyCustomerDue(tx, ctx, updated, sale.customerId, 0, true, Number(sale.due));
+        await salesAccounting.restoreWalletTenders(tx, ctx, id, sale.customerId, sale.tenders, "Sale edited (customer changed)");
+        await salesAccounting.recordCustomerSpent(tx, sale.customerId, Number(sale.total), true);
+      }
+      if (input.customerId) {
+        await salesAccounting.applyCustomerDue(tx, ctx, updated, input.customerId, due, false);
+        await salesAccounting.applyWalletTenders(tx, ctx, id, input.customerId, input.tenders, false);
         await salesAccounting.recordCustomerSpent(tx, input.customerId, Number(total), false);
       }
     }

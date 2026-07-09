@@ -4,6 +4,7 @@ import React, { useMemo, useState, useEffect, useCallback, useRef } from "react"
 import { usePageTitle } from "@/shared/hooks/usePageTitle";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useSearchParams, useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import { useAuth } from "@/features/auth/AuthProvider";
 
 import { Button } from "@/shared/ui/button";
@@ -13,16 +14,18 @@ import { formatCurrency, productDisplayName, round2 } from "@/shared/lib/format"
 import type { Sale, PaymentMethod, SalePayment } from "@/shared/lib/types";
 import CameraScanner from "@/components/CameraScanner";
 import {
-  InvoicePreview,
   type ReceiptView,
-  DraftInvoicePreview,
   type HeldSaleForPrint,
   InvoiceHeader,
   ProductFilterBar,
   InvoiceLineItems,
-  PaymentCollector,
-  CustomerSidebar,
 } from "@/features/sales/components";
+
+const InvoicePreview = dynamic(() => import("@/features/sales/components").then(mod => mod.InvoicePreview), { ssr: false });
+const DraftInvoicePreview = dynamic(() => import("@/features/sales/components").then(mod => mod.DraftInvoicePreview), { ssr: false });
+const PaymentCollector = dynamic(() => import("@/features/sales/components").then(mod => mod.PaymentCollector), { ssr: false });
+const CustomerSidebar = dynamic(() => import("@/features/sales/components").then(mod => mod.CustomerSidebar), { ssr: false });
+
 import type { VoucherRow } from "@/features/sales/components";
 import { usePosCoreData, posInitKeys } from "@/features/pos";
 import { customersApi } from "@/shared/api-client/customers";

@@ -1,31 +1,28 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/server/db/client";
-import fs from "fs";
-import path from "path";
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    const serialDoc = await prisma.serialNumber.findUnique({
-      where: { serial: "45724CAPSF4B88A" },
-      include: {
-        product: { include: { supplier: true } },
-        purchaseItem: { include: { purchase: { include: { supplier: true } } } },
-        saleItem: { include: { sale: true } }
-      }
-    });
+    const phone = "01742104445"; // Mufti Ismail
+    const customer = await prisma.customer.findFirst({ where: { phone } });
     
-    // Check all purchases for this product
-    const purchases = await prisma.purchaseItem.findMany({
-      where: { productId: serialDoc?.productId },
-      include: { purchase: { include: { supplier: true } } },
-      take: 2
+    if (!customer) return NextResponse.json({ error: "Customer not found" });
+
+    const sales = await prisma.sale.findMany({
+      where: { customerId: customer.id }
     });
 
-    const data = { serialDoc, purchases };
-    fs.writeFileSync(path.join(process.cwd(), "db_dump.txt"), JSON.stringify(data, null, 2));
+    const txs = await prisma.customerTransaction.findMany({
+      where: { customerId: customer.id }
+    });
 
-    return NextResponse.json({ ok: true });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message });
+    return NextResponse.json({
+      customer,
+      salesCount: sales.length,
+      sales: sales.map(s => ({ id: s.id, status: s.status, customerId: s.customerId, total: s.total })),
+      txs: txs.map(t => ({ id: t.id, type: t.type, amount: t.amount, saleId: t.saleId, ref: t.reference }))
+    });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message });
   }
 }

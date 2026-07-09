@@ -206,6 +206,14 @@ model Product {
   @@index([productTypeId])
   @@index([globalModelId])
   @@index([globalSeriesId])
+
+  // Optimization: Storefront compound indexes for fast filtering
+  @@index([isPublished, categoryId, price])
+  @@index([isPublished, globalBrandId, price])
+  @@index([isPublished, stock])
+  
+  // Optimization: POS / Inventory Barcode scanning
+  @@index([sku])
 }
 
 model ProductImage {
