@@ -1,0 +1,278 @@
+/**
+ * Inventory service — stock adjustments, low-stock alerts.
+ *
+ * Adjustments are append-only (immutable audit trail).
+ */
+import "server-only";
+import { prisma } from "@/server/db/client";
+import { ServiceError } from "@/server/lib/errors";
+import { requireRole } from "@/server/auth/rbac";
+import { paginate, type PaginationParams } from "@/server/lib/paginate";
+import type { Ctx } from "@/server/lib/ctx";
+import { auditLogService } from "./auditLogService";
+import { cache, cacheKeys, TTL } from "@/lib/cache";
+import { type StockAdjustment } from "@prisma/client";
+
+export interface AdjustmentInput {
+  productId: string;
+  warehouseId?: string;
+  qtyDelta: number; // positive = add, negative = subtract
+  reason: "DAMAGE" | "LOSS" | "THEFT" | "CORRECTION" | "RECEIVED" | "OTHER";
+  notes?: string;
+}
+
+// ─── Service ────────────────────────────────────────────────────────────────
+
+export const inventoryService = {
+  /** Snapshot of current stock levels for all products. */
+  async snapshot(ctx: Ctx) {
+    return cache.fetch(cacheKeys.inventory.snapshot(), TTL.INVENTORY_SNAPSHOT, async () => {
+      return prisma.product.findMany({
+        select: {
+          id: true,
+          name: true,
+          sku: true,
+          stock: true,
+          reorderLevel: true,
+          unit: true,
+        },
+        orderBy: { name: "asc" },
+      });
+    });
+  },
+
+  /** List all stock adjustments (paginated). */
+  async listAdjustments(ctx: Ctx, params?: PaginationParams) {
+    const paginated = await paginate<any>(
+      prisma.stockAdjustment,
+      {},
+      params,
+      { orderBy: { createdAt: "desc" as const } },
+    );
+
+    const productIds = [...new Set(paginated.items.map(a => a.productId))];
+    const products = await prisma.product.findMany({
+      where: { id: { in: productIds } },
+      select: { id: true, name: true }
+    });
+    const productMap = new Map(products.map(p => [p.id, p.name]));
+
+    const userIds = [...new Set(paginated.items.map(a => a.userId).filter(Boolean))];
+    const users = await prisma.user.findMany({
+      where: { id: { in: userIds as string[] } },
+      select: { id: true, name: true }
+    });
+    const userMap = new Map(users.map(u => [u.id, u.name]));
+
+    const items = paginated.items.map(adj => ({
+      id: adj.id,
+      productId: adj.productId,
+      productName: productMap.get(adj.productId) || "Unknown",
+      type: adj.qtyDelta > 0 ? "Add" : adj.qtyDelta < 0 ? "Remove" : "Set",
+      qty: Math.abs(adj.qtyDelta),
+      beforeStock: 0,
+      afterStock: 0,
+      reason: adj.reason,
+      reference: "",
+      note: adj.notes || "",
+      user: adj.userId ? userMap.get(adj.userId) || adj.userId : "System",
+      date: adj.createdAt.toISOString(),
+    }));
+
+    return { ...paginated, items };
+  },
+
+  /** Adjust stock for a product. Requires MANAGER+. Append-only. */
+  async adjust(ctx: Ctx, input: AdjustmentInput) {
+    requireRole(ctx, "ADMIN");
+
+    if (!input.qtyDelta || input.qtyDelta === 0) {
+      throw new ServiceError("VALIDATION", "Quantity delta must be non-zero");
+    }
+
+    // Verify product exists
+    const product = await prisma.product.findUnique({
+      where: { id: input.productId },
+    });
+    if (!product) {
+      throw new ServiceError("NOT_FOUND", "Product not found", 404);
+    }
+
+    const adjustment = await prisma.$transaction(async (tx) => {
+      // Create the adjustment record (immutable audit trail)
+      const adjustment = await tx.stockAdjustment.create({
+        data: {
+          productId: input.productId,
+          warehouseId: input.warehouseId,
+          qtyDelta: input.qtyDelta,
+          reason: input.reason,
+          notes: input.notes,
+          userId: ctx.userId,
+        },
+      });
+
+      // Apply the delta to the product stock
+      await tx.product.update({
+        where: { id: input.productId },
+        data: { stock: { increment: input.qtyDelta } },
+      });
+
+      // Apply the delta to warehouse stock (if warehouseId is provided)
+      if (input.warehouseId) {
+        const existingWarehouseStock = await tx.warehouseStock.findFirst({
+          where: { warehouseId: input.warehouseId, productId: input.productId },
+        });
+
+        if (existingWarehouseStock) {
+          await tx.warehouseStock.update({
+            where: { id: existingWarehouseStock.id },
+            data: { qty: { increment: input.qtyDelta } },
+          });
+        } else {
+          await tx.warehouseStock.create({
+            data: {
+              warehouseId: input.warehouseId,
+              productId: input.productId,
+              qty: input.qtyDelta,
+            },
+          });
+        }
+      }
+
+      // Sync physical serial count (Fix #4)
+      await inventoryService.syncStockCount(tx, input.warehouseId, input.productId);
+
+      await auditLogService.log(ctx, {
+        entity: "StockAdjustment",
+        entityId: adjustment.id,
+        action: "CREATE",
+        diff: { productId: input.productId, qtyDelta: input.qtyDelta, reason: input.reason },
+      });
+
+      return adjustment;
+    });
+
+    await cache.invalidateInventory();
+    await cache.invalidateSpecificProducts([input.productId]);
+
+    return adjustment;
+  },
+
+  /** Products where stock ≤ reorderLevel. */
+  async lowStock(ctx: Ctx) {
+    return prisma.$queryRawUnsafe<any[]>(
+      `SELECT * FROM "Product" WHERE "stock" <= "reorderLevel" ORDER BY ("reorderLevel" - "stock") DESC LIMIT 100`
+    );
+  },
+
+  /** Products where stock = 0. */
+  async outOfStock(ctx: Ctx) {
+    return prisma.product.findMany({
+      where: { stock: { lte: 0 } },
+      orderBy: { name: "asc" },
+      take: 100,
+    });
+  },
+
+  /** Warehouse-level stock (multi-warehouse support). */
+  async warehouseStock(ctx: Ctx, warehouseId: string) {
+    return prisma.warehouseStock.findMany({
+      where: { warehouseId },
+      include: { product: { select: { name: true, sku: true, unit: true } } },
+      take: 500, // Limit to prevent massive payload
+    });
+  },
+
+  /** Reconcile physical serial count in a warehouse/shop with WarehouseStock and Product aggregates. */
+  async syncStockCount(tx: any, warehouseId: string | null | undefined, productId: string) {
+    const product = await tx.product.findUnique({
+      where: { id: productId },
+      select: { trackSerials: true },
+    });
+    if (!product || !product.trackSerials) return;
+
+    if (warehouseId) {
+      const serialCountInWarehouse = await tx.serialNumber.count({
+        where: { productId, warehouseId, status: "IN_STOCK" },
+      });
+
+      await tx.warehouseStock.upsert({
+        where: { warehouseId_productId: { warehouseId, productId } },
+        create: { warehouseId, productId, qty: serialCountInWarehouse },
+        update: { qty: serialCountInWarehouse },
+      });
+    }
+
+    const totalSerialCount = await tx.serialNumber.count({
+      where: { productId, status: "IN_STOCK" },
+    });
+
+    await tx.product.update({
+      where: { id: productId },
+      data: { stock: totalSerialCount },
+    });
+  },
+
+  /** Reconcile physical serial counts in a warehouse/shop for multiple products at once (batched). */
+  async syncStockCounts(tx: any, warehouseId: string | null | undefined, productIds: string[]) {
+    if (!productIds || productIds.length === 0) return;
+    
+    const uniqueProductIds = [...new Set(productIds)];
+
+    const products = await tx.product.findMany({
+      where: { id: { in: uniqueProductIds } },
+      select: { id: true, trackSerials: true },
+    });
+    const trackedProductIds = products.filter((p: any) => p.trackSerials).map((p: any) => p.id);
+    if (trackedProductIds.length === 0) return;
+
+    let warehouseStockUpserts: Promise<any>[] = [];
+    if (warehouseId) {
+      const warehouseCounts = await tx.serialNumber.groupBy({
+        by: ["productId"],
+        where: {
+          productId: { in: trackedProductIds },
+          warehouseId,
+          status: "IN_STOCK",
+        },
+        _count: { productId: true },
+      });
+
+      const warehouseCountMap = new Map<string, number>(
+        warehouseCounts.map((c: any) => [c.productId, c._count.productId])
+      );
+
+      warehouseStockUpserts = trackedProductIds.map((productId) => {
+        const qty = warehouseCountMap.get(productId) ?? 0;
+        return tx.warehouseStock.upsert({
+          where: { warehouseId_productId: { warehouseId, productId } },
+          create: { warehouseId, productId, qty },
+          update: { qty },
+        });
+      });
+    }
+
+    const globalCounts = await tx.serialNumber.groupBy({
+      by: ["productId"],
+      where: {
+        productId: { in: trackedProductIds },
+        status: "IN_STOCK",
+      },
+      _count: { productId: true },
+    });
+
+    const globalCountMap = new Map<string, number>(
+      globalCounts.map((c: any) => [c.productId, c._count.productId])
+    );
+
+    const productStockUpdates = trackedProductIds.map((productId) => {
+      const stock = globalCountMap.get(productId) ?? 0;
+      return tx.product.update({
+        where: { id: productId },
+        data: { stock },
+      });
+    });
+
+    await Promise.all([...warehouseStockUpserts, ...productStockUpdates]);
+  },
+};
