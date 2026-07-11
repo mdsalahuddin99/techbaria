@@ -32,7 +32,7 @@ export const POST = publicApiHandler(async (req: Request) => {
   const userId = (session?.user as any)?.id || "";
 
   return salesService.createStorefrontOrder(
-    { userId, role: "CASHIER" },
+    { userId, role: "CASHIER", permissions: [] },
     body,
   );
 });

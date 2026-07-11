@@ -8,5 +8,6 @@ export function getInternalCtx(): Ctx {
   return {
     userId: "system",
     role: "USER",
+    permissions: [],
   };
 }

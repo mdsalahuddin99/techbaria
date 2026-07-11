@@ -55,6 +55,7 @@ function AuthProviderInner({ children }: { children: ReactNode }) {
         name: nextSession.user.name ?? "",
         image: nextSession.user.image,
         role: (nextSession.user as any).role ?? "CASHIER",
+        permissions: (nextSession.user as any).permissions ?? [],
       },
       expires: nextSession.expires,
     };

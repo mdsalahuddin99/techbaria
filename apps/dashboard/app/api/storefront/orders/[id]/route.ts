@@ -9,7 +9,7 @@ export const GET = publicApiHandler(async (req: Request, opts) => {
   if (!id) return new Response("Missing order id", { status: 400 });
 
   return salesService.getStorefrontOrder(
-    { userId: "", role: "CASHIER" },
+    { userId: "", role: "CASHIER", permissions: [] },
     id,
   );
 });
