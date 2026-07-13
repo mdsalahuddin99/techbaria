@@ -154,7 +154,7 @@ export function ExportImportDialog({ open, onOpenChange, type, onImported }: Exp
           ) : (
             <div className="bg-blue-50/50 dark:bg-blue-950/20 p-3 rounded-md text-sm border border-blue-100 dark:border-blue-900 text-foreground/80 text-left">
               <strong className="block mb-1 text-blue-600 dark:text-blue-400">কীভাবে পূরণ করবেন?</strong>
-              <ul className="list-disc list-inside space-y-1 ml-1">
+              <ul className="list-disc list-inside space-y-1 ml-1 text-xs">
                 <li><b>Name:</b> {
                   type === 'brands' ? 'ব্র্যান্ডের নাম (যেমন: Apple, Samsung)' :
                   type === 'products' ? 'প্রোডাক্টের নাম (যেমন: Smartphone, Laptop)' :
@@ -163,6 +163,7 @@ export function ExportImportDialog({ open, onOpenChange, type, onImported }: Exp
                 }</li>
                 <li><b>Is Published:</b> সাথে সাথে পাবলিশ করতে চাইলে Yes, হাইড রাখতে চাইলে No লিখুন।</li>
               </ul>
+              <p className="mt-2 text-xs text-amber-600 dark:text-amber-400 font-medium">⚠️ দ্রষ্টব্য: ইম্পোর্ট করার পর অনুগ্রহ করে এডিট (✏️) বাটনে ক্লিক করে সংশ্লিষ্ট ব্র্যান্ড, মডেল বা সিরিজের মূল রিলেশনটি লিংক করে দিন।</p>
             </div>
           )}
           <div className="flex justify-between items-center bg-muted/50 p-3 rounded-md">

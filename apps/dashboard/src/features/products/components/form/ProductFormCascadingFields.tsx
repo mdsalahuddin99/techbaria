@@ -21,6 +21,7 @@ import {
 import { Label } from "@/shared/ui/label";
 import { Input } from "@/shared/ui/input";
 import { LoadingButton } from "@/shared/ui/loading-button";
+import { AsyncSuggest } from "@/shared/ui/async-suggest";
 import { CategoryFormDialog, type CategoryDialogMode } from "@/features/categories/components/CategoryFormDialog";
 
 interface Props {
@@ -31,6 +32,10 @@ interface Props {
 export function ProductFormCascadingFields({ form, editing }: Props) {
   const { control } = form;
   const category = useWatch({ name: "category", control });
+  const subcategory = useWatch({ name: "subcategory", control });
+  const brand = useWatch({ name: "brand", control }); // Brand ID
+  const productName = useWatch({ name: "name", control }); // Product Name (string)
+  const model = useWatch({ name: "model", control }); // Model ID
 
   // ── Categories (still hierarchical) ──
   const { data: allCategories = [] } = useQuery({
@@ -51,26 +56,81 @@ export function ProductFormCascadingFields({ form, editing }: Props) {
   const [quickCreateName, setQuickCreateName] = useState("");
   const [quickCreateSaving, setQuickCreateSaving] = useState(false);
 
-  // Fetch independent global lists
+  // Fetch filtered lists based on parent in cascade
   const { data: brands = [] } = useQuery({
-    queryKey: ["catalog", "brands"],
-    queryFn: () => apiFetch<any[]>(`/api/catalog?entity=brands`),
+    queryKey: ["catalog", "brands", subcategory ?? ""],
+    queryFn: () => subcategory
+      ? apiFetch<any[]>(`/api/catalog?entity=brands&subcategory=${encodeURIComponent(subcategory)}`)
+      : apiFetch<any[]>(`/api/catalog?entity=brands`),
   });
 
+  // Products (Product Name) depend on selected brand
   const { data: products = [] } = useQuery({
-    queryKey: ["catalog", "products"],
-    queryFn: () => apiFetch<any[]>(`/api/catalog?entity=products`),
+    queryKey: ["catalog", "products", brand ?? ""],
+    queryFn: () => brand
+      ? apiFetch<any[]>(`/api/catalog?entity=products&brandId=${brand}`)
+      : apiFetch<any[]>(`/api/catalog?entity=products`),
   });
 
+  // Find selected product type ID from the name field
+  const selectedProductType = products.find((p: any) => p.name === productName || p.id === productName);
+  const selectedProductTypeId = selectedProductType?.id;
+
+  // Models depend on selected product type (Product Name)
   const { data: models = [] } = useQuery({
-    queryKey: ["catalog", "models"],
-    queryFn: () => apiFetch<any[]>(`/api/catalog?entity=models`),
+    queryKey: ["catalog", "models", selectedProductTypeId ?? ""],
+    queryFn: () => selectedProductTypeId
+      ? apiFetch<any[]>(`/api/catalog?entity=models&productTypeId=${selectedProductTypeId}`)
+      : apiFetch<any[]>(`/api/catalog?entity=models`),
   });
 
+  // Series depend on selected model
   const { data: seriesList = [] } = useQuery({
-    queryKey: ["catalog", "series"],
-    queryFn: () => apiFetch<any[]>(`/api/catalog?entity=series`),
+    queryKey: ["catalog", "series", model ?? ""],
+    queryFn: () => model
+      ? apiFetch<any[]>(`/api/catalog?entity=series&modelId=${model}`)
+      : apiFetch<any[]>(`/api/catalog?entity=series`),
   });
+
+  // Track previous fields to detect change and reset downstream fields
+  const prevSubcategoryRef = useRef<string | undefined>(undefined);
+  const prevBrandRef = useRef<string | undefined>(undefined);
+  const prevProductNameRef = useRef<string | undefined>(undefined);
+  const prevModelRef = useRef<string | undefined>(undefined);
+
+  useEffect(() => {
+    if (prevSubcategoryRef.current !== undefined && prevSubcategoryRef.current !== subcategory) {
+      form.setValue("brand", "", { shouldDirty: true });
+      form.setValue("name", "", { shouldDirty: true });
+      form.setValue("model", "", { shouldDirty: true });
+      form.setValue("series", "", { shouldDirty: true });
+    }
+    prevSubcategoryRef.current = subcategory;
+  }, [subcategory, form]);
+
+  useEffect(() => {
+    if (prevBrandRef.current !== undefined && prevBrandRef.current !== brand) {
+      form.setValue("name", "", { shouldDirty: true });
+      form.setValue("model", "", { shouldDirty: true });
+      form.setValue("series", "", { shouldDirty: true });
+    }
+    prevBrandRef.current = brand;
+  }, [brand, form]);
+
+  useEffect(() => {
+    if (prevProductNameRef.current !== undefined && prevProductNameRef.current !== productName) {
+      form.setValue("model", "", { shouldDirty: true });
+      form.setValue("series", "", { shouldDirty: true });
+    }
+    prevProductNameRef.current = productName;
+  }, [productName, form]);
+
+  useEffect(() => {
+    if (prevModelRef.current !== undefined && prevModelRef.current !== model) {
+      form.setValue("series", "", { shouldDirty: true });
+    }
+    prevModelRef.current = model;
+  }, [model, form]);
 
   // Category creation dialog state
   const [catDialogOpen, setCatDialogOpen] = useState(false);
@@ -97,20 +157,35 @@ export function ProductFormCascadingFields({ form, editing }: Props) {
     }
     setQuickCreateSaving(true);
     try {
-      const payload: any = { entity: quickCreateEntity, name };
+      let payload: any = { entity: quickCreateEntity, name };
+
+      if (quickCreateEntity === "brands") {
+        payload.subcategories = subcategory ? [subcategory] : [];
+      } else if (quickCreateEntity === "products") {
+        payload.brands = brand ? [brand] : [];
+      } else if (quickCreateEntity === "models") {
+        payload.productTypes = selectedProductTypeId ? [selectedProductTypeId] : [];
+      } else if (quickCreateEntity === "series") {
+        payload.models = model ? [model] : [];
+      }
+
       const created = await apiFetch<any>("/api/catalog", {
         method: "POST",
         body: JSON.stringify(payload),
       });
-      queryClient.invalidateQueries({ queryKey: ["catalog", quickCreateEntity] });
-      
+
+      // Invalidate with parent-scoped query key so dropdown refreshes
       if (quickCreateEntity === "brands") {
+        queryClient.invalidateQueries({ queryKey: ["catalog", "brands", subcategory ?? ""] });
         form.setValue("brand", created.id, { shouldDirty: true });
       } else if (quickCreateEntity === "products") {
+        queryClient.invalidateQueries({ queryKey: ["catalog", "products", brand ?? ""] });
         form.setValue("name", created.name, { shouldDirty: true });
       } else if (quickCreateEntity === "models") {
+        queryClient.invalidateQueries({ queryKey: ["catalog", "models", selectedProductTypeId ?? ""] });
         form.setValue("model", created.id, { shouldDirty: true });
       } else {
+        queryClient.invalidateQueries({ queryKey: ["catalog", "series", model ?? ""] });
         form.setValue("series", created.id, { shouldDirty: true });
       }
       setQuickCreateOpen(false);
@@ -165,7 +240,14 @@ export function ProductFormCascadingFields({ form, editing }: Props) {
               <div className="flex-1 min-w-0">
                 <Select
                   value={field.value}
-                  onValueChange={(v) => field.onChange(v)}
+                  onValueChange={(v) => {
+                    field.onChange(v);
+                    // Reset downstream when subcategory changes
+                    form.setValue("brand", "", { shouldDirty: true });
+                    form.setValue("name", "", { shouldDirty: true });
+                    form.setValue("model", "", { shouldDirty: true });
+                    form.setValue("series", "", { shouldDirty: true });
+                  }}
                   disabled={!category || subcategories.length === 0}
                 >
                   <SelectTrigger><SelectValue placeholder={!category ? "Select category first" : "Select sub-category"} /></SelectTrigger>
@@ -213,21 +295,19 @@ export function ProductFormCascadingFields({ form, editing }: Props) {
             <FormLabel className="w-[110px] shrink-0 text-right">Brand</FormLabel>
             <div className="flex gap-1 items-center flex-1 min-w-0">
               <div className="flex-1 min-w-0">
-                <Select
+                <AsyncSuggest
                   value={field.value ?? ""}
                   onValueChange={(v) => field.onChange(v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={brands.length === 0 ? "No brands available" : "Select brand"}>
-                      {brands.find((b: any) => b.id === field.value)?.name || (editing?.globalBrandId === field.value ? (editing as any).globalBrand?.name : field.value) || ""}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {brands.map((b: any) => (
-                      <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  placeholder="Search brand..."
+                  allowClear
+                  defaultOptions={brands.map((b: any) => ({ value: b.id, label: b.name }))}
+                  fetchOptions={async (search) => {
+                    const res = await apiFetch<any[]>(
+                      `/api/catalog?entity=brands&search=${encodeURIComponent(search)}${subcategory ? `&subcategory=${encodeURIComponent(subcategory)}` : ""}`
+                    );
+                    return res.map((b: any) => ({ value: b.id, label: b.name }));
+                  }}
+                />
               </div>
               <Button
                 type="button" size="icon" variant="outline" className="h-10 w-10 shrink-0"
@@ -249,21 +329,18 @@ export function ProductFormCascadingFields({ form, editing }: Props) {
             <FormLabel className="w-[110px] shrink-0 text-right">Product Name <span className="text-destructive">*</span></FormLabel>
             <div className="flex gap-1 items-center flex-1 min-w-0">
               <div className="flex-1 min-w-0">
-                <Select
+                <AsyncSuggest
                   value={field.value ?? ""}
                   onValueChange={(v) => field.onChange(v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={products.length === 0 ? "No products available" : "Select product name"}>
-                      {products.find((p: any) => p.name === field.value || p.id === field.value)?.name ?? field.value ?? ""}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {products.map((p: any) => (
-                      <SelectItem key={p.id} value={p.name}>{productDisplayName(p)}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  placeholder="Search product name..."
+                  defaultOptions={products.map((p: any) => ({ value: p.name, label: productDisplayName(p) }))}
+                  fetchOptions={async (search) => {
+                    const res = await apiFetch<any[]>(
+                      `/api/catalog?entity=products&search=${encodeURIComponent(search)}${brand ? `&brandId=${brand}` : ""}`
+                    );
+                    return res.map((p: any) => ({ value: p.name, label: productDisplayName(p) }));
+                  }}
+                />
               </div>
               <Button
                 type="button" size="icon" variant="outline" className="h-10 w-10 shrink-0"
@@ -285,21 +362,19 @@ export function ProductFormCascadingFields({ form, editing }: Props) {
             <FormLabel className="w-[110px] shrink-0 text-right">Model</FormLabel>
             <div className="flex gap-1 items-center flex-1 min-w-0">
               <div className="flex-1 min-w-0">
-                <Select
+                <AsyncSuggest
                   value={field.value ?? ""}
                   onValueChange={(v) => field.onChange(v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={models.length === 0 ? "No models available" : "Select model"}>
-                      {models.find((m: any) => m.id === field.value)?.name || (editing?.globalModelId === field.value ? (editing as any).globalModel?.name : field.value) || ""}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {models.map((m: any) => (
-                      <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  placeholder="Search model..."
+                  allowClear
+                  defaultOptions={models.map((m: any) => ({ value: m.id, label: m.name }))}
+                  fetchOptions={async (search) => {
+                    const res = await apiFetch<any[]>(
+                      `/api/catalog?entity=models&search=${encodeURIComponent(search)}${selectedProductTypeId ? `&productTypeId=${selectedProductTypeId}` : ""}`
+                    );
+                    return res.map((m: any) => ({ value: m.id, label: m.name }));
+                  }}
+                />
               </div>
               <Button
                 type="button" size="icon" variant="outline" className="h-10 w-10 shrink-0"
@@ -321,21 +396,19 @@ export function ProductFormCascadingFields({ form, editing }: Props) {
             <FormLabel className="w-[110px] shrink-0 text-right">Series</FormLabel>
             <div className="flex gap-1 items-center flex-1 min-w-0">
               <div className="flex-1 min-w-0">
-                <Select
+                <AsyncSuggest
                   value={field.value ?? ""}
                   onValueChange={(v) => field.onChange(v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={seriesList.length === 0 ? "No series available" : "Select series"}>
-                      {seriesList.find((s: any) => s.id === field.value)?.name || (editing?.globalSeriesId === field.value ? (editing as any).globalSeries?.name : field.value) || ""}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {seriesList.map((s: any) => (
-                      <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  placeholder="Search series..."
+                  allowClear
+                  defaultOptions={seriesList.map((s: any) => ({ value: s.id, label: s.name }))}
+                  fetchOptions={async (search) => {
+                    const res = await apiFetch<any[]>(
+                      `/api/catalog?entity=series&search=${encodeURIComponent(search)}${model ? `&modelId=${model}` : ""}`
+                    );
+                    return res.map((s: any) => ({ value: s.id, label: s.name }));
+                  }}
+                />
               </div>
               <Button
                 type="button" size="icon" variant="outline" className="h-10 w-10 shrink-0"

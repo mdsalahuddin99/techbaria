@@ -118,35 +118,42 @@ model Category {
 // ============ GLOBAL PRODUCT ATTRIBUTES ============
 
 model Brand {
-  id        String    @id @default(cuid())
-  name      String    @unique
-  products  Product[]
-  isPublished Boolean @default(false)
-  createdAt DateTime  @default(now())
+  id            String               @id @default(cuid())
+  name          String               @unique
+  products      Product[]
+  isPublished   Boolean              @default(false)
+  createdAt     DateTime             @default(now())
+  subcategories BrandSubcategory[]
+  productTypes  ProductTypeBrand[]
 }
 
 model ProductType {
-  id        String    @id @default(cuid())
-  name      String    @unique
-  products  Product[]
-  isPublished Boolean @default(false)
-  createdAt DateTime  @default(now())
+  id            String             @id @default(cuid())
+  name          String             @unique
+  products      Product[]
+  isPublished   Boolean            @default(false)
+  createdAt     DateTime           @default(now())
+  brands        ProductTypeBrand[]
+  models        ModelProductType[]
 }
 
 model Model {
-  id        String    @id @default(cuid())
-  name      String    @unique
-  products  Product[]
-  isPublished Boolean @default(false)
-  createdAt DateTime  @default(now())
+  id            String             @id @default(cuid())
+  name          String             @unique
+  products      Product[]
+  isPublished   Boolean            @default(false)
+  createdAt     DateTime           @default(now())
+  productTypes  ModelProductType[]
+  series        SeriesModel[]
 }
 
 model Series {
-  id        String    @id @default(cuid())
-  name      String    @unique
-  products  Product[]
-  isPublished Boolean @default(false)
-  createdAt DateTime  @default(now())
+  id            String             @id @default(cuid())
+  name          String             @unique
+  products      Product[]
+  isPublished   Boolean            @default(false)
+  createdAt     DateTime           @default(now())
+  models        SeriesModel[]
 }
 
 model Color {
@@ -164,10 +171,43 @@ model Storage {
 }
 
 model Ram {
-  id        String    @id @default(cuid())
-  name      String    @unique
-  isPublished Boolean @default(false)
-  createdAt DateTime  @default(now())
+  id          String   @id @default(cuid())
+  name        String   @unique
+  isPublished Boolean  @default(false)
+  createdAt   DateTime @default(now())
+}
+
+// ============ CATALOG CASCADE LINKS ============
+
+model BrandSubcategory {
+  brandId     String
+  subcategory String
+  brand       Brand  @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  @@id([brandId, subcategory])
+}
+
+model ProductTypeBrand {
+  productTypeId String
+  brandId       String
+  productType   ProductType @relation(fields: [productTypeId], references: [id], onDelete: Cascade)
+  brand         Brand       @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  @@id([productTypeId, brandId])
+}
+
+model ModelProductType {
+  modelId       String
+  productTypeId String
+  model         Model       @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  productType   ProductType @relation(fields: [productTypeId], references: [id], onDelete: Cascade)
+  @@id([modelId, productTypeId])
+}
+
+model SeriesModel {
+  seriesId    String
+  modelId     String
+  series      Series @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  model       Model  @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  @@id([seriesId, modelId])
 }
 
 model Product {
