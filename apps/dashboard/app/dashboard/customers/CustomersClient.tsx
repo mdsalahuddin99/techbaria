@@ -2,6 +2,7 @@
 
 import { usePageTitle } from "@/shared/hooks/usePageTitle";
 import { useState, useEffect, useMemo } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Card, CardHeader, CardTitle, CardContent } from "@/shared/ui/card";
 import { Input } from "@/shared/ui/input";
 import { Button } from "@/shared/ui/button";
@@ -49,7 +50,7 @@ export function CustomersClient({
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState(search);
   useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    const timer = setTimeout(() => setDebouncedSearch(search), 500);
     return () => clearTimeout(timer);
   }, [search]);
 
@@ -64,6 +65,7 @@ export function CustomersClient({
     dueFilter: dueFilter !== "all" ? dueFilter : undefined,
     sortKey,
     sortDir,
+    limit: debouncedSearch.trim() ? 1000 : 5, // No limit (1000) for search, 5 for initial
   }), [debouncedSearch, dueFilter, sortKey, sortDir]);
 
   const initialInfiniteData = useMemo(() => {
@@ -81,8 +83,31 @@ export function CustomersClient({
   );
 
   const customers = useMemo(() => {
-    return data?.pages.flatMap((page) => page.items) ?? initialCustomers;
-  }, [data, initialCustomers]);
+    let result = data?.pages.flatMap((page) => page.items) ?? initialCustomers;
+
+    // Apply local filter for instant feedback while server fetches
+    if (queryFilter.search) {
+      const s = queryFilter.search.toLowerCase();
+      result = result.filter(
+        (c) =>
+          (c.name && c.name.toLowerCase().includes(s)) ||
+          (c.phone && c.phone.toLowerCase().includes(s)) ||
+          (c.email && c.email.toLowerCase().includes(s)) ||
+          (c.address && c.address.toLowerCase().includes(s)) ||
+          (c.referencePerson && c.referencePerson.toLowerCase().includes(s)) ||
+          (c.notes && c.notes.toLowerCase().includes(s)) ||
+          (c.group && c.group.toLowerCase().includes(s))
+      );
+    }
+
+    if (queryFilter.dueFilter === "with-due") {
+      result = result.filter((c) => (c.due ?? 0) > 0);
+    } else if (queryFilter.dueFilter === "no-due") {
+      result = result.filter((c) => (c.due ?? 0) === 0);
+    }
+
+    return result;
+  }, [data, initialCustomers, queryFilter]);
 
   const toggleSort = (k: SortKey) => {
     if (sortKey === k) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
@@ -96,6 +121,18 @@ export function CustomersClient({
   const settings = useSettings();
 
   const accounts = useActiveAccounts(initialAccounts);
+
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (searchParams.get("action") === "new") {
+      setOpen(true);
+      // Clean up the URL
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, [searchParams]);
 
 
   const filtered = customers;
@@ -153,9 +190,9 @@ export function CustomersClient({
         }
       />
 
-      <Card className="p-4">
-        <div className="flex flex-col sm:flex-row gap-2">
-          <div className="relative flex-1">
+      <Card className="p-3">
+        <div className="flex flex-wrap gap-2 items-center">
+          <div className="relative flex-1 min-w-[200px] max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               id="customers-search-input"
@@ -165,39 +202,50 @@ export function CustomersClient({
               className="pl-9"
             />
           </div>
-          <Select value={dueFilter} onValueChange={(v) => setDueFilter(v as typeof dueFilter)}>
-            <SelectTrigger className="sm:w-56">
-              <Wallet className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All customers</SelectItem>
-              <SelectItem value="with-due">With due</SelectItem>
-              <SelectItem value="no-due">No due</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select
-            value={`${sortKey}:${sortDir}`}
-            onValueChange={(v) => {
-              const [k, d] = v.split(":") as [SortKey, SortDir];
-              setSortKey(k);
-              setSortDir(d);
-            }}
-          >
-            <SelectTrigger className="sm:w-56">
-              <ArrowUpDown className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="name:asc">Name (A → Z)</SelectItem>
-              <SelectItem value="name:desc">Name (Z → A)</SelectItem>
-              <SelectItem value="totalSpent-desc">Total Spent (high → low)</SelectItem>
-              <SelectItem value="totalSpent-asc">Total Spent (low → high)</SelectItem>
-              <SelectItem value="loyalty:desc">Loyalty (high → low)</SelectItem>
-              <SelectItem value="joined:desc">Newest joined</SelectItem>
-              <SelectItem value="joined:asc">Oldest joined</SelectItem>
-            </SelectContent>
-          </Select>
+          
+          {isFilterEmpty && (
+            <div className="flex-1 min-w-[280px] flex items-center bg-blue-50/80 border border-blue-100 rounded-md px-3 py-1.5 text-sm text-blue-700 font-medium">
+              <span className="truncate" title="সর্বশেষ ৫টি ডেটা দেখানো হচ্ছে। নির্দিষ্ট ডেটা খুঁজে পেতে সার্চ করুন।">
+                সর্বশেষ ৫টি ডেটা দেখানো হচ্ছে। নির্দিষ্ট ডেটা খুঁজে পেতে সার্চ করুন।
+              </span>
+            </div>
+          )}
+
+          <div className="flex gap-2 shrink-0 ml-auto w-full sm:w-auto">
+            <Select value={dueFilter} onValueChange={(v) => setDueFilter(v as typeof dueFilter)}>
+              <SelectTrigger className="w-full sm:w-44">
+                <Wallet className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All customers</SelectItem>
+                <SelectItem value="with-due">With due</SelectItem>
+                <SelectItem value="no-due">No due</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select
+              value={`${sortKey}:${sortDir}`}
+              onValueChange={(v) => {
+                const [k, d] = v.split(":") as [SortKey, SortDir];
+                setSortKey(k);
+                setSortDir(d);
+              }}
+            >
+              <SelectTrigger className="w-full sm:w-48">
+                <ArrowUpDown className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="name:asc">Name (A → Z)</SelectItem>
+                <SelectItem value="name:desc">Name (Z → A)</SelectItem>
+                <SelectItem value="totalSpent-desc">Total Spent (high → low)</SelectItem>
+                <SelectItem value="totalSpent-asc">Total Spent (low → high)</SelectItem>
+                <SelectItem value="loyalty:desc">Loyalty (high → low)</SelectItem>
+                <SelectItem value="joined:desc">Newest joined</SelectItem>
+                <SelectItem value="joined:asc">Oldest joined</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </Card>
 

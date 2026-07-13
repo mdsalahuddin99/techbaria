@@ -107,10 +107,10 @@ export function CustomerWalletDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Customer Wallet</DialogTitle>
+          <DialogTitle className="text-center text-xl">Customer Wallet</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-4 px-2 sm:px-8">
           {/* ── Balance summary ── */}
           <div className="rounded-lg bg-muted/50 p-3 text-sm space-y-1">
             <div className="flex justify-between">
@@ -161,88 +161,98 @@ export function CustomerWalletDialog({
           </Tabs>
 
           {/* ── Amount ── */}
-          <div className="space-y-2">
-            <Label htmlFor="amount">Amount *</Label>
-            <Input
-              id="amount"
-              type="number"
-              step="0.01"
-              min="0"
-              placeholder="0.00"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-            />
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+            <Label htmlFor="amount" className="w-full sm:w-[120px] sm:text-left shrink-0 font-medium">Amount *</Label>
+            <div className="flex-1 min-w-0">
+              <Input
+                id="amount"
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="0.00"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+              />
+            </div>
           </div>
 
           {/* ── Method (Account) ── */}
-          <div className="space-y-2">
-            <Label htmlFor="method">Account *</Label>
-            <Select
-              value={method}
-              onValueChange={(v) => {
-                setMethod(v as AccountType);
-                setAccountId(""); // reset account when method changes
-              }}
-            >
-              <SelectTrigger id="method">
-                <SelectValue placeholder="Select Account (e.g. Bank)" />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(ACCOUNT_TYPE_LABEL).map(([key, label]) => (
-                  <SelectItem key={key} value={key}>
-                    {label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* ── Ledger (Account specific) ── */}
-          {method && (
-            <div className="space-y-2">
-              <Label htmlFor="account">
-                {action === "deposit" ? "Deposit to Ledger *" : "Withdraw from Ledger *"}
-              </Label>
-              <Select value={accountId} onValueChange={setAccountId}>
-                <SelectTrigger id="account">
-                  <SelectValue placeholder="Select Ledger" />
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+            <Label htmlFor="method" className="w-full sm:w-[120px] sm:text-left shrink-0 font-medium">Account *</Label>
+            <div className="flex-1 min-w-0">
+              <Select
+                value={method}
+                onValueChange={(v) => {
+                  setMethod(v as AccountType);
+                  setAccountId(""); // reset account when method changes
+                }}
+              >
+                <SelectTrigger id="method">
+                  <SelectValue placeholder="Select Account (e.g. Bank)" />
                 </SelectTrigger>
                 <SelectContent>
-                  {filteredAccounts.map((a) => (
-                    <SelectItem key={a.id} value={a.id}>
-                      {a.name} {balances[a.id] !== undefined ? `(${formatCurrency(balances[a.id])})` : ""}
+                  {Object.entries(ACCOUNT_TYPE_LABEL).map(([key, label]) => (
+                    <SelectItem key={key} value={key}>
+                      {label}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              {accountId && balances[accountId] !== undefined && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  Ledger Balance: <span className="font-medium text-foreground">{formatCurrency(balances[accountId])}</span>
-                </p>
-              )}
+            </div>
+          </div>
+
+          {/* ── Ledger (Account specific) ── */}
+          {method && (
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+              <Label htmlFor="account" className="w-full sm:w-[120px] sm:text-left shrink-0 font-medium">
+                {action === "deposit" ? "Deposit to Ledger *" : "Withdraw from Ledger *"}
+              </Label>
+              <div className="flex-1 min-w-0">
+                <Select value={accountId} onValueChange={setAccountId}>
+                  <SelectTrigger id="account">
+                    <SelectValue placeholder="Select Ledger" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filteredAccounts.map((a) => (
+                      <SelectItem key={a.id} value={a.id}>
+                        {a.name} {balances[a.id] !== undefined ? `(${formatCurrency(balances[a.id])})` : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {accountId && balances[accountId] !== undefined && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Ledger Balance: <span className="font-medium text-foreground">{formatCurrency(balances[accountId])}</span>
+                  </p>
+                )}
+              </div>
             </div>
           )}
 
           {/* ── Reference ── */}
-          <div className="space-y-2">
-            <Label htmlFor="reference">Reference (optional)</Label>
-            <Input
-              id="reference"
-              placeholder="Receipt no, invoice no…"
-              value={reference}
-              onChange={(e) => setReference(e.target.value)}
-            />
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+            <Label htmlFor="reference" className="w-full sm:w-[120px] sm:text-left shrink-0 font-medium">Reference</Label>
+            <div className="flex-1 min-w-0">
+              <Input
+                id="reference"
+                placeholder="Receipt no, invoice no…"
+                value={reference}
+                onChange={(e) => setReference(e.target.value)}
+              />
+            </div>
           </div>
 
           {/* ── Notes ── */}
-          <div className="space-y-2">
-            <Label htmlFor="notes">Notes (optional)</Label>
-            <Input
-              id="notes"
-              placeholder="Any notes…"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-            />
+          <div className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-3">
+            <Label htmlFor="notes" className="w-full sm:w-[120px] sm:text-left shrink-0 pt-2 font-medium">Notes</Label>
+            <div className="flex-1 min-w-0">
+              <Input
+                id="notes"
+                placeholder="Any notes…"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+              />
+            </div>
           </div>
         </div>
 

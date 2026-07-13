@@ -29,13 +29,13 @@ export function useProductsQuery(initialData?: any) {
 import { useInfiniteQuery, keepPreviousData } from "@tanstack/react-query";
 
 export function useInfiniteProductsQuery(
-  filter?: { search?: string; categoryId?: string; isPublished?: boolean; lowStock?: boolean },
+  filter?: { search?: string; categoryId?: string; isPublished?: boolean; lowStock?: boolean; limit?: number },
   initialData?: any
 ) {
   const { session, status } = useAuth();
   return useInfiniteQuery({
     queryKey: [...productKeys.list(), filter],
-    queryFn: ({ pageParam }) => productsService.list(filter, pageParam ? { cursor: pageParam } : undefined),
+    queryFn: ({ pageParam }) => productsService.list(filter, { cursor: pageParam as string | undefined, limit: filter?.limit }),
     getNextPageParam: (lastPage) => lastPage.nextCursor || undefined,
     initialPageParam: undefined as string | undefined,
     enabled: status !== "loading" && !!session,

@@ -24,11 +24,11 @@ export function useSalesQuery(initialData?: Sale[]) {
   });
 }
 
-export function useInfiniteSalesQuery(filter?: { search?: string; paymentMethod?: string; sortKey?: string; sortDir?: "asc" | "desc" }) {
+export function useInfiniteSalesQuery(filter?: { search?: string; paymentMethod?: string; sortKey?: string; sortDir?: "asc" | "desc"; limit?: number }) {
   const { session, status } = useAuth();
   return useInfiniteQuery({
     queryKey: [...saleKeys.list(), filter],
-    queryFn: ({ pageParam }) => salesService.list(filter, pageParam ? { cursor: pageParam } : undefined),
+    queryFn: ({ pageParam }) => salesService.list(filter, { cursor: pageParam as string | undefined, limit: filter?.limit }),
     getNextPageParam: (lastPage) => (lastPage as any).nextCursor || undefined,
     initialPageParam: undefined as string | undefined,
     enabled: status !== "loading" && !!session,

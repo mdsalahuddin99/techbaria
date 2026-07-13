@@ -110,9 +110,25 @@ export function PurchasesClient({
   );
 
   const allPurchases = useMemo(() => {
-    if (!data) return initialPurchases;
-    return data.pages.flatMap((page) => page.items);
-  }, [data, initialPurchases]);
+    let result = data?.pages.flatMap((page) => page.items) as PurchaseOrder[] ?? initialPurchases;
+    
+    // Apply local filter for instant feedback while server fetches
+    if (queryFilter.search) {
+      const s = queryFilter.search.toLowerCase();
+      result = result.filter(
+        (po) =>
+          (po.poNumber && po.poNumber.toLowerCase().includes(s)) ||
+          (po.supplierName && po.supplierName.toLowerCase().includes(s)) ||
+          (po.note && po.note.toLowerCase().includes(s))
+      );
+    }
+    
+    if (queryFilter.status !== "All") {
+      result = result.filter((po) => po.status === queryFilter.status);
+    }
+    
+    return result;
+  }, [data, initialPurchases, queryFilter]);
 
   const detail = useMemo(() => allPurchases.find((p) => p.id === detailId) ?? null, [allPurchases, detailId]);
   const receipt = useMemo(() => allPurchases.find((p) => p.id === receiptId) ?? null, [allPurchases, receiptId]);

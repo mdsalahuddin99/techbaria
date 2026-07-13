@@ -65,8 +65,8 @@ export function TransferDialog({ open, onOpenChange, defaultMode = "transfer" }:
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Account Movement</DialogTitle>
-          <DialogDescription>Transfer / Deposit / Withdraw রেকর্ড করুন।</DialogDescription>
+          <DialogTitle className="text-center text-xl">Account Movement</DialogTitle>
+          <DialogDescription className="text-center mt-2">Transfer / Deposit / Withdraw রেকর্ড করুন।</DialogDescription>
         </DialogHeader>
 
         <Tabs value={mode} onValueChange={(v) => setMode(v as "transfer" | "deposit" | "withdraw")}>
@@ -77,53 +77,64 @@ export function TransferDialog({ open, onOpenChange, defaultMode = "transfer" }:
           </TabsList>
         </Tabs>
 
-        <div className="space-y-3 mt-2">
+        <div className="space-y-4 px-2 sm:px-8 mt-4">
           {(mode === "transfer" || mode === "withdraw") && (
-            <div>
-              <label className="text-sm font-medium mb-1.5 block">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+              <label className="w-full sm:w-[120px] sm:text-left shrink-0 font-medium">
                 {mode === "transfer" ? "From account" : "Account"}
               </label>
-              <Select value={from} onValueChange={setFrom}>
-                <SelectTrigger><SelectValue placeholder="Choose account" /></SelectTrigger>
-                <SelectContent>
-                  {accounts.map((a) => (
-                    <SelectItem key={a.id} value={a.id}>
-                      {a.name} · {ACCOUNT_TYPE_LABEL[a.type]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex-1 min-w-0">
+                <Select value={from} onValueChange={setFrom}>
+                  <SelectTrigger><SelectValue placeholder="Choose account" /></SelectTrigger>
+                  <SelectContent>
+                    {accounts.map((a) => (
+                      <SelectItem key={a.id} value={a.id}>
+                        {a.name} · {ACCOUNT_TYPE_LABEL[a.type]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           )}
           {(mode === "transfer" || mode === "deposit") && (
-            <div>
-              <label className="text-sm font-medium mb-1.5 block">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+              <label className="w-full sm:w-[120px] sm:text-left shrink-0 font-medium">
                 {mode === "transfer" ? "To account" : "Account"}
               </label>
-              <Select value={to} onValueChange={setTo}>
-                <SelectTrigger><SelectValue placeholder="Choose account" /></SelectTrigger>
-                <SelectContent>
-                  {accounts.map((a) => (
-                    <SelectItem key={a.id} value={a.id}>
-                      {a.name} · {ACCOUNT_TYPE_LABEL[a.type]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex-1 min-w-0">
+                <Select value={to} onValueChange={setTo}>
+                  <SelectTrigger><SelectValue placeholder="Choose account" /></SelectTrigger>
+                  <SelectContent>
+                    {accounts.map((a) => (
+                      <SelectItem key={a.id} value={a.id}>
+                        {a.name} · {ACCOUNT_TYPE_LABEL[a.type]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           )}
-          <div>
-            <label className="text-sm font-medium mb-1.5 block">Amount (৳)</label>
-            <Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} autoFocus />
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+            <label className="w-full sm:w-[120px] sm:text-left shrink-0 font-medium">Amount (৳)</label>
+            <div className="flex-1 min-w-0">
+              <Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} autoFocus />
+            </div>
           </div>
-          <div>
-            <label className="text-sm font-medium mb-1.5 block">Note (optional)</label>
-            <Input value={note} onChange={(e) => setNote(e.target.value)} />
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+            <label className="w-full sm:w-[120px] sm:text-left shrink-0 font-medium">Note</label>
+            <div className="flex-1 min-w-0">
+              <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Optional" />
+            </div>
           </div>
           {amount && (
-            <p className="text-sm text-muted-foreground">
-              Amount: <span className="font-semibold">{formatCurrency(Number(amount) || 0)}</span>
-            </p>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+              <div className="w-full sm:w-[120px] shrink-0" />
+              <p className="text-sm text-muted-foreground flex-1 min-w-0">
+                Amount: <span className="font-semibold">{formatCurrency(Number(amount) || 0)}</span>
+              </p>
+            </div>
           )}
         </div>
 

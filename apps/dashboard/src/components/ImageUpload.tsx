@@ -107,9 +107,10 @@ export default function ImageUpload({
   };
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="group relative inline-block">
       <div
-        className={`${dim} rounded-md border bg-muted/30 grid place-items-center overflow-hidden relative`}
+        onClick={() => !uploading && inputRef.current?.click()}
+        className={`${dim} rounded-md border border-dashed hover:border-solid bg-muted/30 grid place-items-center overflow-hidden relative cursor-pointer hover:bg-muted/50 transition-colors`}
       >
         {value ? (
           <img src={value} alt="Preview" className="h-full w-full object-contain" />
@@ -122,40 +123,32 @@ export default function ImageUpload({
           </div>
         )}
       </div>
-      <div className="flex flex-col gap-1.5">
-        <input
-          ref={inputRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-            if (f) handleFile(f);
-            e.target.value = "";
-          }}
-        />
-        <Button
+
+      {value && !uploading && (
+        <button
           type="button"
-          size="sm"
-          variant="outline"
-          onClick={() => inputRef.current?.click()}
-          disabled={uploading}
+          onClick={(e) => {
+            e.stopPropagation();
+            onChange(undefined);
+          }}
+          className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110"
+          title="Remove image"
         >
-          {value ? <ImageIcon className="h-3.5 w-3.5 mr-1.5" /> : <Upload className="h-3.5 w-3.5 mr-1.5" />}
-          {value ? "Replace" : "Upload"}
-        </Button>
-        {value && (
-          <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            className="text-destructive"
-            onClick={() => onChange(undefined)}
-          >
-            <X className="h-3.5 w-3.5 mr-1.5" /> Remove
-          </Button>
-        )}
-      </div>
+          <X className="h-3 w-3" />
+        </button>
+      )}
+
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) handleFile(f);
+          e.target.value = "";
+        }}
+      />
     </div>
   );
 }

@@ -50,9 +50,9 @@ export function PurchaseList({
 }: PurchaseListProps) {
   return (
     <>
-      <Card className="p-4">
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
+      <Card className="p-3">
+        <div className="flex flex-wrap gap-2 items-center">
+          <div className="relative flex-1 min-w-[200px] max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search by PO # or supplier…"
@@ -66,14 +66,24 @@ export function PurchaseList({
               </div>
             )}
           </div>
+          
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="sm:w-44"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="All">All statuses</SelectItem>
               {STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
             </SelectContent>
           </Select>
-          <Button onClick={onNew} className="bg-primary text-primary-foreground hover:bg-primary/90">
+
+          {!searchTerm.trim() && statusFilter === "All" && (
+            <div className="flex-1 min-w-[280px] flex items-center bg-blue-50/80 border border-blue-100 rounded-md px-3 py-1.5 text-sm text-blue-700 font-medium">
+              <span className="truncate" title="সর্বশেষ ৫টি ডেটা দেখানো হচ্ছে। নির্দিষ্ট ডেটা খুঁজে পেতে সার্চ করুন।">
+                সর্বশেষ ৫টি ডেটা দেখানো হচ্ছে। নির্দিষ্ট ডেটা খুঁজে পেতে সার্চ করুন।
+              </span>
+            </div>
+          )}
+
+          <Button onClick={onNew} className="bg-primary text-primary-foreground hover:bg-primary/90 ml-auto">
             <Plus className="h-4 w-4 mr-2" />New Purchase
           </Button>
         </div>

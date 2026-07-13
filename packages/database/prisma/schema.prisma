@@ -149,6 +149,27 @@ model Series {
   createdAt DateTime  @default(now())
 }
 
+model Color {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  isPublished Boolean @default(false)
+  createdAt DateTime  @default(now())
+}
+
+model Storage {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  isPublished Boolean @default(false)
+  createdAt DateTime  @default(now())
+}
+
+model Ram {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  isPublished Boolean @default(false)
+  createdAt DateTime  @default(now())
+}
+
 model Product {
   id               String            @id @default(cuid())
   sku              String            @unique

@@ -198,6 +198,47 @@ export const categoriesService = {
     };
   },
 
+  /** Bulk create categories from CSV import. Requires MANAGER+. */
+  async bulkCreate(ctx: Ctx, items: { name: string, parentName?: string, isPublished?: boolean }[]) {
+    requireRole(ctx, "ADMIN");
+    if (!items || items.length === 0) return { count: 0 };
+    
+    let count = 0;
+    for (const cat of items) {
+      if (!cat.name?.trim()) continue;
+      
+      const name = cat.name.trim();
+      const slug = slugify(name);
+      
+      // Check if it already exists
+      const existing = await prisma.category.findUnique({ where: { slug } });
+      if (existing) continue;
+      
+      let parentId = null;
+      if (cat.parentName?.trim()) {
+        const p = await prisma.category.findFirst({ 
+          where: { name: { equals: cat.parentName.trim(), mode: "insensitive" } } 
+        });
+        if (p) parentId = p.id;
+      }
+      
+      await prisma.category.create({
+        data: {
+          name,
+          slug,
+          parentId,
+          isPublished: cat.isPublished ?? false,
+        }
+      });
+      count++;
+    }
+    
+    if (count > 0) {
+      await cache.invalidateCategories();
+    }
+    return { count };
+  },
+
   /** Update a category. Requires MANAGER+. */
   async update(ctx: Ctx, id: string, input: CategoryUpdateInput) {
     requireRole(ctx, "ADMIN");

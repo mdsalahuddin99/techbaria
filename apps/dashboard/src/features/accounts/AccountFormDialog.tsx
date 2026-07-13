@@ -125,107 +125,126 @@ export function AccountFormDialog({ open, onOpenChange, editing }: Props) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{editing ? "Edit" : "New"} Account</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-center text-xl">{editing ? "Edit" : "New"} Account</DialogTitle>
+          <DialogDescription className="text-center mt-2">
             Cash, Bank বা Mobile Banking — প্রতিটা type-এ যত খুশি account রাখতে পারেন।
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-3">
-          <div>
-            <label className="text-sm font-medium mb-1.5 block">Type</label>
-            <Select
-              value={v.type}
-              onValueChange={(val) => setV({ ...v, type: val as AccountType })}
-              disabled={!!editing}
-            >
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {(["cash", "bank", "mobile_banking"] as AccountType[]).map((t) => (
-                  <SelectItem key={t} value={t}>{ACCOUNT_TYPE_LABEL[t]}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        <div className="space-y-4 px-2 sm:px-8 mt-2">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+            <label className="w-full sm:w-[120px] sm:text-left shrink-0 font-medium">Type</label>
+            <div className="flex-1 min-w-0">
+              <Select
+                value={v.type}
+                onValueChange={(val) => setV({ ...v, type: val as AccountType })}
+                disabled={!!editing}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {(["cash", "bank", "mobile_banking"] as AccountType[]).map((t) => (
+                    <SelectItem key={t} value={t}>{ACCOUNT_TYPE_LABEL[t]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-          <div>
-            <label className="text-sm font-medium mb-1.5 block">Account name</label>
-            <Input
-              value={v.name}
-              onChange={(e) => setV({ ...v, name: e.target.value })}
-              placeholder={
-                v.type === "cash" ? "Main Cash" :
-                v.type === "bank" ? "DBBL Current A/C" : "bKash Personal"
-              }
-            />
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+            <label className="w-full sm:w-[120px] sm:text-left shrink-0 font-medium">Account name</label>
+            <div className="flex-1 min-w-0">
+              <Input
+                value={v.name}
+                onChange={(e) => setV({ ...v, name: e.target.value })}
+                placeholder={
+                  v.type === "cash" ? "Main Cash" :
+                  v.type === "bank" ? "DBBL Current A/C" : "bKash Personal"
+                }
+              />
+            </div>
           </div>
-          <div>
-            <label className="text-sm font-medium mb-1.5 block">
-              Parent ledger <span className="text-muted-foreground font-normal">(optional)</span>
-            </label>
-            <Select
-              value={v.parentId}
-              onValueChange={(val) => setV({ ...v, parentId: val })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Top-level ledger" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={NO_PARENT}>— None (top-level) —</SelectItem>
-                {parentTree.map((n) => (
-                  <SelectItem key={n.account.id} value={n.account.id}>
-                    {"\u00A0".repeat(n.depth * 2)}{n.depth > 0 ? "↳ " : ""}{n.account.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-muted-foreground mt-1">
-              Sub-ledger বানাতে একটি parent select করুন। একই type-এর account-ই parent হতে পারে।
-            </p>
+          <div className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-3">
+            <div className="w-full sm:w-[120px] shrink-0 pt-2">
+              <label className="text-left font-medium">Parent ledger</label>
+              <span className="block text-[10px] text-muted-foreground font-normal">(optional)</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <Select
+                value={v.parentId}
+                onValueChange={(val) => setV({ ...v, parentId: val })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Top-level ledger" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NO_PARENT}>— None (top-level) —</SelectItem>
+                  {parentTree.map((n) => (
+                    <SelectItem key={n.account.id} value={n.account.id}>
+                      {"\u00A0".repeat(n.depth * 2)}{n.depth > 0 ? "↳ " : ""}{n.account.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-[10px] text-muted-foreground mt-1">
+                Sub-ledger বানাতে একটি parent select করুন। একই type-এর account-ই parent হতে পারে।
+              </p>
+            </div>
           </div>
           {v.type === "bank" && (
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="text-xs text-muted-foreground">Bank name</label>
-                <Input value={v.bankName} onChange={(e) => setV({ ...v, bankName: e.target.value })} />
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+                <label className="w-full sm:w-[120px] sm:text-left shrink-0 font-medium text-muted-foreground">Bank name</label>
+                <div className="flex-1 min-w-0">
+                  <Input value={v.bankName} onChange={(e) => setV({ ...v, bankName: e.target.value })} />
+                </div>
               </div>
-              <div>
-                <label className="text-xs text-muted-foreground">Branch</label>
-                <Input value={v.branch} onChange={(e) => setV({ ...v, branch: e.target.value })} />
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+                <label className="w-full sm:w-[120px] sm:text-left shrink-0 font-medium text-muted-foreground">Branch</label>
+                <div className="flex-1 min-w-0">
+                  <Input value={v.branch} onChange={(e) => setV({ ...v, branch: e.target.value })} />
+                </div>
               </div>
-              <div className="col-span-2">
-                <label className="text-xs text-muted-foreground">Account number</label>
-                <Input value={v.accountNumber} onChange={(e) => setV({ ...v, accountNumber: e.target.value })} />
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+                <label className="w-full sm:w-[120px] sm:text-left shrink-0 font-medium text-muted-foreground">Account number</label>
+                <div className="flex-1 min-w-0">
+                  <Input value={v.accountNumber} onChange={(e) => setV({ ...v, accountNumber: e.target.value })} />
+                </div>
               </div>
             </div>
           )}
           {v.type === "mobile_banking" && (
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="text-xs text-muted-foreground">Provider</label>
-                <Input
-                  value={v.provider}
-                  onChange={(e) => setV({ ...v, provider: e.target.value })}
-                  placeholder="bKash / Nagad / Rocket"
-                />
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+                <label className="w-full sm:w-[120px] sm:text-left shrink-0 font-medium text-muted-foreground">Provider</label>
+                <div className="flex-1 min-w-0">
+                  <Input
+                    value={v.provider}
+                    onChange={(e) => setV({ ...v, provider: e.target.value })}
+                    placeholder="bKash / Nagad / Rocket"
+                  />
+                </div>
               </div>
-              <div>
-                <label className="text-xs text-muted-foreground">Wallet number</label>
-                <Input value={v.walletNumber} onChange={(e) => setV({ ...v, walletNumber: e.target.value })} />
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+                <label className="w-full sm:w-[120px] sm:text-left shrink-0 font-medium text-muted-foreground">Wallet number</label>
+                <div className="flex-1 min-w-0">
+                  <Input value={v.walletNumber} onChange={(e) => setV({ ...v, walletNumber: e.target.value })} />
+                </div>
               </div>
             </div>
           )}
-          <div>
-            <label className="text-sm font-medium mb-1.5 block">Opening balance (৳)</label>
-            <Input
-              type="number"
-              value={v.openingBalance}
-              onChange={(e) => setV({ ...v, openingBalance: e.target.value })}
-              disabled={!!editing}
-            />
-            {editing && (
-              <p className="text-xs text-muted-foreground mt-1">
-                Opening balance তৈরির পর পরিবর্তন করা যাবে না — adjustment দিন।
-              </p>
-            )}
+          <div className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-3">
+            <label className="w-full sm:w-[120px] sm:text-left shrink-0 pt-2 font-medium">Opening balance (৳)</label>
+            <div className="flex-1 min-w-0">
+              <Input
+                type="number"
+                value={v.openingBalance}
+                onChange={(e) => setV({ ...v, openingBalance: e.target.value })}
+                disabled={!!editing}
+              />
+              {editing && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Opening balance তৈরির পর পরিবর্তন করা যাবে না — adjustment দিন।
+                </p>
+              )}
+            </div>
           </div>
         </div>
         <DialogFooter>

@@ -2,6 +2,7 @@
 
 import { usePageTitle } from "@/shared/hooks/usePageTitle";
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Card } from "@/shared/ui/card";
 import { Input } from "@/shared/ui/input";
 import { Button } from "@/shared/ui/button";
@@ -60,12 +61,13 @@ export function SuppliersClient({
   const [debouncedSearch, setDebouncedSearch] = useState("");
   
   useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    const timer = setTimeout(() => setDebouncedSearch(search), 500);
     return () => clearTimeout(timer);
   }, [search]);
 
   const queryFilter = useMemo(() => ({
-    search: debouncedSearch,
+    search: debouncedSearch.trim() || undefined,
+    limit: debouncedSearch.trim() ? 1000 : 5,
   }), [debouncedSearch]);
 
   const initialInfiniteData = useMemo(() => {
@@ -83,9 +85,24 @@ export function SuppliersClient({
   );
 
   const suppliers = useMemo(() => {
-    if (!data) return initialSuppliers;
-    return data.pages.flatMap((page: any) => page.items) as Supplier[];
-  }, [data, initialSuppliers]);
+    let result = data?.pages.flatMap((page: any) => page.items) as Supplier[] ?? initialSuppliers;
+    
+    // Apply local filter for instant feedback while server fetches
+    if (queryFilter.search) {
+      const s = queryFilter.search.toLowerCase();
+      result = result.filter(
+        (sp) =>
+          (sp.name && sp.name.toLowerCase().includes(s)) ||
+          (sp.phone && sp.phone.toLowerCase().includes(s)) ||
+          (sp.contactPerson && sp.contactPerson.toLowerCase().includes(s)) ||
+          (sp.email && sp.email.toLowerCase().includes(s)) ||
+          (sp.address && sp.address.toLowerCase().includes(s)) ||
+          (sp.notes && sp.notes.toLowerCase().includes(s))
+      );
+    }
+    
+    return result;
+  }, [data, initialSuppliers, queryFilter]);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Supplier | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -237,16 +254,26 @@ export function SuppliersClient({
         </Card>
       </div>
 
-      <Card className="p-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            id="suppliers-search-input"
-            placeholder="Search suppliers by name or phone…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
-          />
+      <Card className="p-3">
+        <div className="flex flex-wrap gap-2 items-center">
+          <div className="relative flex-1 min-w-[200px] max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              id="suppliers-search-input"
+              placeholder="Search by name, phone, email, address…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          
+          {isFilterEmpty && (
+            <div className="flex-1 min-w-[280px] flex items-center bg-blue-50/80 border border-blue-100 rounded-md px-3 py-1.5 text-sm text-blue-700 font-medium">
+              <span className="truncate" title="সর্বশেষ ৫টি ডেটা দেখানো হচ্ছে। নির্দিষ্ট ডেটা খুঁজে পেতে সার্চ করুন।">
+                সর্বশেষ ৫টি ডেটা দেখানো হচ্ছে। নির্দিষ্ট ডেটা খুঁজে পেতে সার্চ করুন।
+              </span>
+            </div>
+          )}
         </div>
       </Card>
 
@@ -384,8 +411,8 @@ export function SuppliersClient({
       <Dialog open={!!payOpen} onOpenChange={(o) => !o && setPayOpen(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{payOpen?.name} - Wallet & Payments</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-center text-xl">{payOpen?.name} - Wallet & Payments</DialogTitle>
+            <DialogDescription className="text-center mt-2">
               Payable Due: <span className="font-semibold text-warning mr-4">{payOpen && formatCurrency(payOpen.payableBalance)}</span>
               Advance Wallet: <span className="font-semibold text-accent">{payOpen && formatCurrency(payOpen.advanceBalance || 0)}</span>
             </DialogDescription>
@@ -394,58 +421,68 @@ export function SuppliersClient({
             <Button size="sm" variant={walletAction === "deposit" ? "default" : "outline"} onClick={() => setWalletAction("deposit")}>Deposit Advance</Button>
             <Button size="sm" variant={walletAction === "withdraw" ? "default" : "outline"} onClick={() => setWalletAction("withdraw")}>Withdraw Advance</Button>
           </div>
-          <div className="space-y-3">
-            <div>
-              <label className="text-sm font-medium mb-1.5 block">Amount (৳)</label>
-              <Input type="number" autoFocus value={payAmount} onChange={(e) => setPayAmount(e.target.value)} placeholder="0.00" />
+          <div className="space-y-4 px-2 sm:px-8 mt-2">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+              <label className="w-full sm:w-[120px] sm:text-left shrink-0 font-medium">Amount (৳)</label>
+              <div className="flex-1 min-w-0">
+                <Input type="number" autoFocus value={payAmount} onChange={(e) => setPayAmount(e.target.value)} placeholder="0.00" />
+              </div>
             </div>
-            <div>
-              <label className="text-sm font-medium mb-1.5 block">Payment Method *</label>
-              <Select
-                value={payMethod}
-                onValueChange={(v) => {
-                  setPayMethod(v as AccountType);
-                  setPayAccountId("");
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Method select করুন" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(ACCOUNT_TYPE_LABEL).map(([key, label]) => (
-                    <SelectItem key={key} value={key}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-1.5 block">Account *</label>
-              {accounts.length === 0 ? (
-                <div className="text-xs text-muted-foreground border rounded-md p-2">
-                  Accounts page থেকে আগে account add করুন
-                </div>
-              ) : (
-                <Select value={payAccountId} onValueChange={setPayAccountId} disabled={!payMethod}>
-                  <SelectTrigger><SelectValue placeholder="Account select করুন" /></SelectTrigger>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+              <label className="w-full sm:w-[120px] sm:text-left shrink-0 font-medium">Payment Method *</label>
+              <div className="flex-1 min-w-0">
+                <Select
+                  value={payMethod}
+                  onValueChange={(v) => {
+                    setPayMethod(v as AccountType);
+                    setPayAccountId("");
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Method select করুন" />
+                  </SelectTrigger>
                   <SelectContent>
-                    {payMethod && accounts.filter(a => a.type === payMethod).map((a) => (
-                      <SelectItem key={a.id} value={a.id} className="font-normal text-foreground">
-                        {a.name} · {formatCurrency(balances[a.id] ?? 0)}
+                    {Object.entries(ACCOUNT_TYPE_LABEL).map(([key, label]) => (
+                      <SelectItem key={key} value={key}>
+                        {label}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-              )}
+              </div>
             </div>
-            <div>
-              <label className="text-sm font-medium mb-1.5 block">Date</label>
-              <Input type="date" value={payDate} onChange={(e) => setPayDate(e.target.value)} />
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+              <label className="w-full sm:w-[120px] sm:text-left shrink-0 font-medium">Account *</label>
+              <div className="flex-1 min-w-0">
+                {accounts.length === 0 ? (
+                  <div className="text-xs text-muted-foreground border rounded-md p-2">
+                    Accounts page থেকে আগে account add করুন
+                  </div>
+                ) : (
+                  <Select value={payAccountId} onValueChange={setPayAccountId} disabled={!payMethod}>
+                    <SelectTrigger><SelectValue placeholder="Account select করুন" /></SelectTrigger>
+                    <SelectContent>
+                      {payMethod && accounts.filter(a => a.type === payMethod).map((a) => (
+                        <SelectItem key={a.id} value={a.id} className="font-normal text-foreground">
+                          {a.name} · {formatCurrency(balances[a.id] ?? 0)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
             </div>
-            <div>
-              <label className="text-sm font-medium mb-1.5 block">Note</label>
-              <Input value={payNote} onChange={(e) => setPayNote(e.target.value)} placeholder="Optional" />
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+              <label className="w-full sm:w-[120px] sm:text-left shrink-0 font-medium">Date</label>
+              <div className="flex-1 min-w-0">
+                <Input type="date" value={payDate} onChange={(e) => setPayDate(e.target.value)} />
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+              <label className="w-full sm:w-[120px] sm:text-left shrink-0 font-medium">Note</label>
+              <div className="flex-1 min-w-0">
+                <Input value={payNote} onChange={(e) => setPayNote(e.target.value)} placeholder="Optional" />
+              </div>
             </div>
           </div>
           <DialogFooter>

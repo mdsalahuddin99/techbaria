@@ -33,6 +33,7 @@ import {
   LayoutTemplate,
   ShieldAlert,
   FileText,
+  UserPlus,
 } from "lucide-react";
 import type { UserRole } from "@/features/auth/types";
 import { cn } from "@/shared/lib/utils";
@@ -59,12 +60,12 @@ const navGroups: NavGroup[] = [
     ],
   },
   {
-    labelKey: "nav.group.people" as TranslationKey,
+    labelKey: "nav.customers" as TranslationKey,
     icon: Users,
     permissions: ["PEOPLE"],
     items: [
-      { to: "/dashboard/customers", labelKey: "nav.customers", icon: Users },
-      { to: "/dashboard/suppliers", labelKey: "nav.suppliers", icon: Receipt },
+      { to: "/dashboard/customers?action=new", labelKey: "nav.newCustomer" as TranslationKey, icon: UserPlus },
+      { to: "/dashboard/customers", labelKey: "nav.customerList" as TranslationKey, icon: Users },
     ],
   },
   {
@@ -80,6 +81,15 @@ const navGroups: NavGroup[] = [
     ],
   },
   {
+    labelKey: "nav.suppliers" as TranslationKey,
+    icon: Receipt,
+    permissions: ["PEOPLE"],
+    items: [
+      { to: "/dashboard/suppliers?action=new", labelKey: "nav.newSupplier" as TranslationKey, icon: UserPlus },
+      { to: "/dashboard/suppliers", labelKey: "nav.supplierList" as TranslationKey, icon: Receipt },
+    ],
+  },
+  {
     labelKey: "nav.group.purchases" as TranslationKey,
     icon: Truck,
     permissions: ["INVENTORY"],
@@ -89,12 +99,19 @@ const navGroups: NavGroup[] = [
     ],
   },
   {
-    labelKey: "nav.group.catalog" as TranslationKey,
+    labelKey: "nav.products" as TranslationKey,
     icon: Package,
     permissions: ["INVENTORY", "POS"],
     items: [
       { to: "/dashboard/products?action=new", labelKey: "nav.newProduct" as TranslationKey, icon: PackagePlus },
       { to: "/dashboard/products", labelKey: "nav.productList" as TranslationKey, icon: Package },
+    ],
+  },
+  {
+    labelKey: "nav.categories" as TranslationKey,
+    icon: FolderTree,
+    permissions: ["INVENTORY", "POS"],
+    items: [
       { to: "/dashboard/categories", labelKey: "nav.categories", icon: FolderTree },
     ],
   },

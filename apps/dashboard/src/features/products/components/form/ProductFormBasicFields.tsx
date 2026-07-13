@@ -44,82 +44,102 @@ export function ProductFormBasicFields({ form }: Props) {
   return (
     <>
       <FormField control={control} name="condition" render={({ field }) => (
-        <FormItem>
-          <FormLabel>Condition</FormLabel>
-          <Select value={field.value || "New"} onValueChange={field.onChange}>
-            <FormControl>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-            </FormControl>
-            <SelectContent>
-              <SelectItem value="New">New</SelectItem>
-              <SelectItem value="Used">Used</SelectItem>
-              <SelectItem value="Refurbished">Refurbished</SelectItem>
-            </SelectContent>
-          </Select>
-          <FormMessage />
+        <FormItem className="space-y-1">
+          <div className="flex flex-row items-center gap-2">
+            <FormLabel className="w-[110px] shrink-0 text-right">Condition</FormLabel>
+            <div className="flex-1 min-w-0">
+              <Select value={field.value || "New"} onValueChange={field.onChange}>
+                <FormControl>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="New">New</SelectItem>
+                  <SelectItem value="Used">Used</SelectItem>
+                  <SelectItem value="Refurbished">Refurbished</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <FormMessage className="ml-[110px] pl-2" />
         </FormItem>
       )} />
 
       <FormField control={control} name="sku" render={({ field }) => (
-        <FormItem>
-          <FormLabel>SKU</FormLabel>
-          <FormControl><Input {...field} /></FormControl>
-          <FormMessage />
+        <FormItem className="space-y-1">
+          <div className="flex flex-row items-center gap-2">
+            <FormLabel className="w-[110px] shrink-0 text-right">SKU</FormLabel>
+            <div className="flex-1 min-w-0">
+              <FormControl><Input {...field} /></FormControl>
+            </div>
+          </div>
+          <FormMessage className="ml-[110px] pl-2" />
         </FormItem>
       )} />
 
       <FormField control={control} name="minStock" render={({ field }) => (
-        <FormItem>
-          <FormLabel>Min Stock Alert</FormLabel>
-          <FormControl><Input type="number" {...field} value={field.value ?? ""} /></FormControl>
-          <FormMessage />
+        <FormItem className="space-y-1">
+          <div className="flex flex-row items-center gap-2">
+            <FormLabel className="w-[110px] shrink-0 text-right">Min Stock Alert</FormLabel>
+            <div className="flex-1 min-w-0">
+              <FormControl><Input type="number" {...field} value={field.value ?? ""} /></FormControl>
+            </div>
+          </div>
+          <FormMessage className="ml-[110px] pl-2" />
         </FormItem>
       )} />
 
       <FormField control={control} name="description" render={({ field }) => (
-        <FormItem className="sm:col-span-2">
-          <div className="flex items-center justify-between">
-            <FormLabel>Description</FormLabel>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-7 text-xs flex items-center gap-1"
-              onClick={handleGenerateAI}
-              disabled={isGenerating}
-            >
-              {isGenerating ? (
-                <Loader2 className="w-3 h-3 animate-spin" />
-              ) : (
-                <Sparkles className="w-3 h-3 text-purple-500" />
-              )}
-              Generate with AI
-            </Button>
+        <FormItem className="sm:col-span-2 space-y-1">
+          <div className="flex flex-row items-start gap-2">
+            <div className="w-[110px] shrink-0 text-right flex flex-col items-end gap-2 pt-2">
+              <FormLabel>Description</FormLabel>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-7 px-2 text-[10px] flex items-center gap-1"
+                onClick={handleGenerateAI}
+                disabled={isGenerating}
+              >
+                {isGenerating ? (
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                ) : (
+                  <Sparkles className="w-3 h-3 text-purple-500" />
+                )}
+                AI
+              </Button>
+            </div>
+            <div className="flex-1 min-w-0">
+              <FormControl>
+                <Textarea
+                  placeholder="Enter long product description here..."
+                  className="min-h-[100px]"
+                  {...field}
+                />
+              </FormControl>
+            </div>
           </div>
-          <FormControl>
-            <Textarea
-              placeholder="Enter long product description here..."
-              className="min-h-[100px]"
-              {...field}
-            />
-          </FormControl>
-          <FormMessage />
+          <FormMessage className="ml-[110px] pl-2" />
         </FormItem>
       )} />
 
       <FormField control={control} name="shortDescription" render={({ field }) => (
-        <FormItem className="sm:col-span-2">
-          <FormLabel>Short Description</FormLabel>
-          <FormControl>
-            <Input
-              placeholder="Enter a brief preview (max 300 chars)..."
-              {...field}
-            />
-          </FormControl>
-          <p className="text-[11px] text-muted-foreground mt-1">
-            Used for storefront card preview. Max 300 characters.
-          </p>
-          <FormMessage />
+        <FormItem className="sm:col-span-2 space-y-1">
+          <div className="flex flex-row items-start gap-2">
+            <FormLabel className="w-[110px] shrink-0 text-right pt-2">Short Desc</FormLabel>
+            <div className="flex-1 min-w-0">
+              <FormControl>
+                <Input
+                  placeholder="Enter a brief preview (max 300 chars)..."
+                  {...field}
+                />
+              </FormControl>
+              <p className="text-[11px] text-muted-foreground mt-1">
+                Used for storefront card preview. Max 300 characters.
+              </p>
+            </div>
+          </div>
+          <FormMessage className="ml-[110px] pl-2" />
         </FormItem>
       )} />
     </>

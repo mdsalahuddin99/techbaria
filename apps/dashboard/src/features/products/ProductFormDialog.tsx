@@ -250,7 +250,7 @@ export function ProductFormDialog({
 
   return (
     <Dialog key={editing?.id ?? "new-product"} open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl xl:max-w-5xl max-h-[90vh] overflow-y-auto" onInteractOutside={(e) => e.preventDefault()}>
+      <DialogContent className="sm:max-w-2xl lg:max-w-4xl max-h-[90vh] overflow-y-auto" onInteractOutside={(e) => e.preventDefault()}>
         <DialogDescription className="sr-only">
           {editing ? "Edit product details" : "Add a new product"}
         </DialogDescription>

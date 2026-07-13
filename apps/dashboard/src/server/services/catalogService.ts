@@ -53,6 +53,18 @@ export async function deleteBrand(ctx: Ctx, id: string): Promise<void> {
   await prisma.brand.deleteMany({ where: { id } });
 }
 
+export async function bulkCreateBrands(ctx: Ctx, names: string[]): Promise<{ count: number }> {
+  requireRole(ctx, "ADMIN");
+  const validNames = names.map(n => n.trim()).filter(Boolean);
+  if (validNames.length === 0) return { count: 0 };
+  
+  const result = await prisma.brand.createMany({
+    data: validNames.map(name => ({ name })),
+    skipDuplicates: true,
+  });
+  return { count: result.count };
+}
+
 // ─── Product Names (Product Types) ────────────────────────────────────────────
 
 export interface ProductNameOutput {
@@ -96,6 +108,18 @@ export async function updateProductName(ctx: Ctx, id: string, name: string, isPu
 export async function deleteProductName(ctx: Ctx, id: string): Promise<void> {
   requireRole(ctx, "ADMIN");
   await prisma.productType.deleteMany({ where: { id } });
+}
+
+export async function bulkCreateProductNames(ctx: Ctx, names: string[]): Promise<{ count: number }> {
+  requireRole(ctx, "ADMIN");
+  const validNames = names.map(n => n.trim()).filter(Boolean);
+  if (validNames.length === 0) return { count: 0 };
+  
+  const result = await prisma.productType.createMany({
+    data: validNames.map(name => ({ name })),
+    skipDuplicates: true,
+  });
+  return { count: result.count };
 }
 
 // ─── Models ──────────────────────────────────────────────────────────────────
@@ -143,6 +167,18 @@ export async function deleteModel(ctx: Ctx, id: string): Promise<void> {
   await prisma.model.deleteMany({ where: { id } });
 }
 
+export async function bulkCreateModels(ctx: Ctx, names: string[]): Promise<{ count: number }> {
+  requireRole(ctx, "ADMIN");
+  const validNames = names.map(n => n.trim()).filter(Boolean);
+  if (validNames.length === 0) return { count: 0 };
+  
+  const result = await prisma.model.createMany({
+    data: validNames.map(name => ({ name })),
+    skipDuplicates: true,
+  });
+  return { count: result.count };
+}
+
 // ─── Series ──────────────────────────────────────────────────────────────────
 
 export interface SeriesOutput {
@@ -186,4 +222,124 @@ export async function updateSeries(ctx: Ctx, id: string, name: string, isPublish
 export async function deleteSeries(ctx: Ctx, id: string): Promise<void> {
   requireRole(ctx, "ADMIN");
   await prisma.series.deleteMany({ where: { id } });
+}
+
+export async function bulkCreateSeries(ctx: Ctx, names: string[]): Promise<{ count: number }> {
+  requireRole(ctx, "ADMIN");
+  const validNames = names.map(n => n.trim()).filter(Boolean);
+  if (validNames.length === 0) return { count: 0 };
+  
+  const result = await prisma.series.createMany({
+    data: validNames.map(name => ({ name })),
+    skipDuplicates: true,
+  });
+  return { count: result.count };
+}
+
+// ─── Colors ──────────────────────────────────────────────────────────────────
+
+export interface ColorOutput {
+  id: string;
+  name: string;
+  isPublished: boolean;
+}
+
+export async function listColors(ctx: Ctx): Promise<ColorOutput[]> {
+  const items = await prisma.color.findMany({ orderBy: { name: "asc" } });
+  return items.map((c) => ({ id: c.id, name: c.name, isPublished: c.isPublished }));
+}
+
+export async function createColor(ctx: Ctx, name: string): Promise<ColorOutput> {
+  requireRole(ctx, "ADMIN");
+  const existing = await prisma.color.findFirst({ where: { name: { equals: name, mode: "insensitive" } } });
+  if (existing) throw new ServiceError("CONFLICT", `Color "${name}" already exists`, 409);
+  const c = await prisma.color.create({ data: { name } });
+  return { id: c.id, name: c.name, isPublished: c.isPublished };
+}
+
+export async function updateColor(ctx: Ctx, id: string, name: string, isPublished?: boolean): Promise<ColorOutput> {
+  requireRole(ctx, "ADMIN");
+  const c = await prisma.color.findFirst({ where: { id } });
+  if (!c) throw new ServiceError("NOT_FOUND", "Color not found", 404);
+  const existing = await prisma.color.findFirst({ where: { name: { equals: name, mode: "insensitive" } } });
+  if (existing && existing.id !== id) throw new ServiceError("CONFLICT", `Color "${name}" already exists`, 409);
+  const updated = await prisma.color.update({ where: { id }, data: { name, ...(isPublished !== undefined && { isPublished }) } });
+  return { id: updated.id, name: updated.name, isPublished: updated.isPublished };
+}
+
+export async function deleteColor(ctx: Ctx, id: string): Promise<void> {
+  requireRole(ctx, "ADMIN");
+  await prisma.color.deleteMany({ where: { id } });
+}
+
+// ─── Storage ─────────────────────────────────────────────────────────────────
+
+export interface StorageOutput {
+  id: string;
+  name: string;
+  isPublished: boolean;
+}
+
+export async function listStorage(ctx: Ctx): Promise<StorageOutput[]> {
+  const items = await prisma.storage.findMany({ orderBy: { name: "asc" } });
+  return items.map((s) => ({ id: s.id, name: s.name, isPublished: s.isPublished }));
+}
+
+export async function createStorage(ctx: Ctx, name: string): Promise<StorageOutput> {
+  requireRole(ctx, "ADMIN");
+  const existing = await prisma.storage.findFirst({ where: { name: { equals: name, mode: "insensitive" } } });
+  if (existing) throw new ServiceError("CONFLICT", `Storage "${name}" already exists`, 409);
+  const s = await prisma.storage.create({ data: { name } });
+  return { id: s.id, name: s.name, isPublished: s.isPublished };
+}
+
+export async function updateStorage(ctx: Ctx, id: string, name: string, isPublished?: boolean): Promise<StorageOutput> {
+  requireRole(ctx, "ADMIN");
+  const s = await prisma.storage.findFirst({ where: { id } });
+  if (!s) throw new ServiceError("NOT_FOUND", "Storage not found", 404);
+  const existing = await prisma.storage.findFirst({ where: { name: { equals: name, mode: "insensitive" } } });
+  if (existing && existing.id !== id) throw new ServiceError("CONFLICT", `Storage "${name}" already exists`, 409);
+  const updated = await prisma.storage.update({ where: { id }, data: { name, ...(isPublished !== undefined && { isPublished }) } });
+  return { id: updated.id, name: updated.name, isPublished: updated.isPublished };
+}
+
+export async function deleteStorage(ctx: Ctx, id: string): Promise<void> {
+  requireRole(ctx, "ADMIN");
+  await prisma.storage.deleteMany({ where: { id } });
+}
+
+// ─── RAM ─────────────────────────────────────────────────────────────────────
+
+export interface RamOutput {
+  id: string;
+  name: string;
+  isPublished: boolean;
+}
+
+export async function listRam(ctx: Ctx): Promise<RamOutput[]> {
+  const items = await prisma.ram.findMany({ orderBy: { name: "asc" } });
+  return items.map((r) => ({ id: r.id, name: r.name, isPublished: r.isPublished }));
+}
+
+export async function createRam(ctx: Ctx, name: string): Promise<RamOutput> {
+  requireRole(ctx, "ADMIN");
+  const existing = await prisma.ram.findFirst({ where: { name: { equals: name, mode: "insensitive" } } });
+  if (existing) throw new ServiceError("CONFLICT", `RAM "${name}" already exists`, 409);
+  const r = await prisma.ram.create({ data: { name } });
+  return { id: r.id, name: r.name, isPublished: r.isPublished };
+}
+
+export async function updateRam(ctx: Ctx, id: string, name: string, isPublished?: boolean): Promise<RamOutput> {
+  requireRole(ctx, "ADMIN");
+  const r = await prisma.ram.findFirst({ where: { id } });
+  if (!r) throw new ServiceError("NOT_FOUND", "RAM not found", 404);
+  const existing = await prisma.ram.findFirst({ where: { name: { equals: name, mode: "insensitive" } } });
+  if (existing && existing.id !== id) throw new ServiceError("CONFLICT", `RAM "${name}" already exists`, 409);
+  const updated = await prisma.ram.update({ where: { id }, data: { name, ...(isPublished !== undefined && { isPublished }) } });
+  return { id: updated.id, name: updated.name, isPublished: updated.isPublished };
+}
+
+export async function deleteRam(ctx: Ctx, id: string): Promise<void> {
+  requireRole(ctx, "ADMIN");
+  await prisma.ram.deleteMany({ where: { id } });
 }

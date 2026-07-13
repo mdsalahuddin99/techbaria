@@ -3,7 +3,10 @@ import {
   listBrands,
   listProductNames,
   listModels,
-  listSeries
+  listSeries,
+  listColors,
+  listStorage,
+  listRam
 } from "@/server/services/catalogService";
 import { auth } from "@/server/auth/config";
 import { buildCtx } from "@/server/lib/ctx";
@@ -19,13 +22,19 @@ export default async function CategoriesPage() {
     brands,
     products,
     models,
-    series
+    series,
+    colors,
+    storage,
+    ram
   ] = await Promise.all([
     categoriesService.listFlat(ctx),
     listBrands(ctx),
     listProductNames(ctx),
     listModels(ctx),
-    listSeries(ctx)
+    listSeries(ctx),
+    listColors(ctx),
+    listStorage(ctx),
+    listRam(ctx)
   ]);
 
   return (
@@ -35,6 +44,9 @@ export default async function CategoriesPage() {
       initialProducts={products}
       initialModels={models}
       initialSeries={series}
+      initialColors={colors}
+      initialStorage={storage}
+      initialRam={ram}
     />
   );
 }

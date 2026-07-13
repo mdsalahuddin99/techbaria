@@ -95,7 +95,7 @@ export function ProductsClient({
   // Use debounced search for the API query
   const [debouncedSearch, setDebouncedSearch] = useState(search);
   useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    const timer = setTimeout(() => setDebouncedSearch(search), 500); // 500ms smart debounce
     return () => clearTimeout(timer);
   }, [search]);
 
@@ -104,11 +104,13 @@ export function ProductsClient({
     categoryId: filter !== "All" ? filter : undefined,
     lowStock: lowStockOnly || undefined,
     ...(filterOnlineOnly ? { isPublished: true } : {}),
+    limit: debouncedSearch.trim() ? 1000 : 5, // No limit (1000) for search, 5 for initial
   }), [debouncedSearch, filter, lowStockOnly, filterOnlineOnly]);
 
   const initialInfiniteData = useMemo(() => {
+    // If initialProducts has more than 5, we only take 5 for the empty state
     return {
-      pages: [{ items: initialProducts, nextCursor: null, hasMore: false }],
+      pages: [{ items: initialProducts.slice(0, 5), nextCursor: null, hasMore: false }],
       pageParams: [undefined],
     };
   }, [initialProducts]);
@@ -370,9 +372,9 @@ export function ProductsClient({
         }
       />
 
-      <Card className="p-4">
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
+      <Card className="p-3">
+        <div className="flex flex-wrap gap-2 items-center">
+          <div className="relative flex-1 min-w-[200px] max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               id="products-search-input"
@@ -382,19 +384,30 @@ export function ProductsClient({
               className="pl-9"
             />
           </div>
-          <Select value={filter} onValueChange={setFilter}>
-            <SelectTrigger className="sm:w-52"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="All">All categories</SelectItem>
-              {storeCategories.map((c) => {
-                const parent = c.parentId ? storeCategories.find(p => p.id === c.parentId) : null;
-                const displayName = parent ? `${parent.name} > ${c.name}` : c.name;
-                return (
-                  <SelectItem key={c.id} value={c.id}>{displayName}</SelectItem>
-                );
-              })}
-            </SelectContent>
-          </Select>
+          
+          {isFilterEmpty && (
+            <div className="flex-1 min-w-[280px] flex items-center bg-blue-50/80 border border-blue-100 rounded-md px-3 py-1.5 text-sm text-blue-700 font-medium">
+              <span className="truncate" title="সর্বশেষ ৫টি ডেটা দেখানো হচ্ছে। নির্দিষ্ট ডেটা খুঁজে পেতে সার্চ করুন।">
+                সর্বশেষ ৫টি ডেটা দেখানো হচ্ছে। নির্দিষ্ট ডেটা খুঁজে পেতে সার্চ করুন।
+              </span>
+            </div>
+          )}
+
+          <div className="flex gap-2 shrink-0 ml-auto w-full sm:w-auto">
+            <Select value={filter} onValueChange={setFilter}>
+              <SelectTrigger className="w-full sm:w-[200px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="All">All categories</SelectItem>
+                {storeCategories.map((c) => {
+                  const parent = c.parentId ? storeCategories.find(p => p.id === c.parentId) : null;
+                  const displayName = parent ? `${parent.name} > ${c.name}` : c.name;
+                  return (
+                    <SelectItem key={c.id} value={c.id}>{displayName}</SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </Card>
 

@@ -78,17 +78,33 @@ export function SalesClient() {
     };
   }, []);
 
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useInfiniteSalesQuery({
-    search: debouncedSearch,
-    paymentMethod: method,
+  const queryFilter = useMemo(() => ({
+    search: debouncedSearch.trim() || undefined,
+    paymentMethod: method !== "All" ? method : undefined,
     sortKey: sort.split("-")[0],
     sortDir: sort.split("-")[1] as "asc" | "desc",
-  });
+    limit: debouncedSearch.trim() ? 1000 : 5,
+  }), [debouncedSearch, method, sort]);
+
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useInfiniteSalesQuery(queryFilter);
 
   const allSales = useMemo(() => {
     if (!data) return [];
-    return data.pages.flatMap((page: any) => page.items) as Sale[];
-  }, [data]);
+    let result = data.pages.flatMap((page: any) => page.items) as Sale[];
+
+    // Apply local filter for instant feedback while server fetches
+    if (search) {
+      const s = search.toLowerCase();
+      result = result.filter(
+        (sale) =>
+          (sale.invoiceNo && sale.invoiceNo.toLowerCase().includes(s)) ||
+          (sale.customerName && sale.customerName.toLowerCase().includes(s)) ||
+          (sale.customerPhone && sale.customerPhone.toLowerCase().includes(s))
+      );
+    }
+
+    return result;
+  }, [data, search]);
 
   const total = allSales.reduce((s, x) => s + x.total, 0);
 

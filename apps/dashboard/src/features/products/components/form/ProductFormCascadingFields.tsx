@@ -126,61 +126,65 @@ export function ProductFormCascadingFields({ form, editing }: Props) {
     <>
       {/* 1. Category */}
       <FormField control={control} name="category" render={({ field }) => (
-        <FormItem>
-          <FormLabel>Category</FormLabel>
-          <div className="flex gap-1 items-start">
-            <div className="flex-1 min-w-0">
-              <Select value={field.value} onValueChange={(v) => {
-                field.onChange(v);
-                form.setValue("subcategory", "");
-              }}>
-                <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
-                <SelectContent>
-                  {parentCategories.map((c: any) => (
-                    <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+        <FormItem className="space-y-1">
+          <div className="flex flex-row items-center gap-2">
+            <FormLabel className="w-[110px] shrink-0 text-right">Category</FormLabel>
+            <div className="flex gap-1 items-center flex-1 min-w-0">
+              <div className="flex-1 min-w-0">
+                <Select value={field.value} onValueChange={(v) => {
+                  field.onChange(v);
+                  form.setValue("subcategory", "");
+                }}>
+                  <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+                  <SelectContent>
+                    {parentCategories.map((c: any) => (
+                      <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button
+                type="button" size="icon" variant="outline" className="h-10 w-10 shrink-0"
+                onClick={() => { setCatDialogMode("main"); setCatDialogOpen(true); }}
+                title="Add new category"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
             </div>
-            <Button
-              type="button" size="icon" variant="outline" className="h-10 w-10 shrink-0"
-              onClick={() => { setCatDialogMode("main"); setCatDialogOpen(true); }}
-              title="Add new category"
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
           </div>
-          <FormMessage />
+          <FormMessage className="ml-[33%] pl-3" />
         </FormItem>
       )} />
 
       {/* 2. Sub-category */}
       <FormField control={control} name="subcategory" render={({ field }) => (
-        <FormItem>
-          <FormLabel>Sub-category <span className="text-destructive">*</span></FormLabel>
-          <div className="flex gap-1 items-start">
-            <div className="flex-1 min-w-0">
-              <Select
-                value={field.value}
-                onValueChange={(v) => field.onChange(v)}
-                disabled={!category || subcategories.length === 0}
+        <FormItem className="space-y-1">
+          <div className="flex flex-row items-center gap-2">
+            <FormLabel className="w-[110px] shrink-0 text-right">Sub-category <span className="text-destructive">*</span></FormLabel>
+            <div className="flex gap-1 items-center flex-1 min-w-0">
+              <div className="flex-1 min-w-0">
+                <Select
+                  value={field.value}
+                  onValueChange={(v) => field.onChange(v)}
+                  disabled={!category || subcategories.length === 0}
+                >
+                  <SelectTrigger><SelectValue placeholder={!category ? "Select category first" : "Select sub-category"} /></SelectTrigger>
+                  <SelectContent>
+                    {subcategories.map((c: any) => (
+                      <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button
+                type="button" size="icon" variant="outline" className="h-10 w-10 shrink-0"
+                disabled={!category}
+                onClick={() => { setCatDialogMode("sub"); setCatDialogOpen(true); }}
+                title="Add new sub-category"
               >
-                <SelectTrigger><SelectValue placeholder={!category ? "Select category first" : "Select sub-category"} /></SelectTrigger>
-                <SelectContent>
-                  {subcategories.map((c: any) => (
-                    <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <Plus className="h-4 w-4" />
+              </Button>
             </div>
-            <Button
-              type="button" size="icon" variant="outline" className="h-10 w-10 shrink-0"
-              disabled={!category}
-              onClick={() => { setCatDialogMode("sub"); setCatDialogOpen(true); }}
-              title="Add new sub-category"
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
           </div>
           <CategoryFormDialog
             open={catDialogOpen}
@@ -198,143 +202,151 @@ export function ProductFormCascadingFields({ form, editing }: Props) {
               }
             }}
           />
-          <FormMessage />
+          <FormMessage className="ml-[33%] pl-3" />
         </FormItem>
       )} />
 
       {/* 3. Brand */}
       <FormField control={control} name="brand" render={({ field }) => (
-        <FormItem>
-          <FormLabel>Brand</FormLabel>
-          <div className="flex gap-1 items-start">
-            <div className="flex-1 min-w-0">
-              <Select
-                value={field.value ?? ""}
-                onValueChange={(v) => field.onChange(v)}
+        <FormItem className="space-y-1">
+          <div className="flex flex-row items-center gap-2">
+            <FormLabel className="w-[110px] shrink-0 text-right">Brand</FormLabel>
+            <div className="flex gap-1 items-center flex-1 min-w-0">
+              <div className="flex-1 min-w-0">
+                <Select
+                  value={field.value ?? ""}
+                  onValueChange={(v) => field.onChange(v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={brands.length === 0 ? "No brands available" : "Select brand"}>
+                      {brands.find((b: any) => b.id === field.value)?.name || (editing?.globalBrandId === field.value ? (editing as any).globalBrand?.name : field.value) || ""}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {brands.map((b: any) => (
+                      <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button
+                type="button" size="icon" variant="outline" className="h-10 w-10 shrink-0"
+                onClick={() => openQuickCreate("brands")}
+                title="Add new brand"
               >
-                <SelectTrigger>
-                  <SelectValue placeholder={brands.length === 0 ? "No brands available" : "Select brand"}>
-                    {brands.find((b: any) => b.id === field.value)?.name || (editing?.globalBrandId === field.value ? (editing as any).globalBrand?.name : field.value) || ""}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {brands.map((b: any) => (
-                    <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <Plus className="h-4 w-4" />
+              </Button>
             </div>
-            <Button
-              type="button" size="icon" variant="outline" className="h-10 w-10 shrink-0"
-              onClick={() => openQuickCreate("brands")}
-              title="Add new brand"
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
           </div>
-          <FormMessage />
+          <FormMessage className="ml-[33%] pl-3" />
         </FormItem>
       )} />
 
       {/* 4. Product Name */}
       <FormField control={control} name="name" render={({ field }) => (
-        <FormItem>
-          <FormLabel>Product Name <span className="text-destructive">*</span></FormLabel>
-          <div className="flex gap-1 items-start">
-            <div className="flex-1 min-w-0">
-              <Select
-                value={field.value ?? ""}
-                onValueChange={(v) => field.onChange(v)}
+        <FormItem className="space-y-1">
+          <div className="flex flex-row items-center gap-2">
+            <FormLabel className="w-[110px] shrink-0 text-right">Product Name <span className="text-destructive">*</span></FormLabel>
+            <div className="flex gap-1 items-center flex-1 min-w-0">
+              <div className="flex-1 min-w-0">
+                <Select
+                  value={field.value ?? ""}
+                  onValueChange={(v) => field.onChange(v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={products.length === 0 ? "No products available" : "Select product name"}>
+                      {products.find((p: any) => p.name === field.value || p.id === field.value)?.name ?? field.value ?? ""}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {products.map((p: any) => (
+                      <SelectItem key={p.id} value={p.name}>{productDisplayName(p)}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button
+                type="button" size="icon" variant="outline" className="h-10 w-10 shrink-0"
+                onClick={() => openQuickCreate("products")}
+                title="Add new product name"
               >
-                <SelectTrigger>
-                  <SelectValue placeholder={products.length === 0 ? "No products available" : "Select product name"}>
-                    {products.find((p: any) => p.name === field.value || p.id === field.value)?.name ?? field.value ?? ""}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {products.map((p: any) => (
-                    <SelectItem key={p.id} value={p.name}>{productDisplayName(p)}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <Plus className="h-4 w-4" />
+              </Button>
             </div>
-            <Button
-              type="button" size="icon" variant="outline" className="h-10 w-10 shrink-0"
-              onClick={() => openQuickCreate("products")}
-              title="Add new product name"
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
           </div>
-          <FormMessage />
+          <FormMessage className="ml-[33%] pl-3" />
         </FormItem>
       )} />
 
       {/* 5. Model */}
       <FormField control={control} name="model" render={({ field }) => (
-        <FormItem>
-          <FormLabel>Model</FormLabel>
-          <div className="flex gap-1 items-start">
-            <div className="flex-1 min-w-0">
-              <Select
-                value={field.value ?? ""}
-                onValueChange={(v) => field.onChange(v)}
+        <FormItem className="space-y-1">
+          <div className="flex flex-row items-center gap-2">
+            <FormLabel className="w-[110px] shrink-0 text-right">Model</FormLabel>
+            <div className="flex gap-1 items-center flex-1 min-w-0">
+              <div className="flex-1 min-w-0">
+                <Select
+                  value={field.value ?? ""}
+                  onValueChange={(v) => field.onChange(v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={models.length === 0 ? "No models available" : "Select model"}>
+                      {models.find((m: any) => m.id === field.value)?.name || (editing?.globalModelId === field.value ? (editing as any).globalModel?.name : field.value) || ""}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {models.map((m: any) => (
+                      <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button
+                type="button" size="icon" variant="outline" className="h-10 w-10 shrink-0"
+                onClick={() => openQuickCreate("models")}
+                title="Add new model"
               >
-                <SelectTrigger>
-                  <SelectValue placeholder={models.length === 0 ? "No models available" : "Select model"}>
-                    {models.find((m: any) => m.id === field.value)?.name || (editing?.globalModelId === field.value ? (editing as any).globalModel?.name : field.value) || ""}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {models.map((m: any) => (
-                    <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <Plus className="h-4 w-4" />
+              </Button>
             </div>
-            <Button
-              type="button" size="icon" variant="outline" className="h-10 w-10 shrink-0"
-              onClick={() => openQuickCreate("models")}
-              title="Add new model"
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
           </div>
-          <FormMessage />
+          <FormMessage className="ml-[33%] pl-3" />
         </FormItem>
       )} />
 
       {/* 6. Series */}
       <FormField control={control} name="series" render={({ field }) => (
-        <FormItem>
-          <FormLabel>Series</FormLabel>
-          <div className="flex gap-1 items-start">
-            <div className="flex-1 min-w-0">
-              <Select
-                value={field.value ?? ""}
-                onValueChange={(v) => field.onChange(v)}
+        <FormItem className="space-y-1">
+          <div className="flex flex-row items-center gap-2">
+            <FormLabel className="w-[110px] shrink-0 text-right">Series</FormLabel>
+            <div className="flex gap-1 items-center flex-1 min-w-0">
+              <div className="flex-1 min-w-0">
+                <Select
+                  value={field.value ?? ""}
+                  onValueChange={(v) => field.onChange(v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={seriesList.length === 0 ? "No series available" : "Select series"}>
+                      {seriesList.find((s: any) => s.id === field.value)?.name || (editing?.globalSeriesId === field.value ? (editing as any).globalSeries?.name : field.value) || ""}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {seriesList.map((s: any) => (
+                      <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button
+                type="button" size="icon" variant="outline" className="h-10 w-10 shrink-0"
+                onClick={() => openQuickCreate("series")}
+                title="Add new series"
               >
-                <SelectTrigger>
-                  <SelectValue placeholder={seriesList.length === 0 ? "No series available" : "Select series"}>
-                    {seriesList.find((s: any) => s.id === field.value)?.name || (editing?.globalSeriesId === field.value ? (editing as any).globalSeries?.name : field.value) || ""}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {seriesList.map((s: any) => (
-                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <Plus className="h-4 w-4" />
+              </Button>
             </div>
-            <Button
-              type="button" size="icon" variant="outline" className="h-10 w-10 shrink-0"
-              onClick={() => openQuickCreate("series")}
-              title="Add new series"
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
           </div>
-          <FormMessage />
+          <FormMessage className="ml-[33%] pl-3" />
         </FormItem>
       )} />
 

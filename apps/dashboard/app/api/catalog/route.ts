@@ -6,13 +6,16 @@ import {
   listProductNames, createProductName, updateProductName, deleteProductName,
   listModels, createModel, updateModel, deleteModel,
   listSeries, createSeries, updateSeries, deleteSeries,
+  listColors, createColor, updateColor, deleteColor,
+  listStorage, createStorage, updateStorage, deleteStorage,
+  listRam, createRam, updateRam, deleteRam,
 } from "@/server/services/catalogService";
 import { z } from "zod";
 import type { Ctx } from "@/server/lib/ctx";
 
 const entitySchema = z.object({ name: z.string().min(1) });
 
-type Entity = "brands" | "products" | "models" | "series";
+type Entity = "brands" | "products" | "models" | "series" | "colors" | "storage" | "ram";
 
 /**
  * GET /api/catalog?entity=brands — list all global entities
@@ -29,6 +32,9 @@ export const GET = apiHandler(async (ctx: Ctx, req: Request) => {
     case "products": return listProductNames(ctx);
     case "models":   return listModels(ctx);
     case "series":   return listSeries(ctx);
+    case "colors":   return listColors(ctx);
+    case "storage":  return listStorage(ctx);
+    case "ram":      return listRam(ctx);
     default:         return [];
   }
 }, "catalog:list");
@@ -54,6 +60,18 @@ export const POST = apiHandler(async (ctx: Ctx, req: Request) => {
       const { name: n } = entitySchema.parse(body);
       return createSeries(ctx, n);
     }
+    case "colors": {
+      const { name: n } = entitySchema.parse(body);
+      return createColor(ctx, n);
+    }
+    case "storage": {
+      const { name: n } = entitySchema.parse(body);
+      return createStorage(ctx, n);
+    }
+    case "ram": {
+      const { name: n } = entitySchema.parse(body);
+      return createRam(ctx, n);
+    }
     default:
       throw new Error(`Unknown entity: ${entity}`);
   }
@@ -68,6 +86,9 @@ export const PUT = apiHandler(async (ctx: Ctx, req: Request) => {
     case "products": return updateProductName(ctx, id, name, isPublished);
     case "models": return updateModel(ctx, id, name, isPublished);
     case "series": return updateSeries(ctx, id, name, isPublished);
+    case "colors": return updateColor(ctx, id, name, isPublished);
+    case "storage": return updateStorage(ctx, id, name, isPublished);
+    case "ram": return updateRam(ctx, id, name, isPublished);
     default: throw new Error(`Unknown entity: ${entity}`);
   }
 }, "catalog:update");
@@ -84,6 +105,9 @@ export const DELETE = apiHandler(async (ctx: Ctx, req: Request) => {
     case "products": await deleteProductName(ctx, id); break;
     case "models": await deleteModel(ctx, id); break;
     case "series": await deleteSeries(ctx, id); break;
+    case "colors": await deleteColor(ctx, id); break;
+    case "storage": await deleteStorage(ctx, id); break;
+    case "ram": await deleteRam(ctx, id); break;
     default: throw new Error(`Unknown entity: ${entity}`);
   }
   return { success: true };

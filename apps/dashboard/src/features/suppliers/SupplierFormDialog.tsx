@@ -70,55 +70,85 @@ export function SupplierFormDialog({ open, onOpenChange, editing }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl" onInteractOutside={(e) => e.preventDefault()}>
+      <DialogContent onInteractOutside={(e) => e.preventDefault()}>
         <DialogHeader>
-          <DialogTitle>{editing ? "Edit" : "Add"} Supplier</DialogTitle>
+          <DialogTitle className="text-center text-xl">{editing ? "Edit" : "Add"} Supplier</DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 px-2 sm:px-8">
             <FormField control={form.control} name="name" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Name</FormLabel>
-                <FormControl><Input {...field} /></FormControl>
-                <FormMessage />
+              <FormItem className="space-y-1">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+                  <FormLabel className="w-full sm:w-[120px] sm:text-left shrink-0 font-medium">Name <span className="text-destructive">*</span></FormLabel>
+                  <div className="flex-1 min-w-0">
+                    <FormControl><Input {...field} /></FormControl>
+                  </div>
+                </div>
+                <FormMessage className="sm:ml-[132px]" />
               </FormItem>
             )} />
+            
             <FormField control={form.control} name="contactPerson" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Contact Person</FormLabel>
-                <FormControl><Input {...field} value={field.value ?? ""} /></FormControl>
-                <FormMessage />
+              <FormItem className="space-y-1">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+                  <FormLabel className="w-full sm:w-[120px] sm:text-left shrink-0 font-medium">Contact Person</FormLabel>
+                  <div className="flex-1 min-w-0">
+                    <FormControl><Input {...field} value={field.value ?? ""} /></FormControl>
+                  </div>
+                </div>
+                <FormMessage className="sm:ml-[132px]" />
               </FormItem>
             )} />
+            
             <FormField control={form.control} name="phone" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Phone</FormLabel>
-                <FormControl><Input {...field} /></FormControl>
-                <FormMessage />
+              <FormItem className="space-y-1">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+                  <FormLabel className="w-full sm:w-[120px] sm:text-left shrink-0 font-medium">Phone <span className="text-destructive">*</span></FormLabel>
+                  <div className="flex-1 min-w-0">
+                    <FormControl><Input type="tel" {...field} /></FormControl>
+                  </div>
+                </div>
+                <FormMessage className="sm:ml-[132px]" />
               </FormItem>
             )} />
+            
             <FormField control={form.control} name="email" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Email</FormLabel>
-                <FormControl><Input type="email" {...field} value={field.value ?? ""} /></FormControl>
-                <FormMessage />
+              <FormItem className="space-y-1">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+                  <FormLabel className="w-full sm:w-[120px] sm:text-left shrink-0 font-medium">Email</FormLabel>
+                  <div className="flex-1 min-w-0">
+                    <FormControl><Input type="email" {...field} value={field.value ?? ""} /></FormControl>
+                  </div>
+                </div>
+                <FormMessage className="sm:ml-[132px]" />
               </FormItem>
             )} />
+            
             <FormField control={form.control} name="address" render={({ field }) => (
-              <FormItem className="sm:col-span-2">
-                <FormLabel>Address</FormLabel>
-                <FormControl><Input {...field} value={field.value ?? ""} /></FormControl>
-                <FormMessage />
+              <FormItem className="space-y-1">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+                  <FormLabel className="w-full sm:w-[120px] sm:text-left shrink-0 font-medium">Address</FormLabel>
+                  <div className="flex-1 min-w-0">
+                    <FormControl><Input {...field} value={field.value ?? ""} /></FormControl>
+                  </div>
+                </div>
+                <FormMessage className="sm:ml-[132px]" />
               </FormItem>
             )} />
+            
             <FormField control={form.control} name="notes" render={({ field }) => (
-              <FormItem className="sm:col-span-2">
-                <FormLabel>Notes</FormLabel>
-                <FormControl><Input {...field} value={field.value ?? ""} /></FormControl>
-                <FormMessage />
+              <FormItem className="space-y-1">
+                <div className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-3">
+                  <FormLabel className="w-full sm:w-[120px] sm:text-left shrink-0 pt-2 font-medium">Notes</FormLabel>
+                  <div className="flex-1 min-w-0">
+                    <FormControl><Input {...field} value={field.value ?? ""} /></FormControl>
+                  </div>
+                </div>
+                <FormMessage className="sm:ml-[132px]" />
               </FormItem>
             )} />
-            <DialogFooter className="sm:col-span-2">
+            
+            <DialogFooter className="mt-6">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
                 Cancel
               </Button>

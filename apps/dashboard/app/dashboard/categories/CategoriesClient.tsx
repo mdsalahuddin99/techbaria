@@ -1,7 +1,7 @@
 "use client";
 
 import { usePageTitle } from "@/shared/hooks/usePageTitle";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card } from "@/shared/ui/card";
 import { Button } from "@/shared/ui/button";
@@ -26,10 +26,13 @@ import {
 import { Label } from "@/shared/ui/label";
 import { Switch } from "@/shared/ui/switch";
 import { toast } from "sonner";
+import { Download, Upload } from "lucide-react";
+import Papa from "papaparse";
 import type { CategoryItem } from "@/shared/api-client/categories";
 import { listCategories, removeCategory } from "@/shared/api-client/categories";
 import { PageHeader, EmptyState } from "@/shared/components";
 import { CategoryFormDialog } from "@/features/categories/components/CategoryFormDialog";
+import { ExportImportDialog } from "@/features/categories/components/ExportImportDialog";
 
 export function CategoriesClient({
   initialCategories,
@@ -37,6 +40,9 @@ export function CategoriesClient({
   initialProducts,
   initialModels,
   initialSeries,
+  initialColors = [],
+  initialStorage = [],
+  initialRam = [],
   filterOnlineOnly = false,
 }: {
   initialCategories: CategoryItem[];
@@ -44,12 +50,23 @@ export function CategoriesClient({
   initialProducts: any[];
   initialModels: any[];
   initialSeries: any[];
+  initialColors?: any[];
+  initialStorage?: any[];
+  initialRam?: any[];
   filterOnlineOnly?: boolean;
 }) {
   usePageTitle("Categories");
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("categories");
   const [searchQuery, setSearchQuery] = useState("");
+  const [categorySearchQuery, setCategorySearchQuery] = useState("");
+  
+  // Debounce for Categories search
+  const [debouncedCategorySearch, setDebouncedCategorySearch] = useState("");
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedCategorySearch(categorySearchQuery), 500);
+    return () => clearTimeout(timer);
+  }, [categorySearchQuery]);
 
   const { data: categories = [] } = useQuery({
     queryKey: ["categories", "flat", { filterOnlineOnly }],
@@ -65,6 +82,10 @@ export function CategoriesClient({
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [dialogParentId, setDialogParentId] = useState<string | null>(null);
+
+  // Import Dialog State
+  const [importOpen, setImportOpen] = useState(false);
+  const [importType, setImportType] = useState("categories");
 
   // Catalog data
   const { data: allBrands = [] } = useQuery({
@@ -111,12 +132,45 @@ export function CategoriesClient({
     initialData: initialSeries,
   });
 
+  const { data: allColors = [] } = useQuery({
+    queryKey: ["catalog", "colors", { filterOnlineOnly }],
+    queryFn: async () => {
+      const res = await fetch(`/api/catalog?entity=colors`);
+      if (!res.ok) return [];
+      const data = await res.json();
+      return filterOnlineOnly ? data.filter((x: any) => x.isPublished) : data;
+    },
+    initialData: initialColors,
+  });
+
+  const { data: allStorage = [] } = useQuery({
+    queryKey: ["catalog", "storage", { filterOnlineOnly }],
+    queryFn: async () => {
+      const res = await fetch(`/api/catalog?entity=storage`);
+      if (!res.ok) return [];
+      const data = await res.json();
+      return filterOnlineOnly ? data.filter((x: any) => x.isPublished) : data;
+    },
+    initialData: initialStorage,
+  });
+
+  const { data: allRam = [] } = useQuery({
+    queryKey: ["catalog", "ram", { filterOnlineOnly }],
+    queryFn: async () => {
+      const res = await fetch(`/api/catalog?entity=ram`);
+      if (!res.ok) return [];
+      const data = await res.json();
+      return filterOnlineOnly ? data.filter((x: any) => x.isPublished) : data;
+    },
+    initialData: initialRam,
+  });
+
   // Edit/Delete state
   const [editingItem, setEditingItem] = useState<{ type: string, id: string, name: string } | null>(null);
   const [deleteItem, setDeleteItem] = useState<{ type: string, id: string } | null>(null);
   const [editName, setEditName] = useState("");
 
-  type CatalogEntity = "brands" | "products" | "models" | "series";
+  type CatalogEntity = "brands" | "products" | "models" | "series" | "colors" | "storage" | "ram";
   const [createOpen, setCreateOpen] = useState(false);
   const [createEntity, setCreateEntity] = useState<CatalogEntity>("brands");
   const [createName, setCreateName] = useState<string>("");
@@ -193,7 +247,15 @@ export function CategoriesClient({
   });
 
   const isParent = (c: CategoryItem) => !c.parentId || c.parentId === c.id;
-  const parents = categories.filter(isParent);
+  
+  const parents = useMemo(() => {
+    let result = categories.filter(isParent);
+    if (debouncedCategorySearch) {
+      result = result.filter(c => c.name.toLowerCase().includes(debouncedCategorySearch.toLowerCase()));
+    }
+    return result;
+  }, [categories, debouncedCategorySearch]);
+
   const subcategories = useMemo(() => categories.filter((c) => !!c.parentId && c.parentId !== c.id), [categories]);
   const categoryById = useMemo(() => new Map<string, CategoryItem>(categories.map((c) => [c.id, c])), [categories]);
   const brandById = useMemo(() => new Map<string, any>(allBrands.map((b: any) => [b.id, b])), [allBrands]);
@@ -224,6 +286,18 @@ export function CategoriesClient({
   const filteredSeries = useMemo(() => {
     return allSeries.filter((s: any) => s.name.toLowerCase().includes(searchQuery.toLowerCase()));
   }, [allSeries, searchQuery]);
+
+  const filteredColors = useMemo(() => {
+    return allColors.filter((s: any) => s.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  }, [allColors, searchQuery]);
+
+  const filteredStorage = useMemo(() => {
+    return allStorage.filter((s: any) => s.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  }, [allStorage, searchQuery]);
+
+  const filteredRam = useMemo(() => {
+    return allRam.filter((s: any) => s.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  }, [allRam, searchQuery]);
 
   const childrenOf = (pid: string) =>
     categories.filter((c) => c.parentId === pid && c.id !== pid);
@@ -259,6 +333,12 @@ export function CategoriesClient({
       isDuplicate = allModels.some((m: any) => m.name.toLowerCase() === name.toLowerCase() && m.id !== editingItem.id);
     } else if (editingItem.type === "series") {
       isDuplicate = allSeries.some((s: any) => s.name.toLowerCase() === name.toLowerCase() && s.id !== editingItem.id);
+    } else if (editingItem.type === "colors") {
+      isDuplicate = allColors.some((c: any) => c.name.toLowerCase() === name.toLowerCase() && c.id !== editingItem.id);
+    } else if (editingItem.type === "storage") {
+      isDuplicate = allStorage.some((s: any) => s.name.toLowerCase() === name.toLowerCase() && s.id !== editingItem.id);
+    } else if (editingItem.type === "ram") {
+      isDuplicate = allRam.some((r: any) => r.name.toLowerCase() === name.toLowerCase() && r.id !== editingItem.id);
     }
 
     if (isDuplicate) {
@@ -292,6 +372,12 @@ export function CategoriesClient({
       isDuplicate = allModels.some((m: any) => m.name.toLowerCase() === name.toLowerCase());
     } else if (createEntity === "series") {
       isDuplicate = allSeries.some((s: any) => s.name.toLowerCase() === name.toLowerCase());
+    } else if (createEntity === "colors") {
+      isDuplicate = allColors.some((c: any) => c.name.toLowerCase() === name.toLowerCase());
+    } else if (createEntity === "storage") {
+      isDuplicate = allStorage.some((s: any) => s.name.toLowerCase() === name.toLowerCase());
+    } else if (createEntity === "ram") {
+      isDuplicate = allRam.some((r: any) => r.name.toLowerCase() === name.toLowerCase());
     }
 
     if (isDuplicate) {
@@ -300,6 +386,41 @@ export function CategoriesClient({
 
     await createItemMut.mutateAsync({ entity: createEntity, name });
   };
+
+  const handleOpenImport = (type: string) => {
+    setImportType(type);
+    setImportOpen(true);
+  };
+
+  const handleExport = (type: string, data: any[]) => {
+    let exportData;
+    if (type === "categories") {
+      exportData = data.map(c => ({
+        ID: c.id,
+        Name: c.name,
+        "Parent Category ID": c.parentId || "",
+        "Parent Category Name": parents.find(p => p.id === c.parentId)?.name || "",
+        "Is Published": c.isPublished ? "Yes" : "No"
+      }));
+    } else {
+      exportData = data.map(item => ({
+        ID: item.id,
+        Name: item.name,
+        "Is Published": item.isPublished ? "Yes" : "No"
+      }));
+    }
+
+    const csv = Papa.unparse(exportData);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `${type}_export.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
 
 
 
@@ -317,6 +438,9 @@ export function CategoriesClient({
           <TabsTrigger value="products">Product Names</TabsTrigger>
           <TabsTrigger value="models">Models</TabsTrigger>
           <TabsTrigger value="series">Series</TabsTrigger>
+          <TabsTrigger value="colors">Colors</TabsTrigger>
+          <TabsTrigger value="storage">Storage</TabsTrigger>
+          <TabsTrigger value="ram">RAM</TabsTrigger>
         </TabsList>
 
         {/* Categories Tab */}
@@ -331,11 +455,31 @@ export function CategoriesClient({
                 <p className="text-2xl font-bold">{parents.length}</p>
               </div>
             </div>
-            {!filterOnlineOnly && (
-              <Button onClick={() => openNew(null)} className="sm:ml-auto bg-primary text-primary-foreground hover:bg-primary/90">
-                <Plus className="h-4 w-4 mr-2" />Add Category
-              </Button>
-            )}
+            
+            <div className="flex gap-2 sm:ml-auto w-full sm:w-auto">
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search categories..."
+                  className="pl-8"
+                  value={categorySearchQuery}
+                  onChange={(e) => setCategorySearchQuery(e.target.value)}
+                />
+              </div>
+              {!filterOnlineOnly && (
+                <>
+                  <Button variant="outline" size="icon" title="Export Categories" onClick={() => handleExport("categories", categories)}>
+                    <Download className="h-4 w-4" />
+                  </Button>
+                  <Button variant="outline" size="icon" title="Import Categories" onClick={() => handleOpenImport("categories")}>
+                    <Upload className="h-4 w-4" />
+                  </Button>
+                  <Button onClick={() => openNew(null)} className="bg-primary text-primary-foreground hover:bg-primary/90 shrink-0">
+                    <Plus className="h-4 w-4 mr-2" />Add
+                  </Button>
+                </>
+              )}
+            </div>
           </Card>
 
           <Card>
@@ -452,9 +596,17 @@ export function CategoriesClient({
                 />
               </div>
               {!filterOnlineOnly && (
-                <Button onClick={() => openCreate("brands")} className="bg-primary text-primary-foreground hover:bg-primary/90 shrink-0">
-                  <Plus className="h-4 w-4 mr-2" />Add Brand
-                </Button>
+                <>
+                  <Button variant="outline" size="icon" title="Export Brands" onClick={() => handleExport("brands", allBrands)}>
+                    <Download className="h-4 w-4" />
+                  </Button>
+                  <Button variant="outline" size="icon" title="Import Brands" onClick={() => handleOpenImport("brands")}>
+                    <Upload className="h-4 w-4" />
+                  </Button>
+                  <Button onClick={() => openCreate("brands")} className="bg-primary text-primary-foreground hover:bg-primary/90 shrink-0">
+                    <Plus className="h-4 w-4 mr-2" />Add Brand
+                  </Button>
+                </>
               )}
             </div>
           </Card>
@@ -531,9 +683,17 @@ export function CategoriesClient({
                 />
               </div>
               {!filterOnlineOnly && (
-                <Button onClick={() => openCreate("products")} className="bg-primary text-primary-foreground hover:bg-primary/90 shrink-0">
-                  <Plus className="h-4 w-4 mr-2" />Add Product Name
-                </Button>
+                <>
+                  <Button variant="outline" size="icon" title="Export Products" onClick={() => handleExport("products", allProducts)}>
+                    <Download className="h-4 w-4" />
+                  </Button>
+                  <Button variant="outline" size="icon" title="Import Products" onClick={() => handleOpenImport("products")}>
+                    <Upload className="h-4 w-4" />
+                  </Button>
+                  <Button onClick={() => openCreate("products")} className="bg-primary text-primary-foreground hover:bg-primary/90 shrink-0">
+                    <Plus className="h-4 w-4 mr-2" />Add Product Name
+                  </Button>
+                </>
               )}
             </div>
           </Card>
@@ -612,9 +772,17 @@ export function CategoriesClient({
                 </SelectContent>
               </Select>
               {!filterOnlineOnly && (
-                <Button onClick={() => openCreate("models")} className="bg-primary text-primary-foreground hover:bg-primary/90 shrink-0">
-                  <Plus className="h-4 w-4 mr-2" />Add Model
-                </Button>
+                <>
+                  <Button variant="outline" size="icon" title="Export Models" onClick={() => handleExport("models", allModels)}>
+                    <Download className="h-4 w-4" />
+                  </Button>
+                  <Button variant="outline" size="icon" title="Import Models" onClick={() => handleOpenImport("models")}>
+                    <Upload className="h-4 w-4" />
+                  </Button>
+                  <Button onClick={() => openCreate("models")} className="bg-primary text-primary-foreground hover:bg-primary/90 shrink-0">
+                    <Plus className="h-4 w-4 mr-2" />Add Model
+                  </Button>
+                </>
               )}
             </div>
           </Card>
@@ -696,9 +864,17 @@ export function CategoriesClient({
                 />
               </div>
               {!filterOnlineOnly && (
-                <Button onClick={() => openCreate("series")} className="bg-primary text-primary-foreground hover:bg-primary/90 shrink-0">
-                  <Plus className="h-4 w-4 mr-2" />Add Series
-                </Button>
+                <>
+                  <Button variant="outline" size="icon" title="Export Series" onClick={() => handleExport("series", allSeries)}>
+                    <Download className="h-4 w-4" />
+                  </Button>
+                  <Button variant="outline" size="icon" title="Import Series" onClick={() => handleOpenImport("series")}>
+                    <Upload className="h-4 w-4" />
+                  </Button>
+                  <Button onClick={() => openCreate("series")} className="bg-primary text-primary-foreground hover:bg-primary/90 shrink-0">
+                    <Plus className="h-4 w-4 mr-2" />Add Series
+                  </Button>
+                </>
               )}
             </div>
           </Card>
@@ -756,6 +932,204 @@ export function CategoriesClient({
             </div>
           </Card>
         </TabsContent>
+
+        {/* Colors Tab */}
+        <TabsContent value="colors">
+          <Card className="p-4 flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-primary/10 grid place-items-center">
+                <FolderTree className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Total Colors</p>
+                <p className="text-2xl font-bold">{allColors.length}</p>
+              </div>
+            </div>
+            <div className="flex gap-2 sm:ml-auto w-full sm:w-auto">
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input placeholder="Search colors..." className="pl-8" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+              </div>
+              {!filterOnlineOnly && (
+                <>
+                  <Button variant="outline" size="icon" title="Export Colors" onClick={() => handleExport("colors", allColors)}>
+                    <Download className="h-4 w-4" />
+                  </Button>
+                  <Button variant="outline" size="icon" title="Import Colors" onClick={() => handleOpenImport("colors")}>
+                    <Upload className="h-4 w-4" />
+                  </Button>
+                  <Button onClick={() => openCreate("colors")} className="bg-primary text-primary-foreground hover:bg-primary/90 shrink-0">
+                    <Plus className="h-4 w-4 mr-2" />Add Color
+                  </Button>
+                </>
+              )}
+            </div>
+          </Card>
+          <Card>
+            <div className="divide-y">
+              {filteredColors.map((color: any) => {
+                return (
+                  <div key={color.id} className="flex items-center gap-2 p-3 sm:p-4">
+                    {editingItem?.type === "colors" && editingItem.id === color.id ? (
+                      <>
+                        <Input value={editName} onChange={(e) => setEditName(e.target.value)} className="flex-1" autoFocus />
+                        <LoadingButton size="sm" onClick={handleSaveEdit} loading={updateItemMut.isPending}>Save</LoadingButton>
+                        <Button size="sm" variant="outline" onClick={() => setEditingItem(null)}>Cancel</Button>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex-1 min-w-0"><p className="font-medium truncate">{color.name}</p></div>
+                        {!filterOnlineOnly && (
+                          <>
+                            <div className="flex items-center gap-2 px-2 border-r mr-1">
+                              <Switch checked={color.isPublished} onCheckedChange={(val) => updateItemMut.mutate({ type: "colors", id: color.id, name: color.name, isPublished: val })} />
+                              <span className="text-xs text-muted-foreground hidden sm:inline">Web</span>
+                            </div>
+                            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleEditItem("colors", color.id, color.name)}><Pencil className="h-4 w-4" /></Button>
+                            <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => setDeleteItem({ type: "colors", id: color.id })}><Trash2 className="h-4 w-4" /></Button>
+                          </>
+                        )}
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+              {allColors.length === 0 && <EmptyState icon={FolderTree} title="No colors yet" description="Click “Add Color” to create your first item." />}
+            </div>
+          </Card>
+        </TabsContent>
+
+        {/* Storage Tab */}
+        <TabsContent value="storage">
+          <Card className="p-4 flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-primary/10 grid place-items-center">
+                <FolderTree className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Total Storage</p>
+                <p className="text-2xl font-bold">{allStorage.length}</p>
+              </div>
+            </div>
+            <div className="flex gap-2 sm:ml-auto w-full sm:w-auto">
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input placeholder="Search storage..." className="pl-8" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+              </div>
+              {!filterOnlineOnly && (
+                <>
+                  <Button variant="outline" size="icon" title="Export Storage" onClick={() => handleExport("storage", allStorage)}>
+                    <Download className="h-4 w-4" />
+                  </Button>
+                  <Button variant="outline" size="icon" title="Import Storage" onClick={() => handleOpenImport("storage")}>
+                    <Upload className="h-4 w-4" />
+                  </Button>
+                  <Button onClick={() => openCreate("storage")} className="bg-primary text-primary-foreground hover:bg-primary/90 shrink-0">
+                    <Plus className="h-4 w-4 mr-2" />Add Storage
+                  </Button>
+                </>
+              )}
+            </div>
+          </Card>
+          <Card>
+            <div className="divide-y">
+              {filteredStorage.map((item: any) => {
+                return (
+                  <div key={item.id} className="flex items-center gap-2 p-3 sm:p-4">
+                    {editingItem?.type === "storage" && editingItem.id === item.id ? (
+                      <>
+                        <Input value={editName} onChange={(e) => setEditName(e.target.value)} className="flex-1" autoFocus />
+                        <LoadingButton size="sm" onClick={handleSaveEdit} loading={updateItemMut.isPending}>Save</LoadingButton>
+                        <Button size="sm" variant="outline" onClick={() => setEditingItem(null)}>Cancel</Button>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex-1 min-w-0"><p className="font-medium truncate">{item.name}</p></div>
+                        {!filterOnlineOnly && (
+                          <>
+                            <div className="flex items-center gap-2 px-2 border-r mr-1">
+                              <Switch checked={item.isPublished} onCheckedChange={(val) => updateItemMut.mutate({ type: "storage", id: item.id, name: item.name, isPublished: val })} />
+                              <span className="text-xs text-muted-foreground hidden sm:inline">Web</span>
+                            </div>
+                            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleEditItem("storage", item.id, item.name)}><Pencil className="h-4 w-4" /></Button>
+                            <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => setDeleteItem({ type: "storage", id: item.id })}><Trash2 className="h-4 w-4" /></Button>
+                          </>
+                        )}
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+              {allStorage.length === 0 && <EmptyState icon={FolderTree} title="No storage yet" description="Click “Add Storage” to create your first item." />}
+            </div>
+          </Card>
+        </TabsContent>
+
+        {/* RAM Tab */}
+        <TabsContent value="ram">
+          <Card className="p-4 flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-primary/10 grid place-items-center">
+                <FolderTree className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Total RAM</p>
+                <p className="text-2xl font-bold">{allRam.length}</p>
+              </div>
+            </div>
+            <div className="flex gap-2 sm:ml-auto w-full sm:w-auto">
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input placeholder="Search RAM..." className="pl-8" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+              </div>
+              {!filterOnlineOnly && (
+                <>
+                  <Button variant="outline" size="icon" title="Export RAM" onClick={() => handleExport("ram", allRam)}>
+                    <Download className="h-4 w-4" />
+                  </Button>
+                  <Button variant="outline" size="icon" title="Import RAM" onClick={() => handleOpenImport("ram")}>
+                    <Upload className="h-4 w-4" />
+                  </Button>
+                  <Button onClick={() => openCreate("ram")} className="bg-primary text-primary-foreground hover:bg-primary/90 shrink-0">
+                    <Plus className="h-4 w-4 mr-2" />Add RAM
+                  </Button>
+                </>
+              )}
+            </div>
+          </Card>
+          <Card>
+            <div className="divide-y">
+              {filteredRam.map((item: any) => {
+                return (
+                  <div key={item.id} className="flex items-center gap-2 p-3 sm:p-4">
+                    {editingItem?.type === "ram" && editingItem.id === item.id ? (
+                      <>
+                        <Input value={editName} onChange={(e) => setEditName(e.target.value)} className="flex-1" autoFocus />
+                        <LoadingButton size="sm" onClick={handleSaveEdit} loading={updateItemMut.isPending}>Save</LoadingButton>
+                        <Button size="sm" variant="outline" onClick={() => setEditingItem(null)}>Cancel</Button>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex-1 min-w-0"><p className="font-medium truncate">{item.name}</p></div>
+                        {!filterOnlineOnly && (
+                          <>
+                            <div className="flex items-center gap-2 px-2 border-r mr-1">
+                              <Switch checked={item.isPublished} onCheckedChange={(val) => updateItemMut.mutate({ type: "ram", id: item.id, name: item.name, isPublished: val })} />
+                              <span className="text-xs text-muted-foreground hidden sm:inline">Web</span>
+                            </div>
+                            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleEditItem("ram", item.id, item.name)}><Pencil className="h-4 w-4" /></Button>
+                            <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => setDeleteItem({ type: "ram", id: item.id })}><Trash2 className="h-4 w-4" /></Button>
+                          </>
+                        )}
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+              {allRam.length === 0 && <EmptyState icon={FolderTree} title="No RAM yet" description="Click “Add RAM” to create your first item." />}
+            </div>
+          </Card>
+        </TabsContent>
       </Tabs>
 
       <CategoryFormDialog
@@ -769,6 +1143,16 @@ export function CategoriesClient({
           if (dialogParentId) {
             setExpanded((s) => ({ ...s, [dialogParentId]: true }));
           }
+        }}
+      />
+
+      <ExportImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        type={importType}
+        onImported={() => {
+          queryClient.invalidateQueries({ queryKey: ["categories"] });
+          queryClient.invalidateQueries({ queryKey: ["catalog"] });
         }}
       />
 
