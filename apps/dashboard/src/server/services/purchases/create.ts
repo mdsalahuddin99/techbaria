@@ -58,6 +58,18 @@ export async function create(ctx: Ctx, input: PurchaseCreateInput) {
     }
   }
 
+  // Validate all products exist before attempting to create purchase items
+  const productIds = input.items.map((i) => i.productId);
+  const existingProducts = await prisma.product.findMany({
+    where: { id: { in: productIds } },
+    select: { id: true },
+  });
+  if (existingProducts.length !== new Set(productIds).size) {
+    const existingSet = new Set(existingProducts.map((p) => p.id));
+    const missing = input.items.find((i) => !existingSet.has(i.productId));
+    throw new ServiceError("VALIDATION", `Product "${missing?.name || missing?.productId}" does not exist in the database. It may have been deleted. Please remove it and try again.`, 400);
+  }
+
   const subtotal = input.items.reduce((sum, i) => math.add(sum, math.mul(i.cost, i.qty)), 0);
   const total = math.sub(subtotal, (input.discount ?? 0));
 
@@ -220,7 +232,7 @@ export async function create(ctx: Ctx, input: PurchaseCreateInput) {
         if (!purchaseItem) return [];
         return item.serials!.map((serial) => ({
           productId: item.productId,
-          serial,
+          serial: serial.trim(),
           status: "IN_STOCK" as const,
           purchaseItemId: purchaseItem.id,
           warehouseId: warehouseId || null,
@@ -248,8 +260,8 @@ export async function create(ctx: Ctx, input: PurchaseCreateInput) {
   }).catch(console.error);
 
   cache.invalidatePurchases().catch(console.error);
-  const productIds = [...new Set(input.items.map(item => item.productId))];
-  cache.invalidateSpecificProducts(productIds).catch(console.error);
+  const uniqueProductIds = [...new Set(productIds)];
+  cache.invalidateSpecificProducts(uniqueProductIds).catch(console.error);
 
   return serializePurchase(raw);
 }

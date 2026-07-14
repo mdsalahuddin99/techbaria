@@ -54,6 +54,11 @@ export async function collectSaleDueAction(id: string, input: any) {
   return salesService.collectDue(ctx, id, input);
 }
 
+export async function bulkCollectSaleDueAction(input: any) {
+  const ctx = await getActionCtx();
+  return salesService.bulkCollectDue(ctx, input);
+}
+
 export async function deleteSaleAction(id: string) {
   const ctx = await getActionCtx();
   await salesService.remove(ctx, id);
@@ -92,4 +97,46 @@ export async function deleteReturnAction(id: string) {
   ]);
 
   return { success: true };
+}
+
+export async function getBulkReceiptDataAction(reference: string) {
+  const ctx = await getActionCtx();
+  
+  const tx = await prisma.customerTransaction.findFirst({
+    where: { reference, type: "PAYMENT" },
+    include: { customer: true }
+  });
+  
+  if (!tx) {
+    throw new ServiceError("NOT_FOUND", "Transaction not found", 404);
+  }
+
+  const tenders = await prisma.saleTender.findMany({
+    where: { ref: reference },
+    include: { sale: true }
+  });
+
+  const invoicesAffected = tenders.map(tender => {
+    const sale = tender.sale;
+    const saleDue = Number(sale.due);
+    const collected = Number(tender.amount);
+    const previousDue = saleDue + collected; 
+    
+    return {
+      saleId: sale.id,
+      invoiceNo: (sale.data as any)?.invoiceNo || sale.id.slice(0, 8),
+      date: sale.createdAt,
+      total: Number(sale.total),
+      previousDue,
+      collected,
+      newDue: saleDue,
+    };
+  });
+
+  return {
+    transactionId: tx.reference || tx.id,
+    totalCollected: Number(tx.amount),
+    customerName: tx.customer.name,
+    invoicesAffected,
+  };
 }

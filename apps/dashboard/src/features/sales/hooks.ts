@@ -183,7 +183,7 @@ export function useSaleMutations() {
     onError: (e: Error) => toast.error(e.message),
   });
   const collectDueMutation = useMutation({
-    mutationFn: ({ id, input }: { id: string; input: Record<string, unknown> }) =>
+    mutationFn: ({ id, input }: { id: string; input: { amount: number; accountId: string; type: string; notes?: string } }) =>
       salesService.collectDue(id, input),
     onSuccess: () => {
       invalidate();
@@ -200,6 +200,6 @@ export function useSaleMutations() {
       refundMutation.mutateAsync(input),
     delete: (id: string) => deleteMutation.mutateAsync(id),
     update: (id: string, input: Record<string, unknown>) => updateMutation.mutateAsync({ id, input }),
-    collectDue: (id: string, input: Record<string, unknown>) => collectDueMutation.mutateAsync({ id, input }),
+    collectDue: (id: string, input: { amount: number; accountId: string; type: string; notes?: string }) => collectDueMutation.mutateAsync({ id, input }),
   };
 }

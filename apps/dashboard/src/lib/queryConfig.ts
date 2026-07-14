@@ -39,8 +39,8 @@ export const QueryTier = {
    */
   MASTER_DATA: {
     staleTime: 30_000,
-    gcTime: 60 * 60_000, // 1 hour in memory
-    refetchOnWindowFocus: false,
+    gcTime: 60 * 60_000,
+    refetchOnWindowFocus: true,
     refetchInterval: false,
   } as const,
 

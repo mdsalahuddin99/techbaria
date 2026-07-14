@@ -124,7 +124,7 @@ export function BrandsTab({ initialBrands, filterOnlineOnly = false, categories,
     if (!editName.trim() || !editingItem) return toast.error("Name is required");
     const isDuplicate = allBrands.some((b: any) => b.id !== editingItem.id && b.name.toLowerCase() === editName.toLowerCase());
     if (isDuplicate) return toast.error("A brand with this name already exists");
-    await updateItemMut.mutateAsync({ type: "brands", id: editingItem.id, name: editName, subcategories: editSubcategories });
+    await updateItemMut.mutateAsync({ entity: "brands", id: editingItem.id, name: editName, subcategories: editSubcategories });
   };
 
   const handleExport = () => {
@@ -204,7 +204,7 @@ export function BrandsTab({ initialBrands, filterOnlineOnly = false, categories,
                       <div className="flex items-center gap-1 sm:gap-2 px-1 sm:px-2 border-r mr-1">
                         <Switch
                           checked={brand.isPublished}
-                          onCheckedChange={(val) => updateItemMut.mutate({ type: "brands", id: brand.id, name: brand.name, isPublished: val })}
+                          onCheckedChange={(val) => updateItemMut.mutate({ entity: "brands", id: brand.id, name: brand.name, isPublished: val })}
                           className="scale-75 sm:scale-100"
                         />
                         <span className="text-[10px] sm:text-xs text-muted-foreground hidden sm:inline">Web</span>
@@ -294,6 +294,14 @@ export function BrandsTab({ initialBrands, filterOnlineOnly = false, categories,
                           onChange={(e) => setEditSubcategories(prev => e.target.checked ? [...prev, sc.name] : prev.filter(s => s !== sc.name))}
                         />
                         {sc.name}
+                      </label>
+                    ))}
+                    {editSubcategories.filter(s => !subcategories.some(sc => sc.name === s)).map((invalidName) => (
+                      <label key={invalidName} className="flex items-center gap-2 text-sm cursor-pointer text-destructive">
+                        <input type="checkbox" className="rounded" checked={true}
+                          onChange={() => setEditSubcategories(prev => prev.filter(s => s !== invalidName))}
+                        />
+                        {invalidName} (Missing/Renamed)
                       </label>
                     ))}
                   </div>

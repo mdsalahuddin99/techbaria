@@ -100,6 +100,18 @@ export async function update(ctx: Ctx, id: string, input: ProductUpdateInput) {
     data,
   });
 
+  // If global stock was manually updated, try to sync it to the warehouse stock 
+  // if there is only a single warehouse entry, to prevent POS vs Inventory mismatch.
+  if (input.stock !== undefined) {
+    const wStocks = await prisma.warehouseStock.findMany({ where: { productId: id } });
+    if (wStocks.length === 1) {
+      await prisma.warehouseStock.update({
+        where: { id: wStocks[0].id },
+        data: { qty: input.stock }
+      });
+    }
+  }
+
   await cache.invalidateSpecificProducts([id]);
 
   await auditLogService.log(ctx, {

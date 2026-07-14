@@ -46,6 +46,9 @@ export function useCreateSale() {
 
   const [payments, setPayments] = useState<SalePayment[]>([]);
   const [walletAutoApplied, setWalletAutoApplied] = useState(true);
+  const [pendingMethod, setPendingMethod] = useState<PaymentMethod>("Cash");
+  const [pendingAmount, setPendingAmount] = useState("");
+  const [pendingAccountId, setPendingAccountId] = useState<string | null>(null);
   const [receipt, setReceipt] = useState<Sale | null>(null);
   const [receiptView, setReceiptView] = useState<ReceiptView>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
@@ -288,15 +291,17 @@ export function useCreateSale() {
   );
 
   const handleBarcodeEnter = useCallback(
-    async (code: string) => {
+    async (rawCode: string) => {
+      const code = rawCode.trim();
       const qs = new URLSearchParams();
       qs.set("q", code);
       if (selectedWarehouseId) qs.set("warehouseId", selectedWarehouseId);
       
       try {
         const res = await apiFetch<{ items: any[] }>(`/api/products/search?${qs.toString()}`);
+        const lowerCode = code.toLowerCase().trim();
         const found = res.items.find(
-          (p: any) => p.barcode === code || p.sku === code,
+          (p: any) => (p.barcode || "").toLowerCase() === lowerCode || (p.sku || "").toLowerCase() === lowerCode,
         );
         if (found) {
           addProductToVoucher(found);
@@ -304,8 +309,8 @@ export function useCreateSale() {
         }
         // Try barcode lookup via serial
         const serial = res.items.find((p: any) => {
-          const matchSerials = p.serials?.some((s: any) => s.serialNumber === code || s.imei === code || s.serial === code);
-          const matchSerialNumbers = p.serialNumbers?.some((s: any) => s.serial === code || s.serialNumber === code || s.imei === code);
+          const matchSerials = p.serials?.some((s: any) => (s.serialNumber || "").toLowerCase() === lowerCode || (s.imei || "").toLowerCase() === lowerCode || (s.serial || "").toLowerCase() === lowerCode);
+          const matchSerialNumbers = p.serialNumbers?.some((s: any) => (s.serial || "").toLowerCase() === lowerCode || (s.serialNumber || "").toLowerCase() === lowerCode || (s.imei || "").toLowerCase() === lowerCode);
           return matchSerials || matchSerialNumbers;
         });
         if (serial) {
@@ -369,6 +374,9 @@ export function useCreateSale() {
     const tzoffset = (new Date()).getTimezoneOffset() * 60000;
     setInvoiceDate((new Date(Date.now() - tzoffset)).toISOString().split('T')[0]);
     setNarration("");
+    setPendingMethod("Cash");
+    setPendingAmount("");
+    setPendingAccountId(null);
   }, [session]);
 
   // ── Context event listeners for global Command Palette ────────────────────
@@ -520,24 +528,38 @@ export function useCreateSale() {
         accountId: p.accountId ?? undefined,
       }));
 
-    if (due > 0) {
+    // Auto-include any pending typed amount
+    const pendingAmtNum = round2(Number(pendingAmount) || 0);
+    if (pendingAmtNum > 0) {
+      finalTenders.push({
+        type: pendingMethod,
+        amount: pendingAmtNum,
+        accountId: pendingAccountId ?? undefined,
+      });
+    }
+
+    // Recompute due after adding pending tender
+    const realTotalPaid = round2(finalTenders.reduce((s, p) => s + p.amount, 0));
+    const realDue = round2(invoiceTotal - realTotalPaid);
+
+    if (realDue > 0) {
       if (customerId) {
         // Appending Due tender for unpaid balance
         finalTenders.push({
           type: "Due",
-          amount: due,
+          amount: realDue,
           accountId: undefined,
         });
       } else {
         // Walk-in customer cannot have due. Remaining goes to Cash.
         const existingCash = finalTenders.find((t) => t.type === "Cash");
         if (existingCash) {
-          existingCash.amount = round2(existingCash.amount + due);
+          existingCash.amount = round2(existingCash.amount + realDue);
         } else {
           const defCash = cashAccounts.find((a: any) => a.isDefault) ?? cashAccounts[0] ?? null;
           finalTenders.push({
             type: "Cash",
-            amount: due,
+            amount: realDue,
             accountId: defCash?.id ?? undefined,
           });
         }
@@ -640,6 +662,9 @@ export function useCreateSale() {
     loadDraftId, subtotal, invoiceTotal, addProductToVoucher,
     handleBarcodeEnter, changeQty, changeSerials, changeWarranty,
     changeDiscount, removeRow, clearVoucher, holdCurrentSale,
-    resumeHeldSale, deleteHeldSale, handleCheckout, handleCameraBarcode
+    resumeHeldSale, deleteHeldSale, handleCheckout, handleCameraBarcode,
+    pendingMethod, setPendingMethod,
+    pendingAmount, setPendingAmount,
+    pendingAccountId, setPendingAccountId
   };
 }

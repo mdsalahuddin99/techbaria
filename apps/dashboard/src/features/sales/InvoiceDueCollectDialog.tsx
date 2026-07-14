@@ -42,7 +42,7 @@ export function InvoiceDueCollectDialog({
   const due = sale ? Math.max(0, sale.total - sale.amountPaid) : 0;
   
   const [amount, setAmount] = useState(due.toString());
-  const [method, setMethod] = useState<AccountType | "">("");
+  const [method, setMethod] = useState<AccountType | "Wallet" | "">("");
   const [accountId, setAccountId] = useState("");
   const [notes, setNotes] = useState("");
 
@@ -138,8 +138,8 @@ export function InvoiceDueCollectDialog({
             <Select
               value={method}
               onValueChange={(v) => {
-                setMethod(v as AccountType);
-                setAccountId("");
+                setMethod(v as AccountType | "Wallet");
+                setAccountId(v === "Wallet" ? "WALLET" : "");
               }}
             >
               <SelectTrigger id="method">
@@ -151,11 +151,14 @@ export function InvoiceDueCollectDialog({
                     {label}
                   </SelectItem>
                 ))}
+                {sale?.customerName && (
+                  <SelectItem value="Wallet">Wallet (Advance Balance)</SelectItem>
+                )}
               </SelectContent>
             </Select>
           </div>
 
-          {method && (
+          {method && method !== "Wallet" && (
             <div className="space-y-2">
               <Label htmlFor="account">Deposit Ledger *</Label>
               <Select value={accountId} onValueChange={setAccountId}>

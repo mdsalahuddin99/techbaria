@@ -63,7 +63,10 @@ export function CreateSaleClient() {
     loadDraftId, subtotal, invoiceTotal, addProductToVoucher,
     handleBarcodeEnter, changeQty, changeSerials, changeWarranty,
     changeDiscount, removeRow, clearVoucher, holdCurrentSale,
-    resumeHeldSale, deleteHeldSale, handleCheckout, handleCameraBarcode
+    resumeHeldSale, deleteHeldSale, handleCheckout, handleCameraBarcode,
+    pendingMethod, setPendingMethod,
+    pendingAmount, setPendingAmount,
+    pendingAccountId, setPendingAccountId
   } = useCreateSale();
 
   return (
@@ -408,6 +411,12 @@ export function CreateSaleClient() {
                   quickPhone={quickPhone}
                   onQuickNameChange={setQuickName}
                   onQuickPhoneChange={setQuickPhone}
+                  pendingMethod={pendingMethod}
+                  setPendingMethod={setPendingMethod}
+                  pendingAmount={pendingAmount}
+                  setPendingAmount={setPendingAmount}
+                  pendingAccountId={pendingAccountId}
+                  setPendingAccountId={setPendingAccountId}
                 />
               </div>
             </div>

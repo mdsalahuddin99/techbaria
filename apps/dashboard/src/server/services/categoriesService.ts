@@ -273,7 +273,7 @@ export const categoriesService = {
       }
     }
 
-    const udpated = await prisma.category.update({
+    const updated = await prisma.category.update({
       where: { id },
       data: {
         ...(input.name !== undefined && { name: input.name }),
@@ -285,9 +285,22 @@ export const categoriesService = {
       include: { _count: { select: { products: true } } },
     });
 
+    // If the name changed and this is a subcategory (has parentId),
+    // propagate the name change to BrandSubcategory and Product string fields
+    if (input.name && input.name !== existing.name && existing.parentId) {
+      await prisma.brandSubcategory.updateMany({
+        where: { subcategory: existing.name },
+        data: { subcategory: input.name },
+      });
+      await prisma.product.updateMany({
+        where: { subcategory: existing.name },
+        data: { subcategory: input.name },
+      });
+    }
+
     await cache.invalidateCategories();
 
-    const cat = udpated as any;
+    const cat = updated as any;
     return {
       id: cat.id,
       name: cat.name,

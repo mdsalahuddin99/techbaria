@@ -14,6 +14,7 @@ import { refund } from "./sales/refund";
 import { remove } from "./sales/remove";
 import { update } from "./sales/update";
 import { collectDue } from "./sales/collectDue";
+import { bulkCollectDue } from "./sales/bulkCollectDue";
 import {
   createStorefrontOrder,
   listStorefrontOrders,
@@ -59,6 +60,9 @@ export const salesService = {
 
   /** Collect due for a specific sale. */
   collectDue,
+
+  /** Bulk collect due across multiple sales for a customer. */
+  bulkCollectDue,
 
   /** Get sales for a specific customer. */
   byCustomer,

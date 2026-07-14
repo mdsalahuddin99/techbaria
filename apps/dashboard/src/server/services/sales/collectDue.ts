@@ -49,12 +49,15 @@ export async function collectDue(ctx: Ctx, saleId: string, input: CollectDueInpu
       );
     }
 
-    // 2. Validate account
-    const account = await tx.financialAccount.findUnique({
-      where: { id: input.accountId },
-    });
-    if (!account) {
-      throw new ServiceError("NOT_FOUND", "Financial account not found", 404);
+    // 2. Validate account (skip for Wallet)
+    const isWallet = input.accountId === "WALLET" || input.type === "Wallet";
+    if (!isWallet) {
+      const account = await tx.financialAccount.findUnique({
+        where: { id: input.accountId },
+      });
+      if (!account) {
+        throw new ServiceError("NOT_FOUND", "Financial account not found", 404);
+      }
     }
 
     // 3. Update Sale
@@ -70,7 +73,7 @@ export async function collectDue(ctx: Ctx, saleId: string, input: CollectDueInpu
           create: {
             type: mapPaymentMethodToTenderType(input.type),
             amount: input.amount,
-            accountId: input.accountId,
+            accountId: isWallet ? undefined : input.accountId,
             ref: `DUE-COLLECT`,
           },
         },
@@ -88,33 +91,59 @@ export async function collectDue(ctx: Ctx, saleId: string, input: CollectDueInpu
     if (sale.customerId) {
       const cust = await tx.customer.findUniqueOrThrow({
         where: { id: sale.customerId },
-        select: { due: true },
+        select: { due: true, balance: true },
       });
       
       const runningDue = Number(cust.due);
       const newCustomerDue = Math.max(0, math.sub(runningDue, input.amount));
 
+      let newBalance = Number(cust.balance);
+      if (isWallet) {
+        if (newBalance < input.amount) {
+          throw new ServiceError("CONFLICT", `Insufficient wallet advance. Available: ${newBalance}`, 400);
+        }
+        newBalance = math.sub(newBalance, input.amount);
+      }
+
       await tx.customer.update({
         where: { id: sale.customerId },
-        data: { due: newCustomerDue },
+        data: { due: newCustomerDue, balance: newBalance },
       });
 
       // Log payment in customer transaction ledger
       const invoiceNo = (sale.data as any)?.invoiceNo || sale.id.slice(0, 8);
-      await tx.customerTransaction.create({
-        data: {
-          customerId: sale.customerId,
-          type: "PAYMENT",
-          amount: input.amount,
-          balanceBefore: runningDue,
-          balanceAfter: newCustomerDue,
-          saleId: sale.id,
-          accountId: input.accountId,
-          reference: `COLLECT-${sale.id.slice(0, 8).toUpperCase()}`,
-          notes: input.notes || `Collected due for Invoice ${invoiceNo}`,
-          createdById: ctx.userId,
-        },
-      });
+      
+      if (isWallet) {
+        await tx.customerTransaction.create({
+          data: {
+            customerId: sale.customerId,
+            type: "PAYMENT",
+            amount: input.amount,
+            balanceBefore: Number(cust.balance),
+            balanceAfter: newBalance,
+            saleId: sale.id,
+            accountId: undefined,
+            reference: `WALLET-DUE-${sale.id.slice(0, 8).toUpperCase()}`,
+            notes: input.notes || `Paid due for Invoice ${invoiceNo} from wallet`,
+            createdById: ctx.userId,
+          },
+        });
+      } else {
+        await tx.customerTransaction.create({
+          data: {
+            customerId: sale.customerId,
+            type: "PAYMENT",
+            amount: input.amount,
+            balanceBefore: runningDue,
+            balanceAfter: newCustomerDue,
+            saleId: sale.id,
+            accountId: input.accountId,
+            reference: `COLLECT-${sale.id.slice(0, 8).toUpperCase()}`,
+            notes: input.notes || `Collected due for Invoice ${invoiceNo}`,
+            createdById: ctx.userId,
+          },
+        });
+      }
     }
 
     return updatedSale;

@@ -54,6 +54,18 @@ export async function update(ctx: Ctx, id: string, input: PurchaseUpdateInput) {
     }
   }
 
+  // Validate all products exist before attempting to update purchase items
+  const productIds = input.items.map((i) => i.productId);
+  const existingProducts = await prisma.product.findMany({
+    where: { id: { in: productIds } },
+    select: { id: true },
+  });
+  if (existingProducts.length !== new Set(productIds).size) {
+    const existingSet = new Set(existingProducts.map((p) => p.id));
+    const missing = input.items.find((i) => !existingSet.has(i.productId));
+    throw new ServiceError("VALIDATION", `Product "${missing?.name || missing?.productId}" does not exist in the database. It may have been deleted. Please remove it and try again.`, 400);
+  }
+
   const oldQtyMap = new Map(existing.items.map((i) => [i.productId, i.qty]));
 
   const subtotal = input.items.reduce((sum, i) => math.add(sum, math.mul(i.cost, i.qty)), 0);
@@ -134,7 +146,7 @@ export async function update(ctx: Ctx, id: string, input: PurchaseUpdateInput) {
       // 5a. Create new serials that don't already exist
       if (item.serials?.length && pi) {
         const existingSet = oldSerialsSet.get(item.productId) ?? new Set();
-        const newSerials = item.serials.filter((s) => !existingSet.has(s));
+        const newSerials = item.serials.map(s => s.trim()).filter((s) => !existingSet.has(s));
         if (newSerials.length > 0) {
           await tx.serialNumber.createMany({
             data: newSerials.map((serial) => ({
@@ -238,8 +250,8 @@ export async function update(ctx: Ctx, id: string, input: PurchaseUpdateInput) {
   });
 
   await cache.invalidatePurchases();
-  const productIds = [...new Set(input.items.map(item => item.productId))];
-  await cache.invalidateSpecificProducts(productIds);
+  const uniqueProductIds = [...new Set(productIds)];
+  await cache.invalidateSpecificProducts(uniqueProductIds);
 
   return serializePurchase(raw);
 }

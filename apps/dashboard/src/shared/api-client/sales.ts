@@ -13,6 +13,7 @@ import {
   deleteSaleAction,
   deleteReturnAction,
   collectSaleDueAction,
+  bulkCollectSaleDueAction,
 } from "@/server/actions/sales";
 
 export interface PaginatedResponse<T> {
@@ -72,7 +73,11 @@ export const salesApi = {
     return updateSaleAction(id, input) as unknown as Promise<Sale>;
   },
 
-  collectDue(id: string, input: Record<string, unknown>): Promise<Sale> {
+  collectDue(id: string, input: { amount: number; accountId: string; type: string; notes?: string }): Promise<Sale> {
     return collectSaleDueAction(id, input) as unknown as Promise<Sale>;
+  },
+
+  bulkCollectDue(input: { customerId: string; amount: number; accountId: string; type: string; notes?: string }): Promise<any> {
+    return bulkCollectSaleDueAction(input) as unknown as Promise<any>;
   },
 };

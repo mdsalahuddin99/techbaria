@@ -32,7 +32,7 @@ export function CategoriesTab({ initialCategories, filterOnlineOnly = false, onO
   const { data: categories = [] } = useQuery({
     queryKey: ["categories"],
     queryFn: async () => {
-      const res = await fetch("/api/categories");
+      const res = await fetch("/api/categories?flat=true");
       if (!res.ok) return [];
       const data = await res.json();
       return filterOnlineOnly ? data.filter((x: any) => x.isPublished) : data;
@@ -56,8 +56,8 @@ export function CategoriesTab({ initialCategories, filterOnlineOnly = false, onO
   // Mutations
   const toggleCategoryPublishMut = useMutation({
     mutationFn: async ({ id, isPublished }: { id: string; isPublished: boolean }) => {
-      const res = await fetch(`/api/categories?id=${id}`, {
-        method: "PUT",
+      const res = await fetch(`/api/categories/${id}`, {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isPublished }),
       });
@@ -73,7 +73,7 @@ export function CategoriesTab({ initialCategories, filterOnlineOnly = false, onO
 
   const deleteMut = useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(`/api/categories?id=${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/categories/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to delete");
       return res.json();
     },

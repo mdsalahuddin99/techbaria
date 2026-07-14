@@ -51,6 +51,13 @@ interface PaymentCollectorProps {
   quickPhone: string;
   onQuickNameChange: (v: string) => void;
   onQuickPhoneChange: (v: string) => void;
+
+  pendingMethod: PaymentMethod;
+  setPendingMethod: (m: PaymentMethod) => void;
+  pendingAmount: string;
+  setPendingAmount: (a: string) => void;
+  pendingAccountId: string | null;
+  setPendingAccountId: (a: string | null) => void;
 }
 
 export function PaymentCollector({
@@ -64,6 +71,12 @@ export function PaymentCollector({
   quickPhone,
   onQuickNameChange,
   onQuickPhoneChange,
+  pendingMethod,
+  setPendingMethod,
+  pendingAmount,
+  setPendingAmount,
+  pendingAccountId,
+  setPendingAccountId,
 }: PaymentCollectorProps) {
   const afterDiscount = round2(Math.max(0, subtotal));
   const paidNum = round2(payments.reduce((s, p) => s + p.amount, 0));
@@ -71,11 +84,6 @@ export function PaymentCollector({
 
   const customer = customers.find((c) => c.id === customerId) ?? null;
   const walletBalance = Math.max(0, Number(customer?.balance ?? 0));
-
-  // Pending tender state
-  const [pendingMethod, setPendingMethod] = useState<PaymentMethod>("Cash");
-  const [pendingAmount, setPendingAmount] = useState("");
-  const [pendingAccountId, setPendingAccountId] = useState<string | null>(null);
 
   const cashAccounts = useAccountsByType("cash");
   const bankAccounts = useAccountsByType("bank");
@@ -96,14 +104,22 @@ export function PaymentCollector({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingMethod, cashAccounts.length, bankAccounts.length, mobileAccounts.length]);
 
+  const walletUsed = payments.filter((p) => p.method === "Wallet").reduce((s, p) => s + p.amount, 0);
+  const remainingWalletBalance = Math.max(0, walletBalance - walletUsed);
+
   // Auto-fill pendingAmount with remaining due amount on mount or due change
   useEffect(() => {
     if (dueNum > 0) {
-      setPendingAmount((prev) => (prev === "" || prev === "0" ? dueNum.toString() : prev));
+      if (pendingMethod === "Wallet") {
+        setPendingAmount(Math.min(dueNum, remainingWalletBalance).toString());
+      } else {
+        setPendingAmount(pendingAmount === "" || pendingAmount === "0" ? dueNum.toString() : pendingAmount);
+      }
     } else {
       setPendingAmount("");
     }
-  }, [dueNum]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dueNum, pendingMethod, remainingWalletBalance]);
 
   // Auto-fix account IDs when accounts load
   useEffect(() => {
@@ -283,7 +299,7 @@ export function PaymentCollector({
                       <SelectItem value="Card">🏦 Bank</SelectItem>
                       <SelectItem value="Mobile Banking">📱 Mobile</SelectItem>
                       <SelectItem value="Wallet">
-                        💳 Wallet{walletBalance > 0 ? ` (${formatCurrency(walletBalance)})` : ""}
+                        💳 Wallet{walletBalance > 0 ? ` (${formatCurrency(remainingWalletBalance)})` : ""}
                       </SelectItem>
                     </SelectContent>
                   </Select>
@@ -335,6 +351,11 @@ export function PaymentCollector({
                     className="h-8 text-right border-border bg-card text-[11px] rounded-[4px]"
                     onKeyDown={(e) => { if (e.key === "Enter") commitTender(); }}
                   />
+                  {pendingMethod === "Wallet" && (
+                    <p className="text-[9px] text-slate-500 mt-1 leading-none">
+                      Rem: <span className="font-bold text-emerald-600">{formatCurrency(Math.max(0, remainingWalletBalance - (Number(pendingAmount) || 0)))}</span>
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-0.5">
                   <label className="text-[9px] font-bold text-transparent uppercase tracking-wider block select-none">.</label>

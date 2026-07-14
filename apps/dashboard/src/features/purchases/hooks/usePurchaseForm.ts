@@ -186,8 +186,9 @@ export function usePurchaseForm({
     setLines((prev) => prev.map((l) => (l.productId === productId ? { ...l, ...patch } : l)));
   };
 
-  const startLine = () => {
-    const product = products.find((p) => p.id === activeProductId);
+  const startLine = (overrideProductId?: string) => {
+    const pId = typeof overrideProductId === 'string' ? overrideProductId : activeProductId;
+    const product = products.find((p) => p.id === pId);
     if (!product) return toast.error("Pick a product");
     if (lines.some((l) => l.productId === product.id))
       return toast.error("Product already added");

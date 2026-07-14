@@ -119,7 +119,7 @@ export function StorageTab({ initialStorage, filterOnlineOnly = false, onOpenImp
     if (!editName.trim() || !editingItem) return toast.error("Name is required");
     const isDuplicate = allStorage.some((c: any) => c.id !== editingItem.id && c.name.toLowerCase() === editName.toLowerCase());
     if (isDuplicate) return toast.error("A storage with this name already exists");
-    await updateItemMut.mutateAsync({ type: "storage", id: editingItem.id, name: editName });
+    await updateItemMut.mutateAsync({ entity: "storage", id: editingItem.id, name: editName });
   };
 
   const handleExport = () => {
@@ -181,7 +181,7 @@ export function StorageTab({ initialStorage, filterOnlineOnly = false, onOpenImp
                 {!filterOnlineOnly && (
                   <>
                     <div className="flex items-center gap-1 sm:gap-2 px-1 sm:px-2 border-r mr-1">
-                      <Switch checked={item.isPublished} onCheckedChange={(val) => updateItemMut.mutate({ type: "storage", id: item.id, name: item.name, isPublished: val })} className="scale-75 sm:scale-100" />
+                      <Switch checked={item.isPublished} onCheckedChange={(val) => updateItemMut.mutate({ entity: "storage", id: item.id, name: item.name, isPublished: val })} className="scale-75 sm:scale-100" />
                       <span className="text-[10px] sm:text-xs text-muted-foreground hidden sm:inline">Web</span>
                     </div>
                     <Button size="icon" variant="ghost" className="h-7 w-7 sm:h-8 sm:w-8" onClick={() => {

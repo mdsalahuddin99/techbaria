@@ -15,6 +15,7 @@ import { useCustomerSales } from "@/features/sales/hooks";
 import { CustomerBalanceCard } from "@/features/customers/CustomerBalanceCard";
 import { CustomerLedger } from "@/features/customers/CustomerLedger";
 import { InvoiceDueCollectDialog } from "@/features/sales/InvoiceDueCollectDialog";
+import { BulkDueCollectDialog } from "@/features/customers/BulkDueCollectDialog";
 import Invoice from "@/components/Invoice";
 import { useSettings } from "@/features/settings/hooks";
 import { useActiveAccounts } from "@/features/accounts/hooks";
@@ -30,6 +31,7 @@ export function CustomerHistorySheet({ customer, onClose, onCollect }: CustomerH
   const [historySort, setHistorySort] = useState<"newest" | "oldest" | "total-desc" | "total-asc" | "due-desc" | "due-asc">("newest");
   const [invoicePreview, setInvoicePreview] = useState<Sale | null>(null);
   const [collectDueSale, setCollectDueSale] = useState<Sale | null>(null);
+  const [showBulkCollect, setShowBulkCollect] = useState(false);
   
   const settings = useSettings();
   const accounts = useActiveAccounts();
@@ -234,16 +236,24 @@ export function CustomerHistorySheet({ customer, onClose, onCollect }: CustomerH
 
               {/* Pinned Action Buttons */}
               <div className="shrink-0 p-4 border-t bg-background shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.03)] z-10">
-                <div className="flex gap-3">
+                <div className="flex gap-3 flex-wrap">
+                  {customer.due > 0 && (
+                    <Button 
+                      className="flex-1 min-w-[120px] bg-orange-600 text-white hover:bg-orange-700 h-10 shadow-sm"
+                      onClick={() => setShowBulkCollect(true)}
+                    >
+                      <Wallet className="h-4 w-4 mr-2" />Bulk Collect Due
+                    </Button>
+                  )}
                   <Button 
-                    className="flex-1 bg-emerald-600 text-white hover:bg-emerald-700 h-10 shadow-sm"
+                    className="flex-1 min-w-[120px] bg-emerald-600 text-white hover:bg-emerald-700 h-10 shadow-sm"
                     onClick={() => onCollect(customer)}
                   >
                     <Wallet className="h-4 w-4 mr-2" />Add Wallet Funds
                   </Button>
                   <Button 
                     variant="outline" 
-                    className="flex-1 h-10 bg-white"
+                    className="flex-1 min-w-[100px] h-10 bg-white"
                     onClick={onClose}
                   >
                     <Receipt className="h-4 w-4 mr-2 text-slate-500" />Close
@@ -261,6 +271,19 @@ export function CustomerHistorySheet({ customer, onClose, onCollect }: CustomerH
         sale={collectDueSale}
         accounts={accounts}
       />
+
+      {customer && (
+        <BulkDueCollectDialog
+          open={showBulkCollect}
+          onOpenChange={setShowBulkCollect}
+          customer={{
+            id: customer.id,
+            name: customer.name,
+            due: customer.due ?? 0,
+            balance: customer.balance ?? 0,
+          }}
+        />
+      )}
 
       <Invoice
         sale={invoicePreview}

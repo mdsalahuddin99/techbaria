@@ -126,7 +126,7 @@ export function SeriesTab({ initialSeries, filterOnlineOnly = false, models, onO
     if (!editName.trim() || !editingItem) return toast.error("Name is required");
     const isDuplicate = allSeries.some((s: any) => s.id !== editingItem.id && s.name.toLowerCase() === editName.toLowerCase());
     if (isDuplicate) return toast.error("A series with this name already exists");
-    await updateItemMut.mutateAsync({ type: "series", id: editingItem.id, name: editName, models: editModels });
+    await updateItemMut.mutateAsync({ entity: "series", id: editingItem.id, name: editName, models: editModels });
   };
 
   const handleExport = () => {
@@ -207,7 +207,7 @@ export function SeriesTab({ initialSeries, filterOnlineOnly = false, models, onO
                       <div className="flex items-center gap-1 sm:gap-2 px-1 sm:px-2 border-r mr-1">
                         <Switch
                           checked={series.isPublished}
-                          onCheckedChange={(val) => updateItemMut.mutate({ type: "series", id: series.id, name: series.name, isPublished: val })}
+                          onCheckedChange={(val) => updateItemMut.mutate({ entity: "series", id: series.id, name: series.name, isPublished: val })}
                           className="scale-75 sm:scale-100"
                         />
                         <span className="text-[10px] sm:text-xs text-muted-foreground hidden sm:inline">Web</span>

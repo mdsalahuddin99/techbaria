@@ -289,7 +289,7 @@ export function PurchaseFormDialog({
       onOpenChange(false);
       onSuccess();
     },
-    products: Object.values(localProducts),
+    products: [ ...(productsData?.items || []), ...Object.values(localProducts) ],
     accounts,
     defaultAccountId,
     selectedWarehouseId,
@@ -432,12 +432,16 @@ export function PurchaseFormDialog({
                           <AutoSuggest
                             value={form.activeProductId}
                             onValueChange={(val) => {
-                              form.setActiveProductId(val);
                               if (val) {
                                 const raw = allProducts.find((x: any) => x.id === val);
                                 if (raw) {
-                                  setLocalProducts((prev) => ({ ...prev, [val]: raw }));
+                                  if (!localProducts[val]) {
+                                    setLocalProducts((prev) => ({ ...prev, [val]: raw }));
+                                  }
+                                  form.startLine(val);
                                 }
+                              } else {
+                                form.setActiveProductId("");
                               }
                             }}
                             options={productOptions}
@@ -455,7 +459,7 @@ export function PurchaseFormDialog({
                   </div>
                 </div>
                 <Button
-                  onClick={form.startLine}
+                  onClick={() => form.startLine()}
                   disabled={!form.activeProductId || form.lines.some((l) => l.productId === form.activeProductId)}
                 >
                   <Plus className="h-4 w-4 mr-1" />{form.lines.length === 0 ? "Add" : "Add More"}

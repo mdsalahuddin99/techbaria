@@ -12,9 +12,7 @@ export const GET = apiHandler(async (ctx: Ctx, req: Request) => {
   const category = url.searchParams.get("category") || "all";
   const limit = parseInt(url.searchParams.get("limit") || "50", 10);
 
-  const where: Prisma.ProductWhereInput = {
-    isPublished: true,
-  };
+  const where: Prisma.ProductWhereInput = {};
 
   if (category !== "all") {
     where.category = { name: category };
