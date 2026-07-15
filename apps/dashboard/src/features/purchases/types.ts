@@ -42,6 +42,7 @@ export interface PurchaseOrder {
   supplierId: string;
   supplierName: string;
   supplierAdvance?: number;
+  extraCost?: number;
   items: PurchaseItem[];
   subtotal: number;
   discount: number;

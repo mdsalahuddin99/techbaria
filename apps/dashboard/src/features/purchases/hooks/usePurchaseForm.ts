@@ -12,7 +12,6 @@ export interface DraftLine {
   productId: string;
   name: string;
   baseCost: number;
-  extraCost: number;
   saleMode: "amount" | "percent";
   saleInput: string;
   warrantyStartDate?: string;
@@ -35,7 +34,7 @@ export type Tender = {
 export const methodFromAccountType = (t?: AccountType): PaymentMethod =>
   t === "bank" ? "Card" : t === "mobile_banking" ? "Mobile Banking" : "Cash";
 
-export const lineCost = (l: DraftLine) => l.baseCost + l.extraCost;
+export const lineCost = (l: DraftLine) => l.baseCost;
 
 export const lineSale = (l: DraftLine, fallback = 0) => {
   const total = lineCost(l);
@@ -74,6 +73,7 @@ export function usePurchaseForm({
   const [tenders, setTenders] = useState<Tender[]>([]);
   const [saving, setSaving] = useState(false);
   const [editLoading, setEditLoading] = useState(false);
+  const [extraCost, setExtraCost] = useState<number>(0);
 
   const scanRef = useRef<HTMLInputElement>(null);
 
@@ -92,12 +92,12 @@ export function usePurchaseForm({
         return;
       }
       setSupplierId(po.supplierId);
+      setExtraCost(Number(po.extraCost) ?? 0);
       setReference(po.note ?? "");
       const fetchedLines = po.items.map((i) => ({
         productId: i.productId,
         name: i.name,
-        baseCost: i.costPrice - (i.extraCost ?? 0),
-        extraCost: i.extraCost ?? 0,
+        baseCost: i.costPrice,
         saleMode: "amount" as const,
         saleInput: i.salePrice ? String(Math.max(0, i.salePrice - i.costPrice)) : "",
         warrantyStartDate: i.warrantyStartDate ?? undefined,
@@ -136,6 +136,7 @@ export function usePurchaseForm({
         const parsed = JSON.parse(saved);
         if (parsed.supplierId) setSupplierId(parsed.supplierId);
         if (parsed.reference) setReference(parsed.reference);
+        if (parsed.extraCost) setExtraCost(parsed.extraCost);
         if (parsed.lines?.length) {
           setLines(parsed.lines);
           setCollapsedSet(new Set(parsed.lines.map((l: DraftLine) => l.productId)));
@@ -151,8 +152,8 @@ export function usePurchaseForm({
   // Save Draft on state changes
   useEffect(() => {
     if (editId || open === false) return;
-    const draft = { supplierId, reference, lines, tenders };
-    if (supplierId || reference || lines.length > 0 || tenders.length > 0) {
+    const draft = { supplierId, reference, extraCost, lines, tenders };
+    if (supplierId || reference || extraCost > 0 || lines.length > 0 || tenders.length > 0) {
       try { localStorage.setItem(DRAFT_KEY, JSON.stringify(draft)); } catch (e) { /* ignore */ }
     } else {
       try { localStorage.removeItem(DRAFT_KEY); } catch (e) { /* ignore */ }
@@ -173,6 +174,7 @@ export function usePurchaseForm({
     setActiveScanId("");
     setScanInput("");
     setReference("");
+    setExtraCost(0);
     setTenders([]);
     setCollapsedSet(new Set());
     if (clearDraft && !editId) {
@@ -198,12 +200,11 @@ export function usePurchaseForm({
         productId: product.id,
         name: productDisplayName(product),
         baseCost: 0,
-        extraCost: 0,
         saleMode: "amount",
         saleInput: "",
         warrantyStartDate: undefined,
         warrantyMonths: undefined,
-        expectedDate: undefined,
+        expectedDate: new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0],
         serials: [],
         trackSerials: product.trackSerials !== false,
         manualQty: 1,
@@ -378,7 +379,6 @@ export function usePurchaseForm({
           name: l.name,
           qty: lineUnits(l),
           cost: lineCost(l),
-          extraCost: l.extraCost || undefined,
           salePrice: lineSale(l, (products.find((p) => p.id === l.productId)?.price) || 0),
           serials: l.trackSerials ? l.serials : undefined,
           warrantyStartDate: warrantyStart,
@@ -389,6 +389,7 @@ export function usePurchaseForm({
       if (editId) {
         await updatePurchase(editId, {
           supplierId,
+          extraCost,
           items: itemsPayload,
           notes: reference || undefined,
           expectedDate: lines[0]?.expectedDate,
@@ -421,12 +422,12 @@ export function usePurchaseForm({
       const po = await createPurchase({
         supplierId,
         warehouseId: selectedWarehouseId || undefined,
+        extraCost,
         items: itemsPayload.map((i) => ({
           productId: i.productId,
           name: i.name,
           qty: i.qty,
           costPrice: i.cost,
-          extraCost: i.extraCost,
           salePrice: i.salePrice,
           serials: i.serials,
           warrantyStartDate: i.warrantyStartDate,
@@ -495,6 +496,7 @@ export function usePurchaseForm({
     cameraOpen, setCameraOpen,
     collapsedSet, setCollapsedSet,
     reference, setReference,
+    extraCost, setExtraCost,
     tenders, setTenders, addTender, updateTender, removeTender, validTenders, totalPaid,
     saving, editLoading,
     submit, lineUnits, subtotal, saleTotal, reset,

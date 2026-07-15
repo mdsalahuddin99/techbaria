@@ -295,6 +295,7 @@ export function useCreateSale() {
       const code = rawCode.trim();
       const qs = new URLSearchParams();
       qs.set("q", code);
+      qs.set("exact", "true");
       if (selectedWarehouseId) qs.set("warehouseId", selectedWarehouseId);
       
       try {

@@ -97,7 +97,7 @@ export default function StorefrontBlock() {
 
   return (
     <section className="rounded-2xl border border-border/70 bg-card overflow-hidden">
-      <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-border/60 bg-gradient-to-r from-primary/[0.04] to-transparent">
+      <div className="flex items-center justify-between px-4 pt-2.5 pb-2 border-b border-border/60 bg-gradient-to-r from-primary/[0.04] to-transparent">
         <div className="flex items-center gap-2.5">
           <div className="h-8 w-8 rounded-lg bg-primary hover:bg-primary/90 grid place-items-center text-primary-foreground">
             <ShoppingBag className="h-4 w-4" />
@@ -110,44 +110,43 @@ export default function StorefrontBlock() {
         <Link href="/dashboard/online-orders" className="text-[11px] text-primary hover:underline inline-flex items-center gap-0.5">Manage orders <ArrowUpRight className="h-3 w-3" /></Link>
       </div>
 
-      <div className="p-4 md:p-5 grid gap-4 md:grid-cols-5">
+      <div className="p-2 md:p-3 grid gap-2.5 md:grid-cols-5">
         {/* KPI tiles */}
-        <div className="md:col-span-3 grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+        <div className="md:col-span-3 flex flex-wrap gap-2">
           {tiles.map((t) => (
             <div
               key={t.label}
-              className={cn(
-                "rounded-xl border border-border/60 bg-background/60 p-3 hover:shadow-sm transition",
-                t.wide && "sm:col-span-2",
-              )}
+              className="rounded-lg border border-border/60 bg-background/60 p-2 hover:shadow-sm transition flex items-center gap-2.5 flex-1 min-w-[140px]"
             >
-              <div className="flex items-center justify-between">
-                <div className={cn("h-7 w-7 rounded-md grid place-items-center", t.tone)}>
-                  <t.icon className="h-3.5 w-3.5" />
+              <div className={cn("h-7 w-7 rounded flex-shrink-0 grid place-items-center", t.tone)}>
+                <t.icon className="h-3.5 w-3.5" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[9px] font-medium uppercase tracking-wider text-muted-foreground truncate">
+                  {t.label}
+                </p>
+                <div className="flex items-baseline gap-1.5 mt-0.5">
+                  <p className="text-sm font-bold tracking-tight tabular-nums leading-none">
+                    {t.value}
+                  </p>
+                  {t.sub && (
+                    <p className="text-[9px] text-muted-foreground leading-none">{t.sub}</p>
+                  )}
                 </div>
               </div>
-              <p className="text-[10.5px] font-medium uppercase tracking-wider text-muted-foreground mt-2">
-                {t.label}
-              </p>
-              <p className="text-lg font-bold tracking-tight tabular-nums mt-0.5">
-                {t.value}
-              </p>
-              {t.sub && (
-                <p className="text-[10.5px] text-muted-foreground mt-0.5">{t.sub}</p>
-              )}
             </div>
           ))}
         </div>
 
         {/* Sparkline + recent */}
-        <div className="md:col-span-2 rounded-xl border border-border/60 bg-background/60 p-3 flex flex-col">
+        <div className="md:col-span-2 rounded-lg border border-border/60 bg-background/60 p-2 flex flex-col">
           <div className="flex items-center justify-between">
-            <p className="text-[10.5px] font-medium uppercase tracking-wider text-muted-foreground">
+            <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
               Last 7 days
             </p>
             <Badge variant="secondary" className="text-[9px]">7D</Badge>
           </div>
-          <div className="hidden h-14 -mx-1 md:block">
+          <div className="hidden h-10 -mx-1 md:block">
             <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
               <LineChart data={stats.spark}>
                 <Line
@@ -160,9 +159,9 @@ export default function StorefrontBlock() {
               </LineChart>
             </ResponsiveContainer>
           </div>
-          <div className="mt-1 border-t border-border/50 pt-2 space-y-1.5 flex-1">
+          <div className="mt-1 border-t border-border/50 pt-1.5 space-y-1 flex-1">
             {recent.length === 0 ? (
-              <p className="text-[11px] text-muted-foreground text-center py-3">
+              <p className="text-[10px] text-muted-foreground text-center py-2">
                 No online orders yet.
               </p>
             ) : (

@@ -26,15 +26,10 @@ export async function listBrands(ctx: Ctx, subcategory?: string, search?: string
     whereClause.name = { contains: search, mode: "insensitive" };
   }
 
-  // If no filters are provided, default to take 5 for preview performance.
-  // Otherwise, take 20 to return enough search/filtered results.
-  const hasFilter = subcategory || search;
-  
   const items = await prisma.brand.findMany({
     where: whereClause,
     orderBy: { name: "asc" },
     include: { subcategories: true },
-    take: hasFilter ? 20 : 5,
   });
   return items.map((b) => ({
     id: b.id,
@@ -123,13 +118,10 @@ export async function listProductNames(ctx: Ctx, brandId?: string, search?: stri
     whereClause.name = { contains: search, mode: "insensitive" };
   }
 
-  const hasFilter = brandId || search;
-
   const items = await prisma.productType.findMany({
     where: whereClause,
     orderBy: { name: "asc" },
     include: { brands: true },
-    take: hasFilter ? 20 : 5,
   });
   return items.map((p) => ({
     id: p.id,
@@ -217,13 +209,10 @@ export async function listModels(ctx: Ctx, productTypeId?: string, search?: stri
     whereClause.name = { contains: search, mode: "insensitive" };
   }
 
-  const hasFilter = productTypeId || search;
-
   const items = await prisma.model.findMany({
     where: whereClause,
     orderBy: { name: "asc" },
     include: { productTypes: true },
-    take: hasFilter ? 20 : 5,
   });
   return items.map((m) => ({
     id: m.id,
@@ -311,13 +300,10 @@ export async function listSeries(ctx: Ctx, modelId?: string, search?: string): P
     whereClause.name = { contains: search, mode: "insensitive" };
   }
 
-  const hasFilter = modelId || search;
-
   const items = await prisma.series.findMany({
     where: whereClause,
     orderBy: { name: "asc" },
     include: { models: true },
-    take: hasFilter ? 20 : 5,
   });
   return items.map((s) => ({
     id: s.id,

@@ -200,6 +200,9 @@ export async function create(ctx: Ctx, input: SaleCreateInput) {
       await salesAccounting.applyWalletTenders(tx, ctx, sale.id, input.customerId, input.tenders, false);
     }
 
+    // Apply standard tenders (Cash, Bank, etc.) to update financial account balances
+    await salesAccounting.applySaleTenders(tx, ctx, sale.id, input.tenders);
+
     // Assign serials + sync stock (if tracked)
     await salesSerial.assignSerials(
       tx,

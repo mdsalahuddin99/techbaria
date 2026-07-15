@@ -22,6 +22,7 @@ interface InventoryProductMobileListProps {
   onDelete: (productId: string) => void;
   onPrintLabel?: (product: Product) => void;
   onQuickEditPrice?: (product: Product) => void;
+  isOnlineInventory?: boolean;
 }
 
 /** Mobile card list of inventory rows. */
@@ -32,6 +33,7 @@ export function InventoryProductMobileList({
   onDelete,
   onPrintLabel,
   onQuickEditPrice,
+  isOnlineInventory = false,
 }: InventoryProductMobileListProps) {
   const locale = useLocale();
   const updateProduct = useUpdateProduct();
@@ -128,19 +130,23 @@ export function InventoryProductMobileList({
               </div>
             </div>
             <div className="flex gap-1.5 mt-2.5">
-              <Button size="sm" variant="outline" className="flex-1 h-9" onClick={() => updateProduct.mutate({ id: p.id, patch: { active: !p.active } })}>
-                {p.active ? <EyeOff className="h-3.5 w-3.5 mr-1" /> : <Eye className="h-3.5 w-3.5 mr-1" />}
-                {p.active ? "Web Off" : "Web On"}
-              </Button>
-              {onQuickEditPrice && (
-                <Button size="sm" variant="outline" className="flex-1 h-9" onClick={() => onQuickEditPrice(p)}>
-                  <Tag className="h-3.5 w-3.5 mr-1" /> Price
-                </Button>
+              {isOnlineInventory && (
+                <>
+                  <Button size="sm" variant="outline" className="flex-1 h-9" onClick={() => updateProduct.mutate({ id: p.id, patch: { active: !p.active } })}>
+                    {p.active ? <EyeOff className="h-3.5 w-3.5 mr-1" /> : <Eye className="h-3.5 w-3.5 mr-1" />}
+                    {p.active ? "Web Off" : "Web On"}
+                  </Button>
+                  {onQuickEditPrice && (
+                    <Button size="sm" variant="outline" className="flex-1 h-9" onClick={() => onQuickEditPrice(p)}>
+                      <Tag className="h-3.5 w-3.5 mr-1" /> Price
+                    </Button>
+                  )}
+                  <Button size="sm" variant="outline" className="flex-1 h-9" onClick={() => updateProduct.mutate({ id: p.id, patch: { isTrending: !p.isTrending } })}>
+                    <Sparkles className={cn("h-3.5 w-3.5 mr-1", p.isTrending && "text-amber-500")} />
+                    {p.isTrending ? "Untrend" : "Trend"}
+                  </Button>
+                </>
               )}
-              <Button size="sm" variant="outline" className="flex-1 h-9" onClick={() => updateProduct.mutate({ id: p.id, patch: { isTrending: !p.isTrending } })}>
-                <Sparkles className={cn("h-3.5 w-3.5 mr-1", p.isTrending && "text-amber-500")} />
-                {p.isTrending ? "Untrend" : "Trend"}
-              </Button>
               {needsReorder && p.type !== "bundle" && (
                 <Button asChild size="icon" variant="outline" className="h-9 w-9 shrink-0 text-primary border-primary/40" title="Create PO">
                   <Link

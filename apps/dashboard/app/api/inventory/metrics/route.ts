@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { NextResponse } from "next/server";
 import { reportsService } from "@/server/services/reportsService";
 import { buildCtx } from "@/server/lib/ctx";
@@ -13,13 +15,14 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const from = searchParams.get("from");
     const to = searchParams.get("to");
+    const onlineOnly = searchParams.get("onlineOnly") === "true";
 
     const ctx = buildCtx({
       id: (session.user as any).id,
       role: (session.user as any).role,
     });
 
-    const metrics = await reportsService.getInventoryMetrics(ctx, from || undefined, to || undefined);
+    const metrics = await reportsService.getInventoryMetrics(ctx, from || undefined, to || undefined, onlineOnly);
     return NextResponse.json(metrics);
   } catch (error: any) {
     console.error("Inventory metrics error:", error);

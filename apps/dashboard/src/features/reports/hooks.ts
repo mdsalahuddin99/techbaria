@@ -78,16 +78,17 @@ export interface InventoryMetrics {
 }
 
 export function useInventoryMetricsQuery(
-  { from, to }: { from?: string; to?: string } = {},
+  { from, to, onlineOnly }: { from?: string; to?: string; onlineOnly?: boolean } = {},
   initialData?: any
 ) {
   const { session, status } = useAuth();
   return useQuery({
-    queryKey: reportKeys.inventoryMetrics(from, to),
+    queryKey: [...reportKeys.inventoryMetrics(from, to), onlineOnly],
     queryFn: async (): Promise<InventoryMetrics> => {
       const params = new URLSearchParams();
       if (from) params.append("from", from);
       if (to) params.append("to", to);
+      if (onlineOnly) params.append("onlineOnly", "true");
       const res = await fetch(`/api/inventory/metrics?${params.toString()}`);
       if (!res.ok) throw new Error("Failed to fetch inventory metrics");
       return res.json();

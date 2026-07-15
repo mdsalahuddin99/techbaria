@@ -4,6 +4,7 @@ export interface PurchaseCreateInput {
   invoiceNo?: string;
   status?: string;
   discount?: number;
+  extraCost?: number;
   notes?: string;
   expectedDate?: string;
   items: Array<{
@@ -11,7 +12,6 @@ export interface PurchaseCreateInput {
     name?: string;
     qty: number;
     cost: number;
-    extraCost?: number;
     salePrice?: number;
     serials?: string[];
     warrantyStartDate?: string;

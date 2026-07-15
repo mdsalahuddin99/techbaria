@@ -13,7 +13,8 @@ import type { CategoryCreateInput } from "@/server/services/categoriesService";
 export const GET = apiHandler(async (ctx: Ctx, req: Request) => {
   const url = new URL(req.url);
   if (url.searchParams.get("flat") === "true") {
-    return categoriesService.listFlat(ctx);
+    const isOnline = url.searchParams.get("online") === "true";
+    return categoriesService.listFlat(ctx, { hasPublishedProducts: isOnline });
   }
   return categoriesService.list(ctx);
 });

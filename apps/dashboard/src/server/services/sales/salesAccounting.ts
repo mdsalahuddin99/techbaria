@@ -343,5 +343,41 @@ export const salesAccounting = {
         loyaltyPoints: { increment: pointsChange }
       }
     });
+  },
+
+  /** Add funds to financial accounts when a sale is paid with cash/bank. */
+  async applySaleTenders(
+    tx: any,
+    ctx: Ctx,
+    saleId: string,
+    tenders: Array<{ type: string; amount: any; accountId?: string | null }>
+  ): Promise<void> {
+    const validTenders = tenders.filter(
+      (t) => t.accountId && t.type !== "Due" && t.type !== "Wallet" && t.type !== "DUE" && t.type !== "WALLET"
+    );
+    for (const t of validTenders) {
+      await tx.financialAccount.update({
+        where: { id: t.accountId },
+        data: { balance: { increment: Number(t.amount) } },
+      });
+    }
+  },
+
+  /** Revert funds from financial accounts when a sale is voided/updated/deleted. */
+  async revertSaleTenders(
+    tx: any,
+    ctx: Ctx,
+    saleId: string,
+    tenders: Array<{ type: string; amount: any; accountId?: string | null }>
+  ): Promise<void> {
+    const validTenders = tenders.filter(
+      (t) => t.accountId && t.type !== "Due" && t.type !== "Wallet" && t.type !== "DUE" && t.type !== "WALLET"
+    );
+    for (const t of validTenders) {
+      await tx.financialAccount.update({
+        where: { id: t.accountId },
+        data: { balance: { decrement: Number(t.amount) } },
+      });
+    }
   }
 };

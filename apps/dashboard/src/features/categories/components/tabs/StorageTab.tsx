@@ -41,9 +41,14 @@ export function StorageTab({ initialStorage, filterOnlineOnly = false, onOpenImp
     initialData: initialStorage,
   });
 
-  const filteredStorage = allStorage.filter((c: any) =>
+  let filteredStorage = allStorage.filter((c: any) =>
     c.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  if (!searchQuery.trim()) {
+    filteredStorage = [...filteredStorage].sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()).slice(0, 5);
+  }
+
 
   // States
   const [createOpen, setCreateOpen] = useState(false);

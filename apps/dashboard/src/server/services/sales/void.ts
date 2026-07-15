@@ -73,6 +73,9 @@ export async function voidSale(ctx: Ctx, id: string, reason: string) {
       await salesAccounting.recordCustomerSpent(tx, sale.customerId, Number(sale.total), true);
     }
 
+    // Revert financial account balances (money out)
+    await salesAccounting.revertSaleTenders(tx, ctx, sale.id, sale.tenders);
+
     const updatedSale = await tx.sale.update({
       where: { id },
       data: { status: "VOIDED", notes: `VOIDED: ${reason}` },

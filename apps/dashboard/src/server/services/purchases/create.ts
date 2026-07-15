@@ -84,6 +84,7 @@ export async function create(ctx: Ctx, input: PurchaseCreateInput) {
         invoiceNo: input.invoiceNo || undefined,
         subtotal,
         discount: input.discount ?? 0,
+        extraCost: input.extraCost ?? 0,
         total,
         paid,
         due,
@@ -96,7 +97,6 @@ export async function create(ctx: Ctx, input: PurchaseCreateInput) {
             productId: item.productId,
             qty: item.qty,
             cost: item.cost,
-            extraCost: item.extraCost,
             name: item.name,
             salePrice: item.salePrice,
             serials: item.serials ?? [],
@@ -111,6 +111,13 @@ export async function create(ctx: Ctx, input: PurchaseCreateInput) {
             accountId: t.accountId === "WALLET" ? undefined : t.accountId,
             ref: t.ref,
           })),
+        } : undefined,
+        expense: (input.extraCost ?? 0) > 0 ? {
+          create: {
+            category: "Purchase Extra Cost",
+            amount: input.extraCost!,
+            notes: `Extra cost for Purchase`
+          }
         } : undefined,
       },
       include: { items: true, tenders: true, supplier: true },

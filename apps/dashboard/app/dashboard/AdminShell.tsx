@@ -34,10 +34,14 @@ import {
   ShieldAlert,
   FileText,
   UserPlus,
+  List,
+  RefreshCw,
+  Plus,
 } from "lucide-react";
 import type { UserRole } from "@/features/auth/types";
 import { cn } from "@/shared/lib/utils";
 import { signOut } from "next-auth/react";
+import { toast } from "sonner";
 import { useGlobalBarcodeScanner } from "@/shared/hooks/use-global-barcode-scanner";
 import OfflineIndicator from "@/components/OfflineIndicator";
 import { AdminWatchers } from "./AdminWatchers";
@@ -112,7 +116,10 @@ const navGroups: NavGroup[] = [
     icon: FolderTree,
     permissions: ["INVENTORY", "POS"],
     items: [
+      { to: "/dashboard/categories?action=new", labelKey: "nav.newCategory" as TranslationKey, icon: FolderTree },
       { to: "/dashboard/categories", labelKey: "nav.categories", icon: FolderTree },
+      { to: "/dashboard/item-list?action=new", labelKey: "nav.newItemList" as TranslationKey, icon: Plus },
+      { to: "/dashboard/item-list", labelKey: "nav.itemList", icon: List },
     ],
   },
   {
@@ -141,6 +148,7 @@ const navGroups: NavGroup[] = [
     items: [
       { to: "/dashboard/online-orders", labelKey: "nav.onlineOrders", icon: ShoppingBag },
       { to: "/dashboard/online-categories", labelKey: "nav.onlineCategories" as TranslationKey, icon: FolderTree },
+      { to: "/dashboard/menu-management", labelKey: "nav.menuManagement" as TranslationKey, icon: List },
       { to: "/dashboard/online-inventory", labelKey: "nav.inventory" as TranslationKey, icon: Boxes },
       { to: "/dashboard/storefront-settings", labelKey: "nav.storefrontSettings" as TranslationKey, icon: LayoutTemplate },
       { to: "/dashboard/online-orders/customers", labelKey: "nav.storefrontCustomers", icon: Users },
@@ -175,7 +183,7 @@ const navGroups: NavGroup[] = [
 ];
 
 function getThemeClass(pathname: string) {
-  if (pathname.includes("/dashboard/products") || pathname.includes("/dashboard/categories")) {
+  if (pathname.includes("/dashboard/products") || pathname.includes("/dashboard/categories") || pathname.includes("/dashboard/item-list")) {
     return "theme-catalog";
   }
   if (pathname.includes("/dashboard/inventory")) {
@@ -438,7 +446,7 @@ export function AdminShell({
       <div className="flex-1 flex flex-col min-w-0 relative z-10 print:block">
         <header className="h-14 border-b border-border/60 bg-card md:bg-card/80 md:backdrop-blur-xl md:sticky md:top-0 z-30 flex items-center justify-between gap-3 px-3 md:px-4 print:hidden">
           {/* Global command bar — desktop */}
-          <div className="hidden lg:flex flex-1 max-w-md">
+          <div className="hidden lg:flex flex-1 max-w-[280px] xl:max-w-sm">
             <button
               type="button"
               onClick={() => {
@@ -456,6 +464,81 @@ export function AdminShell({
 
           {/* Right actions */}
           <div className="flex items-center gap-1.5">
+            {/* Quick Add Icons - Desktop Only */}
+            <div className="hidden lg:flex items-center gap-1 mr-1">
+              <Link
+                href="/dashboard/products?action=new"
+                title="New Product"
+                className="grid place-items-center h-8 w-8 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition"
+              >
+                <PackagePlus className="h-4 w-4" />
+              </Link>
+              <Link
+                href="/dashboard/purchases?action=new"
+                title="New Purchase"
+                className="grid place-items-center h-8 w-8 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition"
+              >
+                <ShoppingCart className="h-4 w-4" />
+              </Link>
+              <Link
+                href="/dashboard/customers?action=new"
+                title="New Customer"
+                className="grid place-items-center h-8 w-8 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition"
+              >
+                <UserPlus className="h-4 w-4" />
+              </Link>
+              <Link
+                href="/dashboard/suppliers?action=new"
+                title="New Supplier"
+                className="grid place-items-center h-8 w-8 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition"
+              >
+                <Truck className="h-4 w-4" />
+              </Link>
+              <Link
+                href="/dashboard/expenses?action=new"
+                title="New Expense"
+                className="grid place-items-center h-8 w-8 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition"
+              >
+                <Banknote className="h-4 w-4" />
+              </Link>
+              <Link
+                href="/dashboard/inventory"
+                title="Inventory"
+                className="grid place-items-center h-8 w-8 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition"
+              >
+                <Boxes className="h-4 w-4" />
+              </Link>
+              <Link
+                href="/dashboard/reports"
+                title="Reports"
+                className="grid place-items-center h-8 w-8 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition"
+              >
+                <BarChart3 className="h-4 w-4" />
+              </Link>
+              <div className="h-5 w-px bg-border/70 mx-1" />
+            </div>
+
+            <button
+              onClick={async () => {
+                const loadingToast = toast.loading("Clearing cache...");
+                try {
+                  const res = await fetch("/api/cache/clear", { method: "POST" });
+                  if (res.ok) {
+                    toast.success("Cache cleared! Reloading...", { id: loadingToast });
+                    setTimeout(() => window.location.reload(), 1000);
+                  } else {
+                    toast.error("Failed to clear cache", { id: loadingToast });
+                  }
+                } catch (e) {
+                  toast.error("Failed to clear cache", { id: loadingToast });
+                }
+              }}
+              title="Clear Cache & Hard Reload"
+              className="hidden sm:grid place-items-center h-9 w-9 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition"
+            >
+              <RefreshCw className="h-4 w-4" />
+            </button>
+
             <LanguageToggle iconOnly />
             <Link
               href="/dashboard/notifications"

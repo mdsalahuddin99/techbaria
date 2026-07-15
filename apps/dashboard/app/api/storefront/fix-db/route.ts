@@ -21,9 +21,10 @@ export async function GET(req: Request) {
     });
 
     for (const purchase of purchases) {
-      const calculatedSubtotal = math.sumBy(purchase.items, (item) =>
-        math.add(math.mul(item.qty, item.cost), Number(item.extraCost || 0))
+      const itemsCost = math.sumBy(purchase.items, (item) =>
+        math.mul(item.qty, item.cost)
       );
+      const calculatedSubtotal = math.add(itemsCost, Number(purchase.extraCost || 0));
 
       const expectedTotal = math.sub(calculatedSubtotal, purchase.discount);
       const expectedDue = math.sub(expectedTotal, purchase.paid);

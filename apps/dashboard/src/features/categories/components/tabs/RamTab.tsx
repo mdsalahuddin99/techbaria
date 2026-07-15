@@ -41,9 +41,14 @@ export function RamTab({ initialRam, filterOnlineOnly = false, onOpenImport }: R
     initialData: initialRam,
   });
 
-  const filteredRam = allRam.filter((c: any) =>
+  let filteredRam = allRam.filter((c: any) =>
     c.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  if (!searchQuery.trim()) {
+    filteredRam = [...filteredRam].sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()).slice(0, 5);
+  }
+
 
   // States
   const [createOpen, setCreateOpen] = useState(false);

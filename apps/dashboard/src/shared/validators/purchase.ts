@@ -7,7 +7,6 @@ export const purchaseItemSchema = z.object({
   cost: z.number().min(0).optional(),
   /** Frontend sends this field — alias for `cost` */
   costPrice: z.number({ required_error: "Cost is required" }).min(0).optional(),
-  extraCost: z.number().min(0).default(0),
   salePrice: z.number().min(0).optional(),
   serials: z.array(z.string()).optional(),
   warrantyStartDate: z.string().optional(),
@@ -17,7 +16,6 @@ export const purchaseItemSchema = z.object({
   name: item.name,
   qty: item.qty,
   cost: item.cost ?? item.costPrice ?? 0,
-  extraCost: item.extraCost,
   salePrice: item.salePrice,
   serials: item.serials,
   warrantyStartDate: item.warrantyStartDate,
@@ -35,6 +33,7 @@ export const purchaseCreateSchema = z.object({
   supplierId: z.string().optional(),
   invoiceNo: z.string().optional(),
   discount: z.number().min(0).optional(),
+  extraCost: z.number().min(0).optional(),
   notes: z.string().optional(),
   /** Frontend sends this field — alias for `notes` */
   note: z.string().optional(),
@@ -60,6 +59,7 @@ export const purchaseCreateSchema = z.object({
     supplierId: input.supplierId,
     invoiceNo: input.invoiceNo,
     discount: input.discount,
+    extraCost: input.extraCost,
     notes: input.note ?? input.notes,
     status: input.status,
     expectedDate: input.expectedDate,

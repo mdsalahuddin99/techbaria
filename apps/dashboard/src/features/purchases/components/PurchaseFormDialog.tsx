@@ -332,7 +332,7 @@ export function PurchaseFormDialog({
                 saleInput: "",
                 warrantyStartDate: undefined,
                 warrantyMonths: undefined,
-                expectedDate: undefined,
+                expectedDate: new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0],
                 serials: [],
                 trackSerials: product.trackSerials !== false,
                 manualQty: initialQty || 1,
@@ -506,14 +506,10 @@ export function PurchaseFormDialog({
                       </div>
 
                       {!isCollapsed && (<>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                         <div>
                           <label className="text-xs text-muted-foreground">Cost ৳ *</label>
                           <Input type="number" value={l.baseCost === 0 ? "" : l.baseCost} onChange={(e) => form.updateLine(l.productId, { baseCost: Number(e.target.value) || 0 })} />
-                        </div>
-                        <div>
-                          <label className="text-xs text-muted-foreground">Extra Cost ৳ *</label>
-                          <Input type="number" placeholder="0" value={l.extraCost === 0 ? "" : l.extraCost} onChange={(e) => form.updateLine(l.productId, { extraCost: Number(e.target.value) || 0 })} />
                         </div>
                         <div>
                           <div className="flex items-center justify-between mb-1">
@@ -620,10 +616,14 @@ export function PurchaseFormDialog({
 
 
 
-            <div className="grid grid-cols-1 sm:grid-cols-1 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="text-sm font-medium mb-1.5 block">Transaction Reference</label>
                 <Input value={form.reference} onChange={(e) => form.setReference(e.target.value)} placeholder="e.g. TXN-12345 / Cheque #" />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1.5 block">Extra Cost ৳</label>
+                <Input type="number" min={0} placeholder="e.g. transport, labor" value={form.extraCost === 0 ? "" : form.extraCost} onChange={(e) => form.setExtraCost(Number(e.target.value) || 0)} />
               </div>
             </div>
 
@@ -758,7 +758,10 @@ export function PurchaseFormDialog({
                   <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5 text-slate-650">
                     <div>
                       <span className="text-slate-500 font-semibold mr-1">মোট কস্ট:</span>
-                      <span className="font-bold text-slate-800">{formatCurrency(form.subtotal)}</span>
+                      <span className="font-bold text-slate-800">
+                        {formatCurrency(form.subtotal)}
+                        {form.extraCost > 0 && <span className="text-[10px] text-muted-foreground font-normal ml-1">(+ {formatCurrency(form.extraCost)} extra)</span>}
+                      </span>
                     </div>
                     <div>
                       <span className="text-slate-500 font-semibold mr-1">মোট বিক্রয়:</span>

@@ -68,6 +68,9 @@ export async function remove(ctx: Ctx, id: string) {
       await salesAccounting.recordCustomerSpent(tx, sale.customerId, Number(sale.total), true);
     }
 
+    // Revert financial account balances (money out)
+    await salesAccounting.revertSaleTenders(tx, ctx, sale.id, sale.tenders);
+
     // Delete sale (cascade deletes items + tenders)
     await tx.sale.delete({ where: { id } });
 

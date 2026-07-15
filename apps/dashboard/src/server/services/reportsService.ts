@@ -57,7 +57,7 @@ export const reportsService = {
       }),
       prisma.purchase.aggregate({
         where: { createdAt: { gte: fromDate, lte: toDate } },
-        _sum: { total: true, paid: true, due: true, discount: true },
+        _sum: { total: true, paid: true, due: true, discount: true, extraCost: true },
       }),
       prisma.$queryRaw<Array<{ total: number }>>`
         SELECT SUM(stock * COALESCE(cost, 0)) as total 
@@ -111,7 +111,7 @@ export const reportsService = {
 
     const totalPurchase = Number(purchasesAgg._sum.total || 0);
     const totalPurchaseTax = 0;
-    const totalOtherChargesPurchase = 0;
+    const totalOtherChargesPurchase = Number(purchasesAgg._sum.extraCost || 0);
     const totalDiscountPurchase = Number(purchasesAgg._sum.discount || 0);
     const paidPurchase = Number(purchasesAgg._sum.paid || 0);
     const duePurchase = Number(purchasesAgg._sum.due || 0);
@@ -219,18 +219,20 @@ export const reportsService = {
     };
   },
 
-  async getInventoryMetrics(ctx: Ctx, from?: string, to?: string) {
+  async getInventoryMetrics(ctx: Ctx, from?: string, to?: string, onlineOnly?: boolean) {
+    const pubCondition = onlineOnly ? Prisma.sql`AND "isPublished" = true` : Prisma.empty;
+
     const rawStockVal = await prisma.$queryRaw<Array<{ total: number }>>`
-      SELECT SUM(stock * COALESCE(cost, 0)) as total 
+      SELECT SUM(stock * (CASE WHEN COALESCE(cost, 0) > 0 THEN cost ELSE COALESCE(price, 0) END)) as total 
       FROM "Product" 
-      WHERE "isPublished" = true AND stock > 0
+      WHERE stock > 0 ${pubCondition}
     `;
     const stockValue = Number(rawStockVal[0]?.total || 0);
 
     const rawLowStock = await prisma.$queryRaw<Array<{ id: string, name: string, stock: number, minStock: number }>>`
       SELECT id, name, stock, "reorderLevel" as "minStock"
       FROM "Product"
-      WHERE "isPublished" = true AND stock > 0 AND stock <= "reorderLevel"
+      WHERE stock > 0 AND stock <= "reorderLevel" ${pubCondition}
       ORDER BY stock ASC
       LIMIT 100
     `;
@@ -255,16 +257,20 @@ export const reportsService = {
     }
 
     const rawDeadStock = await prisma.$queryRaw<Array<{ id: string, name: string, category: string, stock: number, unit: string, value: number }>>`
-      SELECT p.id, p.name, c.name as category, p.stock, p.unit, (p.stock * COALESCE(p.cost, 0)) as value
-      FROM "Product" p
-      LEFT JOIN "Category" c ON p."categoryId" = c.id
-      WHERE p."isPublished" = true AND p.stock > 0
-      AND p.id NOT IN (
-        SELECT "productId" FROM "SaleItem" si
-        JOIN "Sale" s ON si."saleId" = s.id
-        WHERE s."createdAt" >= ${filterDate} AND s."createdAt" <= ${toDate}
-      )
-      ORDER BY value DESC
+      SELECT id, name, stock, unit, 
+             (stock * (CASE WHEN COALESCE(cost, 0) > 0 THEN cost ELSE COALESCE(price, 0) END)) as value,
+             (SELECT name FROM "Category" WHERE id = "categoryId") as category
+      FROM "Product"
+      WHERE stock > 0 ${pubCondition}
+        AND id NOT IN (
+          SELECT p.id 
+          FROM "Product" p
+          JOIN "SaleItem" si ON p.id = si."productId"
+          JOIN "Sale" s ON s.id = si."saleId"
+          WHERE s.status = 'COMPLETED' 
+            AND s."createdAt" >= ${filterDate}
+        )
+      ORDER BY stock DESC
       LIMIT 100
     `;
     

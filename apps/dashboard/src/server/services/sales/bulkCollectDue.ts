@@ -107,7 +107,7 @@ export async function bulkCollectDue(ctx: Ctx, input: BulkCollectDueInput): Prom
             create: {
               type: mapPaymentMethodToTenderType(input.type),
               amount: collectedAmount,
-              accountId: isWallet ? undefined : input.accountId,
+              accountId: undefined, // Prevent double-counting in ledger
               ref: bulkRef,
             }
           }
@@ -125,6 +125,14 @@ export async function bulkCollectDue(ctx: Ctx, input: BulkCollectDueInput): Prom
       });
       
       remainingAmount = math.sub(remainingAmount, collectedAmount);
+    }
+
+    // 4.5. Update Financial Account balance (unless Wallet)
+    if (!isWallet && input.accountId) {
+      await tx.financialAccount.update({
+        where: { id: input.accountId },
+        data: { balance: { increment: input.amount } },
+      });
     }
 
     // 5. Update Customer due and balance

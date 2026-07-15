@@ -60,12 +60,8 @@ export function deriveCategories(products: StorefrontProduct[]): StorefrontCateg
   }));
 }
 
-/**
- * Derives the visible category list from products in stock.
- * No separate categories fetch — keeps the public catalog tight.
- */
 export function useStorefrontCategories(options?: { initialData?: StorefrontProduct[] }): StorefrontCategory[] {
-  const { data = options?.initialData ?? [] } = useQuery<StorefrontProduct[]>({
+  const { data: products = options?.initialData ?? [] } = useQuery<StorefrontProduct[]>({
     queryKey: ["storefront", "products"],
     queryFn: async () => {
       const res = await fetch("/api/storefront/products");
@@ -74,7 +70,34 @@ export function useStorefrontCategories(options?: { initialData?: StorefrontProd
     },
   });
 
-  return useMemo(() => deriveCategories(data), [data]);
+  const { data: dbCategories = [] } = useQuery<any[]>({
+    queryKey: ["storefront", "categories"],
+    queryFn: async () => {
+      const res = await fetch("/api/categories");
+      if (!res.ok) return [];
+      return res.json();
+    },
+  });
+
+  return useMemo(() => {
+    let base = deriveCategories(products);
+    if (dbCategories.length > 0) {
+      // Filter by showInMenu
+      base = base.filter(c => {
+        const dbCat = dbCategories.find(db => db.name === c.value);
+        return !dbCat || dbCat.showInMenu !== false;
+      });
+      // Sort by menuOrder
+      base.sort((a, b) => {
+        const dbA = dbCategories.find(db => db.name === a.value);
+        const dbB = dbCategories.find(db => db.name === b.value);
+        const orderA = dbA?.menuOrder ?? 999;
+        const orderB = dbB?.menuOrder ?? 999;
+        return orderA - orderB;
+      });
+    }
+    return base;
+  }, [products, dbCategories]);
 }
 
 /** Pure function to derive brands. */
@@ -128,6 +151,15 @@ export function useMegaMenuTree(options?: { initialData?: StorefrontProduct[] })
     initialData: options?.initialData,
   });
 
+  const { data: dbCategories = [] } = useQuery<any[]>({
+    queryKey: ["storefront", "categories"],
+    queryFn: async () => {
+      const res = await fetch("/api/categories");
+      if (!res.ok) return [];
+      return res.json();
+    },
+  });
+
   return useMemo(() => {
     // Map<Category, Map<Subcategory, Set<Brand>>>
     const tree = new Map<string, Map<string, Set<string>>>();
@@ -138,6 +170,10 @@ export function useMegaMenuTree(options?: { initialData?: StorefrontProduct[] })
       const cat = p.category;
       if (!cat) continue;
       
+      // Filter out if category is hidden via Menu Management
+      const dbCat = dbCategories.find(db => db.name === cat);
+      if (dbCategories.length > 0 && dbCat && dbCat.showInMenu === false) continue;
+      
       if (!tree.has(cat)) {
         tree.set(cat, new Map());
       }
@@ -146,6 +182,10 @@ export function useMegaMenuTree(options?: { initialData?: StorefrontProduct[] })
       // Use 'Others' or similar if no subcategory is present
       const sub = p.subcategory || "Other";
       
+      // Also filter out subcategory if hidden
+      const dbSub = dbCategories.find(db => db.name === sub && db.parentId === dbCat?.id);
+      if (dbCategories.length > 0 && dbSub && dbSub.showInMenu === false) continue;
+
       if (!subMap.has(sub)) {
         subMap.set(sub, new Set());
       }
@@ -159,23 +199,40 @@ export function useMegaMenuTree(options?: { initialData?: StorefrontProduct[] })
     const result: MegaMenuTree[] = [];
     for (const [cat, subMap] of tree.entries()) {
       const subcategories = [];
+      const dbCat = dbCategories.find(db => db.name === cat);
       for (const [sub, brandSet] of subMap.entries()) {
+        const dbSub = dbCategories.find(db => db.name === sub && db.parentId === dbCat?.id);
         subcategories.push({
           subcategory: sub,
           brands: [...brandSet].sort(),
+          menuOrder: dbSub?.menuOrder ?? 999,
         });
       }
-      // Sort subcategories alphabetically
-      subcategories.sort((a, b) => a.subcategory.localeCompare(b.subcategory));
+      // Sort subcategories by menuOrder, then alphabetically
+      subcategories.sort((a, b) => {
+        if (a.menuOrder !== b.menuOrder) return a.menuOrder - b.menuOrder;
+        return a.subcategory.localeCompare(b.subcategory);
+      });
       result.push({
         category: cat,
-        subcategories,
+        subcategories: subcategories.map(s => ({ subcategory: s.subcategory, brands: s.brands }))
       });
     }
 
-    // Sort categories alphabetically
-    result.sort((a, b) => a.category.localeCompare(b.category));
+    // Sort categories by menuOrder, then alphabetically
+    result.sort((a, b) => {
+      const dbA = dbCategories.find(db => db.name === a.category);
+      const dbB = dbCategories.find(db => db.name === b.category);
+      const orderA = dbA?.menuOrder ?? 999;
+      const orderB = dbB?.menuOrder ?? 999;
+      if (orderA !== orderB) return orderA - orderB;
+      return a.category.localeCompare(b.category);
+    });
     
-    return result;
-  }, [data]);
+    // Clean up temporary fields
+    return result.map(r => ({
+      category: r.category,
+      subcategories: r.subcategories
+    }));
+  }, [data, dbCategories]);
 }

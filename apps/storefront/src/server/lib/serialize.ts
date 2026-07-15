@@ -107,7 +107,7 @@ function serializePurchaseItem(
     qty: raw.qty,
     receivedQty: raw.qty,
     costPrice: toNumber(raw.cost),
-    extraCost: raw.extraCost ? Number(raw.extraCost) : undefined,
+    extraCost: (raw as any).extraCost ? Number((raw as any).extraCost) : undefined,
     salePrice: raw.salePrice ? Number(raw.salePrice) : undefined,
     serials: raw.serials?.length ? raw.serials : undefined,
     warrantyStartDate: raw.warrantyStartDate ? new Date(raw.warrantyStartDate).toISOString() : undefined,

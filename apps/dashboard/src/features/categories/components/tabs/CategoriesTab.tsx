@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useSearchParams } from "next/navigation";
 import { Card } from "@/shared/ui/card";
 import { Button } from "@/shared/ui/button";
 import { Badge } from "@/shared/ui/badge";
@@ -26,16 +27,17 @@ interface CategoriesTabProps {
 
 export function CategoriesTab({ initialCategories, filterOnlineOnly = false, onOpenImport }: CategoriesTabProps) {
   const queryClient = useQueryClient();
+  const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState("");
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   const { data: categories = [] } = useQuery({
     queryKey: ["categories"],
     queryFn: async () => {
-      const res = await fetch("/api/categories?flat=true");
+      const url = filterOnlineOnly ? "/api/categories?flat=true&online=true" : "/api/categories?flat=true";
+      const res = await fetch(url);
       if (!res.ok) return [];
-      const data = await res.json();
-      return filterOnlineOnly ? data.filter((x: any) => x.isPublished) : data;
+      return res.json();
     },
     initialData: initialCategories,
   });
@@ -44,7 +46,10 @@ export function CategoriesTab({ initialCategories, filterOnlineOnly = false, onO
     c.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const parents = filteredCategories.filter((c: any) => !c.parentId);
+  let parents = filteredCategories.filter((c: any) => !c.parentId);
+  if (!searchQuery.trim()) {
+    parents = [...parents].sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()).slice(0, 5);
+  }
   const childrenOf = (parentId: string) => filteredCategories.filter((c: any) => c.parentId === parentId);
 
   // States for Dialogs
@@ -52,6 +57,14 @@ export function CategoriesTab({ initialCategories, filterOnlineOnly = false, onO
   const [editing, setEditing] = useState<any | null>(null);
   const [dialogParentId, setDialogParentId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (searchParams.get("action") === "new") {
+      setOpen(true);
+      setEditing(null);
+      setDialogParentId(null);
+    }
+  }, [searchParams]);
 
   // Mutations
   const toggleCategoryPublishMut = useMutation({
@@ -181,12 +194,7 @@ export function CategoriesTab({ initialCategories, filterOnlineOnly = false, onO
                   {!filterOnlineOnly && (
                     <>
                       <div className="flex items-center gap-2 px-1 sm:px-2">
-                        <Switch
-                          checked={c.isPublished}
-                          onCheckedChange={(val) => toggleCategoryPublishMut.mutate({ id: c.id, isPublished: val })}
-                          className="scale-75 sm:scale-100"
-                        />
-                        <span className="text-xs text-muted-foreground hidden sm:inline">Web</span>
+                        <span className="text-xs text-muted-foreground hidden sm:inline">Auto-Published</span>
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
                         <Button variant="outline" className="h-7 sm:h-9 px-2 sm:px-3 text-[10px] sm:text-sm" onClick={() => openNew(c.id)}>
@@ -213,12 +221,7 @@ export function CategoriesTab({ initialCategories, filterOnlineOnly = false, onO
                           {!filterOnlineOnly && (
                             <>
                               <div className="flex items-center gap-1 sm:gap-2 px-1 sm:px-2 border-l ml-1 sm:ml-2">
-                                <Switch
-                                  checked={s.isPublished}
-                                  onCheckedChange={(val) => toggleCategoryPublishMut.mutate({ id: s.id, isPublished: val })}
-                                  className="scale-75 sm:scale-100"
-                                />
-                                <span className="text-[10px] sm:text-xs text-muted-foreground hidden sm:inline">Web</span>
+                                <span className="text-[10px] sm:text-xs text-muted-foreground hidden sm:inline">Auto-Published</span>
                               </div>
                               <Button size="icon" variant="ghost" className="h-6 w-6 sm:h-8 sm:w-8 shrink-0" onClick={() => openEdit(s)}>
                                 <Pencil className="h-3 w-3 sm:h-3.5 sm:w-3.5" />

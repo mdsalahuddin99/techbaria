@@ -83,6 +83,7 @@ export function useCreatePurchase() {
     mutationFn: (input: {
       supplierId: string;
       warehouseId?: string;
+      extraCost?: number;
       items: Array<Omit<PurchaseItem, "receivedQty">>;
       amountPaid: number;
       status: PurchaseStatus;

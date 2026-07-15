@@ -41,9 +41,14 @@ export function ColorsTab({ initialColors, filterOnlineOnly = false, onOpenImpor
     initialData: initialColors,
   });
 
-  const filteredColors = allColors.filter((c: any) =>
+  let filteredColors = allColors.filter((c: any) =>
     c.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  if (!searchQuery.trim()) {
+    filteredColors = [...filteredColors].sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()).slice(0, 5);
+  }
+
 
   // States
   const [createOpen, setCreateOpen] = useState(false);

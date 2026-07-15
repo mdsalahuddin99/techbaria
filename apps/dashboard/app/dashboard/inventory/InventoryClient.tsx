@@ -23,7 +23,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/shared/ui/alert-dialog";
 import { formatCurrency, formatDateTime } from "@/shared/lib/format";
-import { Search, Plus, History, Pencil, Trash2, PackagePlus, Tag, Check, X, ScanLine, Printer, ChevronRight, CornerDownRight, Boxes } from "lucide-react";
+import { Search, Plus, History, Pencil, Trash2, PackagePlus, Tag, Check, X, ScanLine, Printer, ChevronRight, CornerDownRight, Boxes, Layers } from "lucide-react";
 import { Switch } from "@/shared/ui/switch";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/shared/ui/collapsible";
 import { AdjustmentType, Product, Category, ProductCondition, StockAdjustment } from "@/shared/lib/types";
@@ -76,7 +76,7 @@ export function InventoryClient({
     initialData: initialCategories,
   });
   
-  const { data: inventoryMetrics } = useInventoryMetricsQuery();
+  const { data: inventoryMetrics } = useInventoryMetricsQuery({ onlineOnly: filterOnlineOnly });
   const stockValue = inventoryMetrics?.stockValue ?? 0;
   const lowCount = inventoryMetrics?.lowStock.length ?? 0;
   const outCount = products.filter(p => p.stock === 0).length; // Still doing outCount here because API returned only lowStock/deadStock
@@ -287,13 +287,15 @@ export function InventoryClient({
         <div className="absolute top-0 right-0 h-64 w-64 bg-indigo-500/20 blur-[100px] rounded-full" />
         <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-extrabold text-white tracking-tight flex items-center gap-3">
-              <Boxes className="h-8 w-8 text-indigo-400" />
-              Inventory Command Center
-            </h1>
-            <p className="text-sm text-slate-300 font-medium mt-1.5">
-              Track stock value, manage categories, and audit adjustments across your business.
-            </p>
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white mb-2 relative z-10 flex items-center gap-2">
+            <Layers className="h-6 w-6 text-indigo-300" />
+            {filterOnlineOnly ? "E-commerce Catalog" : "Inventory Command Center"}
+          </h1>
+          <p className="text-sm sm:text-base text-indigo-100 max-w-2xl relative z-10 leading-relaxed font-medium">
+            {filterOnlineOnly 
+              ? "Manage products published to your online store and track their availability."
+              : "Track stock value, manage categories, and audit adjustments across your business."}
+          </p>
           </div>
         </div>
       </div>
@@ -329,9 +331,11 @@ export function InventoryClient({
             <Button variant="outline" onClick={openNew} className="h-10">
               <PackagePlus className="h-4 w-4 mr-2" /><span className="hidden sm:inline">Add Product</span><span className="sm:hidden">Add</span>
             </Button>
-            <Button onClick={() => setAdjOpen(true)} className="bg-primary text-primary-foreground hover:bg-primary/90 h-10">
-              <Plus className="h-4 w-4 mr-2" /><span className="hidden sm:inline">New Adjustment</span><span className="sm:hidden">Adjust</span>
-            </Button>
+            {!filterOnlineOnly && (
+              <Button onClick={() => setAdjOpen(true)} className="bg-primary text-primary-foreground hover:bg-primary/90 h-10">
+                <Plus className="h-4 w-4 mr-2" /><span className="hidden sm:inline">New Adjustment</span><span className="sm:hidden">Adjust</span>
+              </Button>
+            )}
           </Card>
 
           {/* Mobile floating scan button */}
@@ -464,8 +468,8 @@ export function InventoryClient({
                         )}
                       </div>
                       <div className="flex items-center gap-2">
-                        <Switch checked={isActive} onCheckedChange={(v) => toggleCategoryActive(c.id, v)} />
-                        <span className="text-xs text-muted-foreground hidden sm:inline">{isActive ? "Active" : "Off"}</span>
+                        {/* Status is now automated based on product publication */}
+                        <span className="text-xs text-muted-foreground hidden sm:inline">Auto-Published</span>
                       </div>
                       {isRenaming ? (
                         <>
@@ -505,7 +509,6 @@ export function InventoryClient({
                                     <p className="text-sm truncate">{s.name} <span className="text-xs text-muted-foreground">({sCount})</span></p>
                                   )}
                                 </div>
-                                <Switch checked={sActive} onCheckedChange={(v) => toggleCategoryActive(s.id, v)} />
                                 {sRenaming ? (
                                   <>
                                     <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleRename(s.id)}><Check className="h-3.5 w-3.5" /></Button>

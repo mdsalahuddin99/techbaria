@@ -43,9 +43,14 @@ export function SeriesTab({ initialSeries, filterOnlineOnly = false, models, onO
     initialData: initialSeries,
   });
 
-  const filteredSeries = allSeries.filter((s: any) =>
+  let filteredSeries = allSeries.filter((s: any) =>
     s.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  if (!searchQuery.trim()) {
+    filteredSeries = [...filteredSeries].sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()).slice(0, 5);
+  }
+
 
   const modelById = new Map(models.map((m: any) => [m.id, m]));
 

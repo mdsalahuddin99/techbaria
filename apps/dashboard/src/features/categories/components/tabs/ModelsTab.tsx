@@ -45,11 +45,15 @@ export function ModelsTab({ initialModels, filterOnlineOnly = false, products, o
     initialData: initialModels,
   });
 
-  const filteredModels = allModels.filter((m: any) => {
+  let filteredModels = allModels.filter((m: any) => {
     const matchesSearch = m.name.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesFilter = modelProductFilter === "all" || (m.productTypes && m.productTypes.includes(modelProductFilter));
     return matchesSearch && matchesFilter;
   });
+
+  if (!searchQuery.trim()) {
+    filteredModels = [...filteredModels].sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()).slice(0, 5);
+  }
 
   const productNameById = new Map(products.map((p: any) => [p.id, p]));
 
@@ -73,7 +77,10 @@ export function ModelsTab({ initialModels, filterOnlineOnly = false, products, o
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
-      if (!res.ok) throw new Error("Failed to create");
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || "Failed to create");
+      }
       return res.json();
     },
     onSuccess: () => {
@@ -83,7 +90,7 @@ export function ModelsTab({ initialModels, filterOnlineOnly = false, products, o
       setCreateProducts([]);
       toast.success("Model created successfully");
     },
-    onError: () => toast.error("Failed to create model"),
+    onError: (err: any) => toast.error(err.message || "Failed to create model"),
   });
 
   const updateItemMut = useMutation({
@@ -93,7 +100,10 @@ export function ModelsTab({ initialModels, filterOnlineOnly = false, products, o
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
-      if (!res.ok) throw new Error("Failed to update");
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || "Failed to update");
+      }
       return res.json();
     },
     onSuccess: () => {
@@ -102,13 +112,16 @@ export function ModelsTab({ initialModels, filterOnlineOnly = false, products, o
       setEditingItem(null);
       toast.success("Model updated successfully");
     },
-    onError: () => toast.error("Failed to update model"),
+    onError: (err: any) => toast.error(err.message || "Failed to update model"),
   });
 
   const deleteItemMut = useMutation({
     mutationFn: async (id: string) => {
       const res = await fetch(`/api/catalog?entity=models&id=${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Failed to delete");
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || "Failed to delete");
+      }
       return res.json();
     },
     onSuccess: () => {
@@ -116,21 +129,21 @@ export function ModelsTab({ initialModels, filterOnlineOnly = false, products, o
       setDeleteId(null);
       toast.success("Model deleted successfully");
     },
-    onError: () => toast.error("Failed to delete model"),
+    onError: (err: any) => toast.error(err.message || "Failed to delete model"),
   });
 
-  const handleCreate = async () => {
+  const handleCreate = () => {
     if (!createName.trim()) return toast.error("Name is required");
     const isDuplicate = allModels.some((m: any) => m.name.toLowerCase() === createName.toLowerCase());
     if (isDuplicate) return toast.error("A model with this name already exists");
-    await createItemMut.mutateAsync({ entity: "models", name: createName, productTypes: createProducts });
+    createItemMut.mutate({ entity: "models", name: createName, productTypes: createProducts });
   };
 
-  const handleSaveEdit = async () => {
+  const handleSaveEdit = () => {
     if (!editName.trim() || !editingItem) return toast.error("Name is required");
     const isDuplicate = allModels.some((m: any) => m.id !== editingItem.id && m.name.toLowerCase() === editName.toLowerCase());
     if (isDuplicate) return toast.error("A model with this name already exists");
-    await updateItemMut.mutateAsync({ entity: "models", id: editingItem.id, name: editName, productTypes: editProducts });
+    updateItemMut.mutate({ entity: "models", id: editingItem.id, name: editName, productTypes: editProducts });
   };
 
   const handleExport = () => {

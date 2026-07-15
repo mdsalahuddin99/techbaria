@@ -123,25 +123,6 @@ export function ProductFormBasicFields({ form }: Props) {
         </FormItem>
       )} />
 
-      <FormField control={control} name="shortDescription" render={({ field }) => (
-        <FormItem className="sm:col-span-2 space-y-1">
-          <div className="flex flex-row items-start gap-2">
-            <FormLabel className="w-[110px] shrink-0 text-right pt-2">Short Desc</FormLabel>
-            <div className="flex-1 min-w-0">
-              <FormControl>
-                <Input
-                  placeholder="Enter a brief preview (max 300 chars)..."
-                  {...field}
-                />
-              </FormControl>
-              <p className="text-[11px] text-muted-foreground mt-1">
-                Used for storefront card preview. Max 300 characters.
-              </p>
-            </div>
-          </div>
-          <FormMessage className="ml-[110px] pl-2" />
-        </FormItem>
-      )} />
     </>
   );
 }

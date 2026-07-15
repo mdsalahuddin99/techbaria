@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Input } from "@/shared/ui/input";
 import { Button } from "@/shared/ui/button";
 import { Badge } from "@/shared/ui/badge";
@@ -81,6 +81,9 @@ export function PaymentCollector({
   const afterDiscount = round2(Math.max(0, subtotal));
   const paidNum = round2(payments.reduce((s, p) => s + p.amount, 0));
   const dueNum = round2(Math.max(0, afterDiscount - paidNum));
+  const enteredAmount = pendingAmount ? (Number(pendingAmount) || 0) : dueNum;
+  const projectedDue = Math.max(0, dueNum - enteredAmount);
+  const projectedPaid = paidNum + enteredAmount;
 
   const customer = customers.find((c) => c.id === customerId) ?? null;
   const walletBalance = Math.max(0, Number(customer?.balance ?? 0));
@@ -108,15 +111,28 @@ export function PaymentCollector({
   const remainingWalletBalance = Math.max(0, walletBalance - walletUsed);
 
   // Auto-fill pendingAmount with remaining due amount on mount or due change
+  const prevDueRef = useRef(dueNum);
   useEffect(() => {
-    if (dueNum > 0) {
-      if (pendingMethod === "Wallet") {
-        setPendingAmount(Math.min(dueNum, remainingWalletBalance).toString());
+    if (dueNum !== prevDueRef.current) {
+      // dueNum changed, update the pendingAmount to match the new due
+      if (dueNum > 0) {
+        if (pendingMethod === "Wallet") {
+          setPendingAmount(Math.min(dueNum, remainingWalletBalance).toString());
+        } else {
+          setPendingAmount(dueNum.toString());
+        }
       } else {
-        setPendingAmount(pendingAmount === "" || pendingAmount === "0" ? dueNum.toString() : pendingAmount);
+        setPendingAmount("");
       }
+      prevDueRef.current = dueNum;
     } else {
-      setPendingAmount("");
+      // dueNum didn't change, meaning pendingMethod or remainingWalletBalance changed
+      if (pendingMethod === "Wallet") {
+        const parsed = Number(pendingAmount) || 0;
+        if (parsed > remainingWalletBalance) {
+          setPendingAmount(Math.min(dueNum, remainingWalletBalance).toString());
+        }
+      }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dueNum, pendingMethod, remainingWalletBalance]);
@@ -169,13 +185,13 @@ export function PaymentCollector({
           <span className="font-extrabold text-slate-800 tabular-nums text-xs">{formatCurrency(afterDiscount)}</span>
           <span className="text-slate-300">·</span>
           <span className="text-slate-600 text-[11px]">
-            Paid: <span className="font-semibold text-slate-800">{formatCurrency(paidNum)}</span>
+            Paid: <span className="font-semibold text-slate-800">{formatCurrency(projectedPaid)}</span>
           </span>
-          {dueNum > 0 ? (
+          {projectedDue > 0 ? (
             <>
               <span className="text-slate-300">·</span>
               <span className="text-[11px] font-bold text-orange-600">
-                Due: {formatCurrency(dueNum)}
+                Due: {formatCurrency(projectedDue)}
               </span>
             </>
           ) : (

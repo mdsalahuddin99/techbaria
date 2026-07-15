@@ -111,8 +111,10 @@ model Category {
   children  Category[]      @relation("CategoryTree")
   products  Product[]
   isPublished Boolean       @default(false)
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
+  showInMenu  Boolean       @default(true)
+  menuOrder   Int           @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 }
 
 // ============ GLOBAL PRODUCT ATTRIBUTES ============
@@ -125,6 +127,7 @@ model Brand {
   createdAt     DateTime             @default(now())
   subcategories BrandSubcategory[]
   productTypes  ProductTypeBrand[]
+  itemLists     ItemList[]
 }
 
 model ProductType {
@@ -135,6 +138,7 @@ model ProductType {
   createdAt     DateTime           @default(now())
   brands        ProductTypeBrand[]
   models        ModelProductType[]
+  itemLists     ItemList[]
 }
 
 model Model {
@@ -145,6 +149,7 @@ model Model {
   createdAt     DateTime           @default(now())
   productTypes  ModelProductType[]
   series        SeriesModel[]
+  itemLists     ItemList[]
 }
 
 model Series {
@@ -154,6 +159,7 @@ model Series {
   isPublished   Boolean            @default(false)
   createdAt     DateTime           @default(now())
   models        SeriesModel[]
+  itemLists     ItemList[]
 }
 
 model Color {
@@ -209,6 +215,32 @@ model SeriesModel {
   model       Model  @relation(fields: [modelId], references: [id], onDelete: Cascade)
   @@id([seriesId, modelId])
 }
+
+model ItemList {
+  id             String       @id @default(cuid())
+  categoryId     String?
+  subcategory    String?
+  
+  brandId        String?
+  brand          Brand?       @relation(fields: [brandId], references: [id])
+  
+  productTypeId  String?
+  productType    ProductType? @relation(fields: [productTypeId], references: [id])
+  
+  modelId        String?
+  model          Model?       @relation(fields: [modelId], references: [id])
+  
+  seriesId       String?
+  series         Series?      @relation(fields: [seriesId], references: [id])
+  
+  colors         String[]     
+  storages       String[]
+  rams           String[]
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
 
 model Product {
   id               String            @id @default(cuid())
@@ -546,6 +578,7 @@ model Purchase {
   invoiceNo   String?
   subtotal    Decimal          @db.Decimal(12, 2)
   discount    Decimal          @default(0) @db.Decimal(12, 2)
+  extraCost   Decimal          @default(0) @db.Decimal(12, 2)
   total       Decimal          @db.Decimal(12, 2)
   paid        Decimal          @default(0) @db.Decimal(12, 2)
   due         Decimal          @default(0) @db.Decimal(12, 2)
@@ -554,6 +587,7 @@ model Purchase {
   supplierTransactions SupplierTransaction[]
   notes       String?
   createdAt   DateTime         @default(now())
+  expense     Expense?
 
   @@index([createdAt])
   @@index([supplierId])
@@ -567,7 +601,6 @@ model PurchaseItem {
   product           Product        @relation(fields: [productId], references: [id])
   qty               Int
   cost              Decimal        @db.Decimal(12, 2)
-  extraCost         Decimal?       @db.Decimal(12, 2)
   name              String
   salePrice         Decimal?       @db.Decimal(12, 2)
   serials           String[]
@@ -730,6 +763,8 @@ model Expense {
   account   FinancialAccount? @relation(fields: [accountId], references: [id])
   date      DateTime          @default(now())
   notes     String?
+  purchaseId String?          @unique
+  purchase   Purchase?        @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
 
   @@index([date])
 }

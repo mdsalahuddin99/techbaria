@@ -73,7 +73,7 @@ export async function collectDue(ctx: Ctx, saleId: string, input: CollectDueInpu
           create: {
             type: mapPaymentMethodToTenderType(input.type),
             amount: input.amount,
-            accountId: isWallet ? undefined : input.accountId,
+            accountId: undefined, // Prevent double-counting in ledger
             ref: `DUE-COLLECT`,
           },
         },
@@ -87,7 +87,15 @@ export async function collectDue(ctx: Ctx, saleId: string, input: CollectDueInpu
       }
     });
 
-    // 4. Update Customer due and ledger
+    // 4. Update Financial Account balance (unless Wallet)
+    if (!isWallet && input.accountId) {
+      await tx.financialAccount.update({
+        where: { id: input.accountId },
+        data: { balance: { increment: input.amount } },
+      });
+    }
+
+    // 5. Update Customer due and ledger
     if (sale.customerId) {
       const cust = await tx.customer.findUniqueOrThrow({
         where: { id: sale.customerId },

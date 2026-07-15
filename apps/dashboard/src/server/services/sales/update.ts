@@ -176,6 +176,10 @@ export async function update(ctx: Ctx, id: string, input: SaleUpdateInput) {
       }
     }
 
+    // Step 10: Revert old financial account balances, apply new ones
+    await salesAccounting.revertSaleTenders(tx, ctx, id, sale.tenders);
+    await salesAccounting.applySaleTenders(tx, ctx, id, input.tenders);
+
     await auditLogService.log(ctx, {
       entity: "Sale",
       entityId: id,

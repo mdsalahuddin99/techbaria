@@ -36,6 +36,7 @@ interface InventoryProductTableProps {
   onToggleSelect?: (productId: string) => void;
   onToggleAll?: (allSelected: boolean) => void;
   onQuickEditPrice?: (product: Product) => void;
+  isOnlineInventory?: boolean;
 }
 
 /** Desktop table view of inventory rows. */
@@ -45,10 +46,11 @@ export function InventoryProductTable({
   onEdit,
   onDelete,
   onPrintLabel,
+  onQuickEditPrice,
   selectedIds,
   onToggleSelect,
   onToggleAll,
-  onQuickEditPrice,
+  isOnlineInventory = false,
 }: InventoryProductTableProps) {
   const locale = useLocale();
   const updateProduct = useUpdateProduct();
@@ -233,24 +235,28 @@ export function InventoryProductTable({
                             <Printer className="mr-2 h-4 w-4" /> Print Label
                           </DropdownMenuItem>
                         )}
-                        {onQuickEditPrice && (
-                          <DropdownMenuItem onClick={() => onQuickEditPrice(p)}>
-                            <Tag className="mr-2 h-4 w-4" /> Edit Online Price
-                          </DropdownMenuItem>
+                        {isOnlineInventory && (
+                          <>
+                            {onQuickEditPrice && (
+                              <DropdownMenuItem onClick={() => onQuickEditPrice(p)}>
+                                <Tag className="mr-2 h-4 w-4" /> Edit Online Price
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => updateProduct.mutate({ id: p.id, patch: { active: !p.active } })}>
+                              {p.active ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
+                              {p.active ? "Hide from E-commerce" : "Show on E-commerce"}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => updateProduct.mutate({ id: p.id, patch: { isTrending: !p.isTrending } })}>
+                              <Sparkles className="mr-2 h-4 w-4" />
+                              {p.isTrending ? "Remove Trending" : "Mark as Trending"}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => updateProduct.mutate({ id: p.id, patch: { isFlashDeal: !p.isFlashDeal } })}>
+                              <Zap className="mr-2 h-4 w-4 text-amber-500" />
+                              {p.isFlashDeal ? "Remove Flash Deal" : "Mark as Flash Deal"}
+                            </DropdownMenuItem>
+                          </>
                         )}
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => updateProduct.mutate({ id: p.id, patch: { active: !p.active } })}>
-                          {p.active ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
-                          {p.active ? "Hide from E-commerce" : "Show on E-commerce"}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => updateProduct.mutate({ id: p.id, patch: { isTrending: !p.isTrending } })}>
-                          <Sparkles className="mr-2 h-4 w-4" />
-                          {p.isTrending ? "Remove Trending" : "Mark as Trending"}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => updateProduct.mutate({ id: p.id, patch: { isFlashDeal: !p.isFlashDeal } })}>
-                          <Zap className="mr-2 h-4 w-4 text-amber-500" />
-                          {p.isFlashDeal ? "Remove Flash Deal" : "Mark as Flash Deal"}
-                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>

@@ -43,9 +43,14 @@ export function ProductsTab({ initialProducts, filterOnlineOnly = false, brands,
     initialData: initialProducts,
   });
 
-  const filteredProducts = allProducts.filter((p: any) =>
+  let filteredProducts = allProducts.filter((p: any) =>
     p.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  if (!searchQuery.trim()) {
+    filteredProducts = [...filteredProducts].sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()).slice(0, 5);
+  }
+
 
   const brandById = new Map(brands.map((b: any) => [b.id, b]));
 

@@ -28,6 +28,7 @@ export const translations = {
   "nav.onlineProducts": { en: "Online Products", bn: "অনলাইন প্রোডাক্টস" },
   "nav.onlineCategories": { en: "Online Categories", bn: "অনলাইন ক্যাটাগরি" },
   "nav.onlineBrands": { en: "Online Brands", bn: "অনলাইন ব্র্যান্ড" },
+  "nav.menuManagement": { en: "Menu Management", bn: "মেনু ম্যানেজমেন্ট" },
 
 
   // Sidebar items
@@ -39,7 +40,10 @@ export const translations = {
   "nav.pos": { en: "Create Sale", bn: "সেল তৈরি করুন" },
   "nav.quotations": { en: "Quotations", bn: "কোটেশন" },
   "nav.products": { en: "Products", bn: "পণ্য" },
+  "nav.newCategory": { en: "Add Category", bn: "নতুন ক্যাটাগরি" },
   "nav.categories": { en: "Categories", bn: "ক্যাটাগরি" },
+  "nav.newItemList": { en: "Add Item List", bn: "নতুন আইটেম লিস্ট" },
+  "nav.itemList": { en: "Item List", bn: "আইটেম তালিকা" },
   "nav.inventory": { en: "Inventory", bn: "ইনভেন্টরি" },
   "nav.restock": { en: "Restock Orders", bn: "রিস্টক অর্ডার" },
   "nav.transfers": { en: "Stock Transfers", bn: "স্টক ট্রান্সফার" },

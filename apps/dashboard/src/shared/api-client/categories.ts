@@ -21,6 +21,8 @@ export interface CategoryNode {
   series?: string | null;
   createdAt: string;
   isPublished: boolean;
+  showInMenu?: boolean;
+  menuOrder?: number;
 }
 
 export interface CategoryItem {
@@ -35,6 +37,8 @@ export interface CategoryItem {
   series?: string | null;
   createdAt: string;
   isPublished: boolean;
+  showInMenu?: boolean;
+  menuOrder?: number;
 }
 
 export interface CategoryCreatePayload {
@@ -45,6 +49,8 @@ export interface CategoryCreatePayload {
   productName?: string;
   productModel?: string;
   series?: string;
+  showInMenu?: boolean;
+  menuOrder?: number;
 }
 
 export interface CategoryUpdatePayload {
@@ -55,6 +61,8 @@ export interface CategoryUpdatePayload {
   productName?: string;
   productModel?: string;
   series?: string;
+  showInMenu?: boolean;
+  menuOrder?: number;
 }
 
 // ─── API calls ──────────────────────────────────────────────────────────────

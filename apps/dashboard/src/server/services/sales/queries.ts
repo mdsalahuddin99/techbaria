@@ -70,10 +70,12 @@ async function runSaleListQuery(ctx: Ctx, params?: PaginationParams, filter?: Sa
 /** List sales with optional filters (paginated). */
 export async function list(ctx: Ctx, params?: PaginationParams, filter?: SaleListFilter) {
   // Cache only unfiltered first-page loads (main table view)
-  const noFilter = !filter?.channel && !filter?.customerId && !filter?.from && !filter?.to;
+  const noFilter = !filter?.channel && !filter?.customerId && !filter?.from && !filter?.to && !filter?.search && (!filter?.paymentMethod || filter?.paymentMethod === "All");
   const firstPage = !params?.cursor;
+  
   if (noFilter && firstPage) {
-    return cache.fetch(cacheKeys.sales.list(), TTL.SALES_LIST, async () => {
+    const limitSuffix = params?.limit ? `:${params.limit}` : "";
+    return cache.fetch(`${cacheKeys.sales.list()}${limitSuffix}`, TTL.SALES_LIST, async () => {
       return runSaleListQuery(ctx, params, filter);
     });
   }

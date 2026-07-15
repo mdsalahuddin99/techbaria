@@ -20,27 +20,27 @@ export function ProductFormImageFields({ form }: Props) {
       <FormField control={control} name="imageUrl" render={({ field }) => (
         <FormItem className="sm:col-span-2">
           <FormLabel>Feature Image</FormLabel>
-          <div className="flex gap-4 items-start">
+          <div className="flex gap-4 items-center">
             <FormControl>
               <ImageUpload
                 value={field.value || undefined}
                 onChange={(url) => field.onChange(url ?? "")}
                 fallbackEmoji="📷"
-                size="md"
+                size="sm"
                 allowDataUrlFallback
               />
             </FormControl>
             <FormField control={control} name="emoji" render={({ field: emojiField }) => (
               <div className="flex-1 min-w-0">
                 <p className="text-xs text-muted-foreground mb-1.5">Icon (fallback)</p>
-                <div className="grid grid-cols-5 gap-1.5 max-w-[13rem]">
+                <div className="flex gap-1.5 overflow-x-auto pb-1">
                   {EMOJIS.map((e) => (
                     <button
                       key={e}
                       type="button"
                       onClick={() => emojiField.onChange(e)}
                       className={cn(
-                        "h-9 w-9 rounded-md border text-lg flex items-center justify-center transition-colors",
+                        "h-8 w-8 shrink-0 rounded-md border text-lg flex items-center justify-center transition-colors",
                         emojiField.value === e
                           ? "border-primary bg-primary/10 ring-1 ring-primary"
                           : "border-border hover:bg-muted"

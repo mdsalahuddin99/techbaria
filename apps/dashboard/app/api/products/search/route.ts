@@ -18,27 +18,41 @@ export const GET = apiHandler(async (ctx: Ctx, req: Request) => {
     where.category = { name: category };
   }
 
-  if (q) {
-    const terms = q.split(/\s+/).filter(Boolean);
-    const wordConditions = terms.map(term => ({
-      OR: [
-        { name: { contains: term, mode: "insensitive" as const } },
-        { sku: { contains: term, mode: "insensitive" as const } },
-        { globalBrand: { name: { contains: term, mode: "insensitive" as const } } },
-        { globalModel: { name: { contains: term, mode: "insensitive" as const } } },
-        { category: { name: { contains: term, mode: "insensitive" as const } } }
-      ]
-    }));
+  const exact = url.searchParams.get("exact") === "true";
 
-    where.AND = [
-      {
+  if (q) {
+    if (exact) {
+      where.AND = [
+        {
+          OR: [
+            { barcode: { equals: q, mode: "insensitive" as const } },
+            { sku: { equals: q, mode: "insensitive" as const } },
+            { serialNumbers: { some: { serial: { equals: q, mode: "insensitive" as const } } } }
+          ]
+        }
+      ];
+    } else {
+      const terms = q.split(/\s+/).filter(Boolean);
+      const wordConditions = terms.map(term => ({
         OR: [
-          { barcode: { equals: q, mode: "insensitive" as const } },
-          { serialNumbers: { some: { serial: { equals: q, mode: "insensitive" as const } } } },
-          { AND: wordConditions }
+          { name: { contains: term, mode: "insensitive" as const } },
+          { sku: { contains: term, mode: "insensitive" as const } },
+          { globalBrand: { name: { contains: term, mode: "insensitive" as const } } },
+          { globalModel: { name: { contains: term, mode: "insensitive" as const } } },
+          { category: { name: { contains: term, mode: "insensitive" as const } } }
         ]
-      }
-    ];
+      }));
+
+      where.AND = [
+        {
+          OR: [
+            { barcode: { equals: q, mode: "insensitive" as const } },
+            { serialNumbers: { some: { serial: { equals: q, mode: "insensitive" as const } } } },
+            { AND: wordConditions }
+          ]
+        }
+      ];
+    }
   }
 
   const select = {

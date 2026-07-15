@@ -26,6 +26,7 @@ export async function update(ctx: Ctx, id: string, input: PurchaseUpdateInput) {
       invoiceNo: true,
       paid: true,
       warehouseId: true,
+      expense: { select: { id: true } },
       items: { select: { productId: true, qty: true } },
     },
   });
@@ -109,6 +110,7 @@ export async function update(ctx: Ctx, id: string, input: PurchaseUpdateInput) {
       data: {
         supplierId: input.supplierId,
         discount: input.discount ?? 0,
+        extraCost: input.extraCost ?? 0,
         notes: encodeNotes(input.notes, {
           status: input.status ?? "Ordered",
           expectedDate: input.expectedDate,
@@ -122,7 +124,6 @@ export async function update(ctx: Ctx, id: string, input: PurchaseUpdateInput) {
             productId: item.productId,
             qty: item.qty,
             cost: item.cost,
-            extraCost: item.extraCost,
             name: item.name,
             salePrice: item.salePrice,
             serials: item.serials ?? [],
@@ -130,6 +131,20 @@ export async function update(ctx: Ctx, id: string, input: PurchaseUpdateInput) {
             warrantyMonths: item.warrantyMonths,
           })),
         },
+        expense: (input.extraCost ?? 0) > 0 
+          ? {
+              upsert: {
+                create: {
+                  category: "Purchase Extra Cost",
+                  amount: input.extraCost!,
+                  notes: `Extra cost for Purchase`
+                },
+                update: {
+                  amount: input.extraCost!,
+                }
+              }
+            }
+          : existing.expense ? { delete: true } : undefined,
       },
       include: { items: true, tenders: true, supplier: true },
     });

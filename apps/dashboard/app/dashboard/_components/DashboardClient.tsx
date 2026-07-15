@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
 import { usePageTitle } from "@/shared/hooks/usePageTitle";
 import { useSalesQuery } from "@/features/sales/hooks";
@@ -106,10 +106,10 @@ function SectionHeader({
   iconColor: string;
 }) {
   return (
-    <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100/50 bg-white/40">
-      <div className="flex items-center gap-3.5">
-        <div className={cn("h-9 w-9 rounded-xl grid place-items-center shadow-sm", iconBg)}>
-          <Icon className={cn("h-4.5 w-4.5", iconColor)} />
+    <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-100/50 bg-white/40">
+      <div className="flex items-center gap-3">
+        <div className={cn("h-7 w-7 rounded-lg grid place-items-center shadow-sm", iconBg)}>
+          <Icon className={cn("h-3.5 w-3.5", iconColor)} />
         </div>
         <div>
           <h3 className="text-sm font-bold text-slate-800 tracking-tight">{title}</h3>
@@ -131,6 +131,12 @@ function SectionHeader({
 // ─── Main dashboard UI (client component) ────────────────────────────────────
 
 export default function DashboardClient() {
+  const [mounted, setMounted] = useState(false);
+  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   usePageTitle("Dashboard");
 
   // Fetch real, aggregated metrics from the new backend service
@@ -139,7 +145,7 @@ export default function DashboardClient() {
   // We still need the latest sales for the recent invoices table
   const { data: salesData } = useSalesQuery();
   const sales = (salesData?.items ?? []) as Sale[];
-  const recent = sales.slice(0, 8);
+  const recent = sales.slice(0, 5);
 
   // We still need products to find low stock items (or we can just show the metric)
   // For the reorder queue, we use the prefetched products list
@@ -152,7 +158,7 @@ export default function DashboardClient() {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
-  if (isMetricsLoading || !metrics) {
+  if (!mounted || isMetricsLoading || !metrics) {
     return (
       <div className="flex items-center justify-center h-[60vh]">
         <div className="flex flex-col items-center gap-3">
@@ -212,16 +218,15 @@ export default function DashboardClient() {
   } as const;
 
   return (
-    <div className="space-y-6 max-w-[1600px] mx-auto animate-in fade-in duration-500">
-      
+    <div className="space-y-3 max-w-[1600px] mx-auto animate-in fade-in duration-500">
       {/* ── Page header ── */}
-      <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 p-4 sm:px-6 sm:py-4 shadow-xl">
+      <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 p-3 sm:px-5 sm:py-3 shadow-xl">
         <div className="absolute inset-0 bg-[url('/noise.svg')] opacity-10 mix-blend-overlay" />
         <div className="absolute -top-12 -right-12 h-32 w-32 bg-indigo-500/30 blur-[40px] rounded-full" />
         
         <div className="relative z-10 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
-            <h1 className="text-xl md:text-2xl font-extrabold text-white tracking-tight flex items-center gap-2">
+            <h1 className="text-lg md:text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
               {greeting}, Mizan <span className="inline-block origin-[70%_70%] animate-[wave_2s_ease-in-out_infinite]">👋</span>
             </h1>
             <div className="hidden sm:flex items-center gap-2 border-l border-slate-700 pl-3">
@@ -250,50 +255,50 @@ export default function DashboardClient() {
       </div>
 
       {/* ── KPI metric cards ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {kpis.map((kpi, idx) => {
           const a = accentMap[kpi.accent];
           return (
             <div
               key={kpi.id}
               className={cn(
-                "relative overflow-hidden rounded-2xl bg-gradient-to-br p-5 shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl group",
+                "relative overflow-hidden rounded-xl bg-gradient-to-br p-3 shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl group",
                 a.bg
               )}
               style={{ animationDelay: `${idx * 100}ms` }}
             >
-              <div className="absolute top-0 right-0 p-4 opacity-20 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-12">
-                <kpi.icon className="h-16 w-16 text-white" />
+              <div className="absolute top-0 right-0 p-2.5 opacity-20 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-12">
+                <kpi.icon className="h-10 w-10 text-white" />
               </div>
-              <div className="relative z-10 flex items-start justify-between mb-4">
-                <div className={cn("h-11 w-11 rounded-xl grid place-items-center backdrop-blur-md shadow-inner", a.iconBg)}>
-                  <kpi.icon className="h-5.5 w-5.5" />
+              <div className="relative z-10 flex items-start justify-between mb-1.5">
+                <div className={cn("h-7 w-7 rounded-md grid place-items-center backdrop-blur-md shadow-inner", a.iconBg)}>
+                  <kpi.icon className="h-3.5 w-3.5" />
                 </div>
                 {kpi.delta !== null && (
                   <span
                     className={cn(
-                      "inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full backdrop-blur-md shadow-sm",
+                      "inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full backdrop-blur-md shadow-sm",
                       kpi.delta >= 0
                         ? "bg-white/20 text-white border border-white/30"
                         : "bg-red-500/20 text-white border border-red-500/30",
                     )}
                   >
                     {kpi.delta >= 0 ? (
-                      <TrendingUp className="h-3 w-3" />
+                      <TrendingUp className="h-2.5 w-2.5" />
                     ) : (
-                      <TrendingDown className="h-3 w-3" />
+                      <TrendingDown className="h-2.5 w-2.5" />
                     )}
                     {kpi.delta >= 0 ? "+" : ""}{kpi.delta.toFixed(1)}%
                   </span>
                 )}
               </div>
-              <p className="relative z-10 text-[11px] font-extrabold uppercase tracking-widest text-white/80 mb-1">
+              <p className="relative z-10 text-[10px] font-extrabold uppercase tracking-widest text-white/80 mb-0.5">
                 {kpi.label}
               </p>
-              <p className="relative z-10 text-3xl font-extrabold text-white tracking-tight tabular-nums drop-shadow-md">
+              <p className="relative z-10 text-xl font-extrabold text-white tracking-tight tabular-nums drop-shadow-md">
                 {kpi.value}
               </p>
-              <p className="relative z-10 text-xs text-white/90 mt-2 font-medium bg-black/10 inline-block px-2.5 py-1 rounded-lg backdrop-blur-sm">
+              <p className="relative z-10 text-[10px] text-white/90 mt-1 font-medium bg-black/10 inline-block px-2 py-0.5 rounded-md backdrop-blur-sm">
                 {kpi.sub}
               </p>
             </div>
@@ -304,10 +309,12 @@ export default function DashboardClient() {
       <StorefrontBlock />
 
       {/* ── Main Content Rows ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 items-start">
 
-        {/* Stock distribution donut */}
-        <div className="bg-white/60 backdrop-blur-xl rounded-2xl border border-slate-200/60 shadow-xl overflow-hidden flex flex-col">
+        {/* Left Column (1/3) */}
+        <div className="space-y-3 flex flex-col">
+          {/* Stock distribution donut */}
+          <div className="bg-white/60 backdrop-blur-xl rounded-2xl border border-slate-200/60 shadow-xl overflow-hidden flex flex-col">
           <SectionHeader
             icon={Package}
             title="Inventory Health"
@@ -317,17 +324,17 @@ export default function DashboardClient() {
             href="/dashboard/inventory"
             linkLabel="Inventory"
           />
-          <div className="flex-1 p-5 flex flex-col justify-center">
+          <div className="flex-1 p-4 flex flex-col justify-center">
             {metrics.stock.total === 0 ? (
-              <div className="h-64 flex flex-col items-center justify-center text-slate-400 bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
-                <Package className="h-12 w-12 mb-3 opacity-20" />
+              <div className="py-8 flex flex-col items-center justify-center text-slate-400 bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
+                <Package className="h-10 w-10 mb-2 opacity-20" />
                 <p className="text-sm font-medium text-slate-500">No products found</p>
               </div>
             ) : (
               <>
-                <div className="h-48 relative mb-4">
+                <div className="h-36 relative mb-3">
                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <span className="text-3xl font-extrabold text-slate-800">{metrics.stock.total}</span>
+                    <span className="text-2xl font-extrabold text-slate-800">{metrics.stock.total}</span>
                     <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Total Items</span>
                   </div>
                   <ResponsiveContainer width="100%" height="100%">
@@ -336,8 +343,8 @@ export default function DashboardClient() {
                         data={metrics.stockDonut}
                         cx="50%"
                         cy="50%"
-                        innerRadius={55}
-                        outerRadius={80}
+                        innerRadius={45}
+                        outerRadius={65}
                         paddingAngle={4}
                         dataKey="value"
                         strokeWidth={0}
@@ -381,90 +388,6 @@ export default function DashboardClient() {
             )}
           </div>
         </div>
-        {/* Recent invoices table */}
-        <div className="lg:col-span-2 bg-white/60 backdrop-blur-xl rounded-2xl border border-slate-200/60 shadow-xl overflow-hidden">
-          <SectionHeader
-            icon={Receipt}
-            title="Recent Transactions"
-            subtitle="Latest POS & Online sales"
-            href="/dashboard/sales"
-            linkLabel="All Sales"
-            iconBg="bg-green-500/10"
-            iconColor="text-green-600"
-          />
-          {recent.length === 0 ? (
-            <div className="py-20 flex flex-col items-center justify-center text-slate-400 bg-slate-50/50 m-4 rounded-xl border border-dashed border-slate-200">
-              <Receipt className="h-12 w-12 mb-3 opacity-20" />
-              <p className="text-sm font-bold text-slate-600">No invoices yet</p>
-              <p className="text-xs mt-1 text-slate-500">Create your first sale to see it here.</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto p-4">
-              <table className="w-full text-sm border-separate border-spacing-y-2">
-                <thead>
-                  <tr className="text-slate-500">
-                    <th className="text-left px-4 py-2 text-[10px] font-bold uppercase tracking-wider">Invoice</th>
-                    <th className="text-left px-4 py-2 text-[10px] font-bold uppercase tracking-wider">Customer</th>
-                    <th className="hidden md:table-cell text-left px-4 py-2 text-[10px] font-bold uppercase tracking-wider">Date</th>
-                    <th className="text-center px-4 py-2 text-[10px] font-bold uppercase tracking-wider">Status</th>
-                    <th className="text-right px-4 py-2 text-[10px] font-bold uppercase tracking-wider">Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recent.map((s) => (
-                    <tr
-                      key={s.id}
-                      className="bg-white hover:bg-slate-50 transition-colors group shadow-sm rounded-xl overflow-hidden"
-                    >
-                      <td className="px-4 py-3.5 rounded-l-xl border-y border-l border-slate-100">
-                        <span className="font-bold text-indigo-600 text-xs tracking-tight bg-indigo-50 px-2 py-1 rounded-md">
-                          #{s.invoiceNo}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3.5 border-y border-slate-100">
-                        <div className="flex items-center gap-3">
-                          <div className="h-8 w-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 grid place-items-center text-white text-[11px] font-bold shrink-0 shadow-sm">
-                            {(s.customerName || "?").charAt(0).toUpperCase()}
-                          </div>
-                          <span className="text-slate-700 text-sm font-bold truncate max-w-[140px]">
-                            {s.customerName || "Walk-in"}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="hidden md:table-cell px-4 py-3.5 border-y border-slate-100">
-                        <div className="flex items-center gap-2 text-xs text-slate-500 font-semibold bg-slate-50 w-fit px-2.5 py-1 rounded-md">
-                          <Clock className="h-3.5 w-3.5" />
-                          {formatDateTime(s.date)}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3.5 text-center border-y border-slate-100">
-                        <StatusBadge
-                          method={s.paymentMethod}
-                          total={s.total}
-                          paid={s.amountPaid}
-                        />
-                      </td>
-                      <td className="px-4 py-3.5 text-right rounded-r-xl border-y border-r border-slate-100">
-                        <span className="font-extrabold text-slate-800 tabular-nums text-sm">
-                          {formatCurrency(s.total)}
-                        </span>
-                        {s.total > s.amountPaid && (
-                          <p className="text-[10px] text-red-500 font-bold uppercase tracking-wider mt-1">
-                            Due: {formatCurrency(s.total - s.amountPaid)}
-                          </p>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ── Top products + Reorder queue ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* Top selling products */}
         <div className="bg-white/60 backdrop-blur-xl rounded-2xl border border-slate-200/60 shadow-xl overflow-hidden flex-1">
@@ -476,30 +399,30 @@ export default function DashboardClient() {
               iconColor="text-orange-600"
             />
             {metrics.topProducts.length === 0 ? (
-              <div className="py-12 flex flex-col items-center justify-center text-slate-400 bg-slate-50/50 m-4 rounded-xl border border-dashed border-slate-200">
-                <Package className="h-10 w-10 mb-2 opacity-20" />
+              <div className="py-6 flex flex-col items-center justify-center text-slate-400 bg-slate-50/50 m-4 rounded-xl border border-dashed border-slate-200">
+                <Package className="h-8 w-8 mb-2 opacity-20" />
                 <p className="text-xs font-semibold">No sales data yet</p>
               </div>
             ) : (
-              <div className="p-5 space-y-4">
-                {metrics.topProducts.map((p, i) => {
+              <div className="p-3 space-y-2.5">
+                {metrics.topProducts.slice(0, 5).map((p, i) => {
                   const maxQty = metrics.topProducts[0].qty;
                   const pct = Math.max(12, (p.qty / Math.max(1, maxQty)) * 100);
                   return (
-                    <div key={i} className="flex items-center gap-4 group">
-                      <div className="h-8 w-8 rounded-lg bg-slate-100 text-slate-500 font-extrabold flex items-center justify-center text-sm shadow-inner group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors">
+                    <div key={i} className="flex items-center gap-3 group">
+                      <div className="h-6 w-6 rounded-md bg-slate-100 text-slate-500 font-extrabold flex items-center justify-center text-[10px] shadow-inner group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors">
                         {i + 1}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-1.5">
-                          <span className="text-sm font-bold text-slate-700 truncate group-hover:text-indigo-700 transition-colors">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs font-bold text-slate-700 truncate group-hover:text-indigo-700 transition-colors">
                             {p.name}
                           </span>
-                          <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full tabular-nums ml-2 shrink-0">
+                          <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full tabular-nums ml-2 shrink-0">
                             {p.qty} sold
                           </span>
                         </div>
-                        <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden shadow-inner">
+                        <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden shadow-inner">
                           <div
                             className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-1000 ease-out"
                             style={{ width: `${pct}%` }}
@@ -513,9 +436,9 @@ export default function DashboardClient() {
             )}
           </div>
 
-          {/* Reorder queue */}
-          <div className="bg-white/60 backdrop-blur-xl rounded-2xl border border-slate-200/60 shadow-xl overflow-hidden">
-            <SectionHeader
+        {/* Restock Alerts */}
+        <div className="bg-white/60 backdrop-blur-xl rounded-2xl border border-slate-200/60 shadow-xl overflow-hidden">
+          <SectionHeader
               icon={AlertTriangle}
               title="Restock Alerts"
               subtitle={`${metrics.stock.low} items need attention`}
@@ -525,12 +448,12 @@ export default function DashboardClient() {
               iconColor="text-red-600"
             />
             {lowStockProducts.length === 0 ? (
-              <div className="py-10 flex flex-col items-center justify-center text-slate-400 bg-slate-50/50 m-4 rounded-xl border border-dashed border-slate-200">
-                <div className="h-12 w-12 rounded-full bg-emerald-50 grid place-items-center mb-3">
-                  <Sparkles className="h-6 w-6 text-emerald-500" />
+              <div className="py-6 flex flex-col items-center justify-center text-slate-400 bg-slate-50/50 m-3 rounded-xl border border-dashed border-slate-200">
+                <div className="h-10 w-10 rounded-full bg-emerald-50 grid place-items-center mb-2">
+                  <Sparkles className="h-5 w-5 text-emerald-500" />
                 </div>
                 <p className="text-sm font-bold text-slate-700">Inventory looks great</p>
-                <p className="text-xs text-slate-500 mt-1">No items currently need restocking.</p>
+                <p className="text-xs text-slate-500 mt-0.5">No items currently need restocking.</p>
               </div>
             ) : (
               <div className="divide-y divide-slate-100">
@@ -539,8 +462,8 @@ export default function DashboardClient() {
                   const suggested = suggestedPoQty(p);
                   const ratio = Math.min(1, p.stock / Math.max(1, reorder));
                   return (
-                    <div key={p.id} className="flex items-center gap-4 p-4 hover:bg-slate-50/80 transition-colors">
-                      <div className="h-10 w-10 rounded-xl bg-amber-50 grid place-items-center text-xl shrink-0 shadow-sm border border-amber-100">
+                    <div key={p.id} className="flex items-center gap-3 p-3 hover:bg-slate-50/80 transition-colors">
+                      <div className="h-8 w-8 rounded-lg bg-amber-50 grid place-items-center text-lg shrink-0 shadow-sm border border-amber-100">
                         {p.emoji || "📦"}
                       </div>
                       <div className="min-w-0 flex-1">
@@ -579,6 +502,92 @@ export default function DashboardClient() {
               </div>
             )}
           </div>
+
+        </div>
+
+        {/* Right Column (2/3) */}
+        <div className="lg:col-span-2 space-y-3 flex flex-col">
+          {/* Recent invoices table */}
+          <div className="bg-white/60 backdrop-blur-xl rounded-2xl border border-slate-200/60 shadow-xl overflow-hidden">
+          <SectionHeader
+            icon={Receipt}
+            title="Recent Transactions"
+            subtitle="Latest POS & Online sales"
+            href="/dashboard/sales"
+            linkLabel="All Sales"
+            iconBg="bg-green-500/10"
+            iconColor="text-green-600"
+          />
+          {recent.length === 0 ? (
+            <div className="py-6 flex flex-col items-center justify-center text-slate-400 bg-slate-50/50 m-3 rounded-xl border border-dashed border-slate-200">
+              <Receipt className="h-10 w-10 mb-2 opacity-20" />
+              <p className="text-sm font-bold text-slate-600">No invoices yet</p>
+              <p className="text-xs mt-1 text-slate-500">Create your first sale to see it here.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto p-3">
+              <table className="w-full text-sm border-separate border-spacing-y-1">
+                <thead>
+                  <tr className="text-slate-500">
+                    <th className="text-left px-3 py-2 text-[10px] font-bold uppercase tracking-wider">Invoice</th>
+                    <th className="text-left px-3 py-2 text-[10px] font-bold uppercase tracking-wider">Customer</th>
+                    <th className="hidden md:table-cell text-left px-3 py-2 text-[10px] font-bold uppercase tracking-wider">Date</th>
+                    <th className="text-center px-3 py-2 text-[10px] font-bold uppercase tracking-wider">Status</th>
+                    <th className="text-right px-3 py-2 text-[10px] font-bold uppercase tracking-wider">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recent.map((s) => (
+                    <tr
+                      key={s.id}
+                      className="bg-white hover:bg-slate-50 transition-colors group shadow-sm rounded-xl overflow-hidden"
+                    >
+                      <td className="px-3 py-2 rounded-l-xl border-y border-l border-slate-100">
+                        <span className="font-bold text-indigo-600 text-xs tracking-tight bg-indigo-50 px-2 py-1 rounded-md">
+                          #{s.invoiceNo}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2 border-y border-slate-100">
+                        <div className="flex items-center gap-3">
+                          <div className="h-7 w-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 grid place-items-center text-white text-[11px] font-bold shrink-0 shadow-sm">
+                            {(s.customerName || "?").charAt(0).toUpperCase()}
+                          </div>
+                          <span className="text-slate-700 text-sm font-bold truncate max-w-[140px]">
+                            {s.customerName || "Walk-in"}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="hidden md:table-cell px-3 py-2 border-y border-slate-100">
+                        <div className="flex items-center gap-2 text-[11px] text-slate-500 font-semibold bg-slate-50 w-fit px-2 py-1 rounded-md">
+                          <Clock className="h-3 w-3" />
+                          {formatDateTime(s.date)}
+                        </div>
+                      </td>
+                      <td className="px-3 py-2 text-center border-y border-slate-100">
+                        <StatusBadge
+                          method={s.paymentMethod}
+                          total={s.total}
+                          paid={s.amountPaid}
+                        />
+                      </td>
+                      <td className="px-3 py-2 text-right rounded-r-xl border-y border-r border-slate-100">
+                        <span className="font-extrabold text-slate-800 tabular-nums text-sm">
+                          {formatCurrency(s.total)}
+                        </span>
+                        {s.total > s.amountPaid && (
+                          <p className="text-[10px] text-red-500 font-bold uppercase tracking-wider mt-1">
+                            Due: {formatCurrency(s.total - s.amountPaid)}
+                          </p>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
 
       </div>
 

@@ -43,9 +43,14 @@ export function BrandsTab({ initialBrands, filterOnlineOnly = false, categories,
     initialData: initialBrands,
   });
 
-  const filteredBrands = allBrands.filter((b: any) =>
+  let filteredBrands = allBrands.filter((b: any) =>
     b.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  if (!searchQuery.trim()) {
+    filteredBrands = [...filteredBrands].sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()).slice(0, 5);
+  }
+
 
   // States
   const [createOpen, setCreateOpen] = useState(false);

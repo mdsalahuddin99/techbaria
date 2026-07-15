@@ -21,6 +21,8 @@ export interface CategoryOutput {
   imageUrl: string | null;
   productCount: number;
   isPublished: boolean;
+  showInMenu: boolean;
+  menuOrder: number;
   children: CategoryOutput[];
   createdAt: string;
 }
@@ -31,6 +33,8 @@ export interface CategoryCreateInput {
   imageUrl?: string | null;
   parentId?: string | null;
   isPublished?: boolean;
+  showInMenu?: boolean;
+  menuOrder?: number;
 }
 
 export interface CategoryUpdateInput {
@@ -39,6 +43,8 @@ export interface CategoryUpdateInput {
   imageUrl?: string | null;
   parentId?: string | null;
   isPublished?: boolean;
+  showInMenu?: boolean;
+  menuOrder?: number;
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -82,6 +88,8 @@ async function buildTree(): Promise<CategoryOutput[]> {
       parentId: c.parentId,
       imageUrl: c.imageUrl,
       isPublished: c.isPublished,
+      showInMenu: c.showInMenu,
+      menuOrder: c.menuOrder,
       productCount: (c as any)._count.products,
       children: [],
       createdAt: c.createdAt.toISOString(),
@@ -108,12 +116,26 @@ export const categoriesService = {
   },
 
   /** Get flat list (no nesting) for dropdowns. */
-  async listFlat(ctx: Ctx) {
-    return cache.fetch(cacheKeys.categories.list(), TTL.CATEGORY_TREE, async () => {
-      const categories = await prisma.category.findMany({
+  async listFlat(ctx: Ctx, opts?: { hasPublishedProducts?: boolean }) {
+    const cacheKeySuffix = opts?.hasPublishedProducts ? "-published" : "";
+    return cache.fetch(cacheKeys.categories.list() + cacheKeySuffix, TTL.CATEGORY_TREE, async () => {
+      let categories = await prisma.category.findMany({
         include: { _count: { select: { products: true } } },
-        orderBy: { name: "asc" },
+        orderBy: [{ menuOrder: "asc" }, { name: "asc" }],
       });
+
+      if (opts?.hasPublishedProducts) {
+        const publishedProducts = await prisma.product.findMany({
+          where: { isPublished: true },
+          select: { category: { select: { name: true } }, subcategory: true }
+        });
+        const validNames = new Set<string>();
+        publishedProducts.forEach(p => {
+          if (p.category?.name) validNames.add(p.category.name);
+          if (p.subcategory) validNames.add(p.subcategory);
+        });
+        categories = categories.filter((c: any) => validNames.has(c.name));
+      }
 
       return categories.map((c: any) => ({
         id: c.id,
@@ -122,6 +144,8 @@ export const categoriesService = {
         parentId: c.parentId,
         imageUrl: c.imageUrl,
         isPublished: c.isPublished,
+        showInMenu: c.showInMenu,
+        menuOrder: c.menuOrder,
         productCount: c._count.products,
         createdAt: c.createdAt.toISOString(),
       }));
@@ -145,6 +169,8 @@ export const categoriesService = {
       parentId: cat.parentId,
       imageUrl: cat.imageUrl,
       isPublished: cat.isPublished,
+      showInMenu: cat.showInMenu,
+      menuOrder: cat.menuOrder,
       productCount: cat._count.products,
       createdAt: cat.createdAt.toISOString(),
     };
@@ -181,6 +207,8 @@ export const categoriesService = {
         imageUrl: input.imageUrl ?? null,
         parentId: input.parentId ?? null,
         isPublished: input.isPublished ?? false,
+        showInMenu: input.showInMenu ?? true,
+        menuOrder: input.menuOrder ?? 0,
       },
     });
 
@@ -193,6 +221,8 @@ export const categoriesService = {
       parentId: c.parentId,
       imageUrl: c.imageUrl,
       isPublished: c.isPublished,
+      showInMenu: c.showInMenu,
+      menuOrder: c.menuOrder,
       productCount: 0,
       createdAt: c.createdAt.toISOString(),
     };
@@ -281,6 +311,8 @@ export const categoriesService = {
         ...(input.imageUrl !== undefined && { imageUrl: input.imageUrl }),
         ...(input.parentId !== undefined && { parentId: input.parentId }),
         ...(input.isPublished !== undefined && { isPublished: input.isPublished }),
+        ...(input.showInMenu !== undefined && { showInMenu: input.showInMenu }),
+        ...(input.menuOrder !== undefined && { menuOrder: input.menuOrder }),
       },
       include: { _count: { select: { products: true } } },
     });
@@ -308,6 +340,8 @@ export const categoriesService = {
       parentId: cat.parentId,
       imageUrl: cat.imageUrl,
       isPublished: cat.isPublished,
+      showInMenu: cat.showInMenu,
+      menuOrder: cat.menuOrder,
       productCount: cat._count.products,
       createdAt: cat.createdAt.toISOString(),
     };

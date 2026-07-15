@@ -312,11 +312,12 @@ function FormFields({
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <ProductFormCascadingFields form={form} editing={editing} />
-      <ProductFormImageFields form={form} />
-      <ProductFormBasicFields form={form} />
-
-      {/* ── Show more fields: color / storage / ram / condition ── */}
+      
+      {/* ── Show more fields: color / storage / ram ── */}
       {advanced && <ProductFormAdvancedFields form={form} />}
+
+      <ProductFormBasicFields form={form} />
+      <ProductFormImageFields form={form} />
 
       <FormField control={control} name="trackSerials" render={({ field }) => (
         <FormItem className="sm:col-span-2 flex items-center justify-between p-3 rounded-md bg-secondary/50 space-y-0">

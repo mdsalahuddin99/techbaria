@@ -7,15 +7,16 @@ export default async function SalesHistoryPage() {
   const queryClient = getQueryClient();
 
   const filter = {
-    search: "",
-    paymentMethod: "All",
+    search: undefined,
+    paymentMethod: undefined,
     sortKey: "newest",
     sortDir: undefined,
+    limit: 5,
   };
 
   await queryClient.prefetchInfiniteQuery({
     queryKey: [...queryKeys.sales.list(), filter],
-    queryFn: () => listSalesAction(filter),
+    queryFn: () => listSalesAction(filter, { limit: 5 }),
     initialPageParam: undefined,
   });
 

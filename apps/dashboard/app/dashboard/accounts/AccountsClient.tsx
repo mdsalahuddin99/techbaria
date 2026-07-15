@@ -101,10 +101,13 @@ export function AccountsClient({
   const [ledgerCategory, setLedgerCategory] = useState<string>("All");
   const ledgerAll = useLedger(undefined, initialLedger);
   const ledger = useLedger(ledgerAccountId || undefined, initialLedger);
-  const filteredLedger = useMemo(
-    () => (ledgerCategory === "All" ? ledger : ledger.filter((t) => t.category === ledgerCategory)),
-    [ledger, ledgerCategory]
-  );
+  const filteredLedger = useMemo(() => {
+    let result = ledgerCategory === "All" ? ledger : ledger.filter((t) => t.category === ledgerCategory);
+    if (!ledgerAccountId && ledgerCategory === "All") {
+      result = result.slice(0, 5);
+    }
+    return result;
+  }, [ledger, ledgerCategory, ledgerAccountId]);
 
   const cashSalesSinceOpen = activeShift ? Math.max(0, expectedCash - activeShift.openingBalance) : 0;
   const totalReceivable = customers.reduce((s, c) => s + (c.due ?? 0), 0);
@@ -265,7 +268,7 @@ export function AccountsClient({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {ledgerAll.slice(0, 15).map((tx) => {
+                {ledgerAll.slice(0, 5).map((tx) => {
                   const acc = accounts.find((a) => a.id === tx.accountId);
                   return (
                     <TableRow key={tx.id}>
@@ -444,7 +447,7 @@ export function AccountsClient({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {shifts.map((s) => (
+                  {shifts.slice(0, 5).map((s) => (
                     <TableRow key={s.id}>
                       <TableCell className="text-sm">{formatDateTime(s.openedAt)}</TableCell>
                       <TableCell className="text-sm">{s.closedAt ? formatDateTime(s.closedAt) : "—"}</TableCell>
