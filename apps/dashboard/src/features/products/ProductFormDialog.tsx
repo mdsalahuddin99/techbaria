@@ -26,7 +26,6 @@ import { productDisplayName } from "@/shared/lib/format";
 import { generateEan13 } from "@/shared/lib/barcode";
 import { cn } from "@/shared/lib/utils";
 import { findDuplicateIdentifiers } from "./warranty";
-import { BundleComponentsEditor } from "./components/BundleComponentsEditor";
 import ImageUpload from "@/components/ImageUpload";
 import { toast } from "sonner";
 import { CategoryFormDialog, type CategoryDialogMode } from "@/features/categories/components/CategoryFormDialog";
@@ -59,7 +58,7 @@ const defaults: ProductFormValues = {
   condition: "" as unknown as "New",
   trackSerials: false,
   type: "simple",
-  components: [],
+  bundleQty: "",
 };
 
 interface Props {
@@ -138,7 +137,7 @@ export function ProductFormDialog({
         serialNumber: rest.serialNumber ?? "",
         imei: rest.imei ?? "",
         type: rest.type ?? "simple",
-        components: rest.components ?? [],
+        bundleQty: (rest as any).bundleQty ?? "",
       });
       appliedBarcodeRef.current = undefined;
     } else {
@@ -212,11 +211,7 @@ export function ProductFormDialog({
       trackSerials: values.trackSerials ?? true,
       serials: editing?.serials,
       type: values.type ?? "simple",
-      components:
-        values.type === "bundle"
-          ? (values.components ?? [])
-              .filter((c): c is { productId: string; qty: number } => !!c.productId && (c.qty ?? 0) > 0)
-          : undefined,
+      bundleQty: values.type === "bundle" ? (values.bundleQty ? Number(values.bundleQty) : undefined) : undefined,
     };
   };
 
@@ -237,7 +232,7 @@ export function ProductFormDialog({
         return;
       }
     }
-    const { serialNumber, imei: _imei, serials, components, ...payload } = buildPayload(values);
+    const { serialNumber, imei: _imei, serials, ...payload } = buildPayload(values);
     if (editing) {
       await update.mutateAsync({ id: editing.id, patch: payload });
     } else {
@@ -306,7 +301,7 @@ function FormFields({
   form, control, editing, advanced, allProducts,
   onOpenChange, onSubmit, loading,
 }: FormFieldsProps) {
-  const type = useWatch({ name: "type", control });
+  const type = form.watch("type");
   const submitting = loading ?? form.formState.isSubmitting;
 
   return (
@@ -337,22 +332,32 @@ function FormFields({
       <FormField control={control} name="type" render={({ field }) => (
         <FormItem className="sm:col-span-2 flex items-center justify-between p-3 rounded-md bg-secondary/50 space-y-0">
           <div>
-            <FormLabel className="text-sm font-medium">Bundle / Kit Product</FormLabel>
+            <FormLabel className="text-sm font-medium">Box / Bundle Product</FormLabel>
             <p className="text-xs text-muted-foreground">
-              On করলে এটা কয়েকটা component product নিয়ে তৈরি bundle হিসেবে বিক্রি হবে।
+              On করলে এই প্রোডাক্টটি স্ক্যান করার সময় ডিফল্টভাবে বান্ডেলের কোয়ান্টিটি সিলেক্ট হয়ে যাবে।
             </p>
           </div>
           <FormControl>
             <Switch
-              checked={field.value === "bundle"}
-              onCheckedChange={(v) => field.onChange(v ? "bundle" : "simple")}
+              checked={type === "bundle"}
+              onCheckedChange={(v) => form.setValue("type", v ? "bundle" : "simple", { shouldValidate: true, shouldDirty: true })}
             />
           </FormControl>
         </FormItem>
       )} />
 
       {type === "bundle" && (
-        <BundleComponentsEditor form={form} editingId={editing?.id} />
+        <FormField control={control} name="bundleQty" render={({ field }) => (
+          <FormItem className="sm:col-span-2 space-y-1">
+            <div className="flex flex-row items-center gap-2">
+              <FormLabel className="w-[110px] shrink-0 text-right">Items in Box <span className="text-destructive">*</span></FormLabel>
+              <div className="flex-1 min-w-0">
+                <FormControl><Input type="number" {...field} value={field.value ?? ""} /></FormControl>
+              </div>
+            </div>
+            <FormMessage className="ml-[110px] pl-2" />
+          </FormItem>
+        )} />
       )}
 
 

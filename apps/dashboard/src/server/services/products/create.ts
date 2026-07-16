@@ -66,8 +66,9 @@ export async function create(ctx: Ctx, input: ProductCreateInput) {
       condition: input.condition,
       emoji: input.emoji ?? "📦",
       wholesalePrice: input.wholesalePrice ?? 0,
-      supplierId: input.supplierId ?? null,
       trackSerials: input.trackSerials ?? true,
+      supplierId: input.supplierId ?? null,
+      bundleQty: input.bundleQty,
       warrantyStartDate: input.warrantyStartDate ? new Date(input.warrantyStartDate) : undefined,
       ...(input.warrantyMonths !== undefined && { warrantyMonths: input.warrantyMonths }),
       images: {

@@ -259,6 +259,8 @@ model Product {
   stock            Int               @default(0) // aggregate
   reorderLevel     Int               @default(0)
   unit             String            @default("pc")
+  bundleQty        Int?
+
 
   subcategory       String?
 

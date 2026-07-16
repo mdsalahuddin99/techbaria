@@ -42,9 +42,9 @@ export function ProductListItem({ product, allProducts }: Props) {
   return (
     <Link
       href={`/p/${encodeURIComponent(product.slug || product.id)}`}
-      className="group relative flex gap-3 sm:gap-5 rounded-2xl bg-card/[0.04] border border-white/10 hover:border-indigo-400/40 hover:bg-card/[0.06] transition p-3 sm:p-4"
+      className="group relative flex gap-3 sm:gap-5 rounded-sm bg-card/[0.04] border border-white/10 hover:border-indigo-400/40 hover:bg-card/[0.06] transition p-3 sm:p-4"
     >
-      <div className="relative h-28 w-28 sm:h-40 sm:w-40 shrink-0 rounded-xl bg-gradient-to-br from-indigo-950/40 to-transparent overflow-hidden grid place-items-center">
+      <div className="relative h-28 w-28 sm:h-40 sm:w-40 shrink-0 rounded-sm bg-gradient-to-br from-indigo-950/40 to-transparent overflow-hidden grid place-items-center">
         {product.imageUrl ? (
           <Image
             src={product.imageUrl}
@@ -57,7 +57,7 @@ export function ProductListItem({ product, allProducts }: Props) {
           <span className="text-5xl">{product.emoji || "📦"}</span>
         )}
         {off && (
-          <span className="absolute top-1.5 left-1.5 text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-gradient-to-r from-rose-500 to-pink-500 text-white">
+          <span className="absolute top-1.5 left-1.5 text-[10px] font-bold px-1.5 py-0.5 rounded-sm bg-gradient-to-r from-rose-500 to-pink-500 text-white">
             -{off}%
           </span>
         )}
@@ -95,16 +95,22 @@ export function ProductListItem({ product, allProducts }: Props) {
 
         <div className="mt-auto pt-2 flex items-end justify-between gap-2">
           <div className="min-w-0">
-            <div className="text-base sm:text-xl font-bold text-white">{formatPrice(product.price)}</div>
-            {originalPrice && (
-              <div className="text-[10px] sm:text-xs text-slate-500 line-through">{formatPrice(originalPrice)}</div>
+            {out ? (
+              <div className="text-base sm:text-xl font-bold text-rose-500">Out of Stock</div>
+            ) : (
+              <>
+                <div className="text-base sm:text-xl font-bold text-white">{formatPrice(product.price)}</div>
+                {originalPrice && (
+                  <div className="text-[10px] sm:text-xs text-slate-500 line-through">{formatPrice(originalPrice)}</div>
+                )}
+              </>
             )}
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0">
             <button
               onClick={stop(() => wishToggle(product.id))}
-              className={`h-9 w-9 rounded-xl border grid place-items-center transition ${
+              className={`h-9 w-9 rounded-sm border grid place-items-center transition ${
                 isWish ? "bg-rose-500/20 border-rose-400/40 text-rose-300" : "bg-card/5 border-white/10 text-slate-300 hover:text-rose-300"
               }`}
               aria-label="Wishlist"
@@ -113,7 +119,7 @@ export function ProductListItem({ product, allProducts }: Props) {
             </button>
             <button
               onClick={stop(() => openQuick(product.id))}
-              className="hidden sm:grid h-9 w-9 rounded-xl bg-card/5 border border-white/10 place-items-center text-slate-300 hover:text-indigo-300 transition"
+              className="hidden sm:grid h-9 w-9 rounded-sm bg-card/5 border border-white/10 place-items-center text-slate-300 hover:text-indigo-300 transition"
               aria-label="Quick view"
             >
               <Eye className="h-4 w-4" />
@@ -123,7 +129,7 @@ export function ProductListItem({ product, allProducts }: Props) {
                 const ok = cmpToggle(product.id);
                 if (!ok) toast({ title: `Max ${COMPARE_MAX} products compare করা যাবে`, variant: "destructive" });
               })}
-              className={`hidden sm:grid h-9 w-9 rounded-xl border place-items-center transition ${
+              className={`hidden sm:grid h-9 w-9 rounded-sm border place-items-center transition ${
                 isCmp ? "bg-indigo-500/20 border-indigo-400/40 text-indigo-300" : "bg-card/5 border-white/10 text-slate-300 hover:text-indigo-300"
               }`}
               aria-label="Compare"
@@ -132,7 +138,6 @@ export function ProductListItem({ product, allProducts }: Props) {
             </button>
             <button
               onClick={stop(() => {
-                if (out) return;
                 add({
                   productId: product.id,
                   name: productDisplayName(product),
@@ -143,11 +148,10 @@ export function ProductListItem({ product, allProducts }: Props) {
                 });
                 toast({ title: "Cart-এ যোগ হয়েছে", description: productDisplayName(product) });
               })}
-              disabled={out}
-              className="h-9 px-3 sm:px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 disabled:text-slate-500 text-white text-xs sm:text-sm font-semibold inline-flex items-center gap-1.5 shadow-lg shadow-indigo-600/30"
+              className="h-9 px-3 sm:px-4 rounded-sm bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 disabled:text-slate-500 text-white text-xs sm:text-sm font-semibold inline-flex items-center gap-1.5 shadow-lg shadow-indigo-600/30"
             >
               <ShoppingBag className="h-4 w-4" />
-              <span className="hidden sm:inline">Add</span>
+              <span className="hidden sm:inline">{out ? "Pre Order" : "Add"}</span>
             </button>
           </div>
         </div>

@@ -110,16 +110,16 @@ export default function StorefrontBlock() {
         <Link href="/dashboard/online-orders" className="text-[11px] text-primary hover:underline inline-flex items-center gap-0.5">Manage orders <ArrowUpRight className="h-3 w-3" /></Link>
       </div>
 
-      <div className="p-2 md:p-3 grid gap-2.5 md:grid-cols-5">
+      <div className="p-2 md:p-3">
         {/* KPI tiles */}
-        <div className="md:col-span-3 flex flex-wrap gap-2">
+        <div className="flex flex-wrap justify-center lg:justify-between gap-3">
           {tiles.map((t) => (
             <div
               key={t.label}
-              className="rounded-lg border border-border/60 bg-background/60 p-2 hover:shadow-sm transition flex items-center gap-2.5 flex-1 min-w-[140px]"
+              className="rounded-lg border border-border/60 bg-background/60 px-4 py-3 hover:shadow-sm transition flex items-center gap-3 w-fit min-w-[160px]"
             >
-              <div className={cn("h-7 w-7 rounded flex-shrink-0 grid place-items-center", t.tone)}>
-                <t.icon className="h-3.5 w-3.5" />
+              <div className={cn("h-5 w-5 rounded flex-shrink-0 grid place-items-center", t.tone)}>
+                <t.icon className="h-3 w-3" />
               </div>
               <div className="min-w-0">
                 <p className="text-[9px] font-medium uppercase tracking-wider text-muted-foreground truncate">
@@ -138,56 +138,7 @@ export default function StorefrontBlock() {
           ))}
         </div>
 
-        {/* Sparkline + recent */}
-        <div className="md:col-span-2 rounded-lg border border-border/60 bg-background/60 p-2 flex flex-col">
-          <div className="flex items-center justify-between">
-            <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-              Last 7 days
-            </p>
-            <Badge variant="secondary" className="text-[9px]">7D</Badge>
-          </div>
-          <div className="hidden h-10 -mx-1 md:block">
-            <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
-              <LineChart data={stats.spark}>
-                <Line
-                  type="monotone"
-                  dataKey="total"
-                  stroke="hsl(var(--primary))"
-                  strokeWidth={1.75}
-                  dot={false}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="mt-1 border-t border-border/50 pt-1.5 space-y-1 flex-1">
-            {recent.length === 0 ? (
-              <p className="text-[10px] text-muted-foreground text-center py-2">
-                No online orders yet.
-              </p>
-            ) : (
-              recent.map((o) => (
-                <Link href="/dashboard/online-orders" key={o.id} className="flex items-center justify-between gap-2 text-[11.5px] hover:bg-muted/40 rounded-md px-2 py-1.5 transition">
-                  <div className="min-w-0 flex-1">
-                    <div className="font-medium truncate">#{o.orderNo}</div>
-                    <div className="text-[10px] text-muted-foreground truncate">
-                      {formatDateTime(o.createdAt)}
-                    </div>
-                  </div>
-                  <Badge
-                    variant="secondary"
-                    className={cn("text-[9px] px-1.5 py-0 h-4", statusTone[o.status])}
-                  >
-                    {o.status}
-                  </Badge>
-                  <span className="tabular-nums font-semibold shrink-0">
-                    {formatCurrency(o.total)}
-                  </span>
-                </Link>
-              ))
-            )}
-          </div>
         </div>
-      </div>
     </section>
   );
 }

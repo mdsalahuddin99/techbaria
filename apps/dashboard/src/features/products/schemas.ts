@@ -58,15 +58,11 @@ export const productSchema = z.object({
   trackSerials: z.boolean().default(false),
   // ---- Phase 4: bundle ----
   type: z.enum(["simple", "bundle"]).default("simple"),
-  components: z
-    .array(
-      z.object({
-        productId: z.string().min(1),
-        qty: z.coerce.number().positive(),
-      })
-    )
-    .optional()
-    .default([]),
+  bundleQty: optNum,
+  components: z.array(z.object({
+    productId: z.string(),
+    qty: z.coerce.number().int().positive()
+  })).optional().default([]),
 }).strict();
 
 /**

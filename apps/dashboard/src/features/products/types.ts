@@ -94,6 +94,7 @@ export interface Product {
   trackSerials?: boolean;
   /** Per-unit tracking for serialized inventory. Optional. */
   serials?: ProductUnit[];
+  bundleQty?: number | null;
 
   /** Default discount to remember and auto-suggest at sale time. */
   defaultDiscount?: { mode: "amount" | "percent"; value: number };
@@ -105,13 +106,6 @@ export interface Product {
   // ---- Bundle / Kit (Phase 4) ----
   /** 'simple' (default) or 'bundle' (composed of other products). */
   type?: "simple" | "bundle";
-  /** Component products that make up this bundle. Stock for the bundle is derived from these. */
-  components?: BundleComponent[];
-}
-
-export interface BundleComponent {
-  productId: string;
-  qty: number;
 }
 
 export type ProductInput = Omit<Product, "id">;

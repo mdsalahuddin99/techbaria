@@ -134,7 +134,7 @@ export function ShopClient({ initialProducts, totalCount }: Props) {
   return (
     <div className="max-w-7xl mx-auto px-3 sm:px-6 pt-3 sm:pt-4">
       {/* Breadcrumb — Electro style */}
-      <nav className="text-xs text-slate-500 flex items-center gap-1.5 mb-4 bg-[#F0FDF4] border border-[#BFDBFE] px-3 py-2 rounded-md overflow-x-auto whitespace-nowrap scrollbar-hide" aria-label="Breadcrumb">
+      <nav className="text-xs text-slate-500 flex items-center gap-1.5 mb-4 bg-[#F0FDF4] border border-[#BFDBFE] px-3 py-2 rounded-sm overflow-x-auto whitespace-nowrap scrollbar-hide" aria-label="Breadcrumb">
         <Link href="/" className="hover:text-[#16A34A] font-medium">Home</Link>
         <ChevronRight className="h-3 w-3 text-slate-300 shrink-0" />
         <Link href="/shop" className="hover:text-[#16A34A] font-medium">Shop</Link>
@@ -169,7 +169,7 @@ export function ShopClient({ initialProducts, totalCount }: Props) {
       {/* Category header — Electro style: compact with left yellow border accent */}
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-3">
-          <span className="w-1 h-7 bg-[#16A34A] rounded-full shrink-0" />
+          <span className="w-1 h-7 bg-[#16A34A] rounded-sm shrink-0" />
           <div>
             <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-[#1E3A5F]">
               {filters.brands.length === 1 ? filters.brands[0] : (activeSub ?? decoded ?? "All Products")}
@@ -187,7 +187,7 @@ export function ShopClient({ initialProducts, totalCount }: Props) {
       <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-5">
         {/* Sidebar — desktop */}
         <aside className="hidden lg:block">
-          <div className="sticky top-24 rounded-lg border border-slate-200 bg-white p-4 max-h-[calc(100vh-7rem)] overflow-y-auto [&::-webkit-scrollbar]:hidden">
+          <div className="sticky top-24 rounded-sm border border-slate-200 bg-white p-4 max-h-[calc(100vh-7rem)] overflow-y-auto [&::-webkit-scrollbar]:hidden">
             <ShopFilters
               value={filters}
               bounds={bounds}
@@ -201,11 +201,11 @@ export function ShopClient({ initialProducts, totalCount }: Props) {
 
         <div className="min-w-0">
           {/* Toolbar — Electro style */}
-          <div className="flex items-center justify-between gap-2 mb-3 bg-slate-50 border border-slate-200 rounded-md px-2.5 py-1.5">
+          <div className="flex items-center justify-between gap-2 mb-3 bg-slate-50 border border-slate-200 rounded-sm px-2.5 py-1.5">
             <div className="flex items-center gap-2 shrink-0">
               <Sheet>
                 <SheetTrigger asChild>
-                  <button className="lg:hidden inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-[#16A34A] text-white text-sm font-bold hover:bg-[#15803D] transition">
+                  <button className="lg:hidden inline-flex items-center gap-1.5 h-8 px-3 rounded-sm bg-[#16A34A] text-white text-sm font-bold hover:bg-[#15803D] transition">
                     <Filter className="h-4 w-4" /> Filters
                   </button>
                 </SheetTrigger>
@@ -226,7 +226,7 @@ export function ShopClient({ initialProducts, totalCount }: Props) {
 
             <div className="flex items-center gap-2 ml-auto shrink-0">
               <span className="text-xs text-slate-500 hidden sm:inline">{visible.length} items</span>
-              <div className="inline-flex rounded-md border border-slate-200 bg-white overflow-hidden">
+              <div className="inline-flex rounded-sm border border-slate-200 bg-white overflow-hidden">
                 <button
                   onClick={() => setView("grid")}
                   className={`h-8 w-8 grid place-items-center transition ${
@@ -284,7 +284,7 @@ export function ShopClient({ initialProducts, totalCount }: Props) {
               <button
                 onClick={() => handlePageChange(Math.max(1, page - 1))}
                 disabled={page === 1}
-                className="h-10 px-4 rounded-xl border border-slate-200 bg-white text-slate-500 font-medium hover:bg-slate-50 disabled:opacity-50 transition"
+                className="h-10 px-4 rounded-sm border border-slate-200 bg-white text-slate-500 font-medium hover:bg-slate-50 disabled:opacity-50 transition"
               >
                 <ChevronLeft className="h-4 w-4 inline-block mr-1" /> আগে
               </button>
@@ -299,7 +299,7 @@ export function ShopClient({ initialProducts, totalCount }: Props) {
                     <button
                       key={p}
                       onClick={() => handlePageChange(p)}
-                      className={`h-10 w-10 flex items-center justify-center rounded-xl font-bold transition ${
+                      className={`h-10 w-10 flex items-center justify-center rounded-sm font-bold transition ${
                         page === p
                           ? "bg-[#16A34A] text-white shadow-md shadow-green-500/20"
                           : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
@@ -317,7 +317,7 @@ export function ShopClient({ initialProducts, totalCount }: Props) {
               <button
                 onClick={() => handlePageChange(Math.min(totalPages, page + 1))}
                 disabled={page === totalPages}
-                className="h-10 px-4 rounded-xl border border-slate-200 bg-white text-slate-500 font-medium hover:bg-slate-50 disabled:opacity-50 transition"
+                className="h-10 px-4 rounded-sm border border-slate-200 bg-white text-slate-500 font-medium hover:bg-slate-50 disabled:opacity-50 transition"
               >
                 পরে <ChevronRight className="h-4 w-4 inline-block ml-1" />
               </button>

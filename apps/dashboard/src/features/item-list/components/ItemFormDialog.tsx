@@ -132,6 +132,11 @@ export function ItemFormDialog({ open, onOpenChange, editing, categories }: any)
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!categoryName) return toast.error("Category is required");
+    if (!subcategoryName) return toast.error("Subcategory is required");
+    if (!brandName) return toast.error("Brand is required");
+    if (!productTypeName) return toast.error("Product Name is required");
+    if (!modelName) return toast.error("Model is required");
+    if (!seriesName) return toast.error("Series is required");
 
     const data = {
       categoryId: categoryName, // backend stores this string, we use the name
@@ -150,7 +155,7 @@ export function ItemFormDialog({ open, onOpenChange, editing, categories }: any)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="sm:max-w-[800px] h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 py-4 border-b">
           <DialogTitle>{editing?.id ? "Edit Item List" : editing ? "Duplicate Item List" : "Create Item List"}</DialogTitle>
         </DialogHeader>
@@ -159,9 +164,9 @@ export function ItemFormDialog({ open, onOpenChange, editing, categories }: any)
           <form id="item-form" onSubmit={handleSubmit} className="space-y-4">
             
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className="text-sm font-medium">Category *</label>
-                <div className="flex items-center gap-1">
+              <div className="flex flex-row items-center gap-3">
+                <label className="w-[120px] shrink-0 text-right text-sm font-medium">Category *</label>
+                <div className="flex items-center gap-1 flex-1 min-w-0">
                   <div className="flex-1 min-w-0">
                     <Select value={categoryName} onValueChange={(val) => { setCategoryName(val); setSubcategoryName(""); }}>
                       <SelectTrigger>
@@ -184,9 +189,9 @@ export function ItemFormDialog({ open, onOpenChange, editing, categories }: any)
                 </div>
               </div>
 
-              <div className="space-y-1">
-                <label className="text-sm font-medium">Subcategory</label>
-                <div className="flex items-center gap-1">
+              <div className="flex flex-row items-center gap-3">
+                <label className="w-[120px] shrink-0 text-right text-sm font-medium">Subcategory *</label>
+                <div className="flex items-center gap-1 flex-1 min-w-0">
                   <div className="flex-1 min-w-0">
                     <Select value={subcategoryName} onValueChange={setSubcategoryName} disabled={!categoryName || subcategories.length === 0}>
                       <SelectTrigger>
@@ -212,16 +217,20 @@ export function ItemFormDialog({ open, onOpenChange, editing, categories }: any)
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className="text-sm font-medium">Brand</label>
-                <Input list="brands-list" value={brandName} onChange={(e) => setBrandName(e.target.value)} placeholder="e.g. Samsung" autoComplete="off" />
+              <div className="flex flex-row items-center gap-3">
+                <label className="w-[120px] shrink-0 text-right text-sm font-medium">Brand *</label>
+                <div className="flex-1 min-w-0">
+                  <Input list="brands-list" value={brandName} onChange={(e) => setBrandName(e.target.value)} placeholder="e.g. Samsung" autoComplete="off" disabled={!subcategoryName} />
+                </div>
                 <datalist id="brands-list">
                   {availableBrands.map((name: any) => <option key={name} value={name} />)}
                 </datalist>
               </div>
-              <div className="space-y-1">
-                <label className="text-sm font-medium">Product Name</label>
-                <Input list="products-list" value={productTypeName} onChange={(e) => setProductTypeName(e.target.value)} placeholder="e.g. Smartphone" autoComplete="off" />
+              <div className="flex flex-row items-center gap-3">
+                <label className="w-[120px] shrink-0 text-right text-sm font-medium">Product Name *</label>
+                <div className="flex-1 min-w-0">
+                  <Input list="products-list" value={productTypeName} onChange={(e) => setProductTypeName(e.target.value)} placeholder="e.g. Smartphone" autoComplete="off" disabled={!brandName} />
+                </div>
                 <datalist id="products-list">
                   {availableProductNames.map((name: any) => <option key={name} value={name} />)}
                 </datalist>
@@ -229,16 +238,20 @@ export function ItemFormDialog({ open, onOpenChange, editing, categories }: any)
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className="text-sm font-medium">Model</label>
-                <Input list="models-list" value={modelName} onChange={(e) => setModelName(e.target.value)} placeholder="e.g. Galaxy S24" autoComplete="off" />
+              <div className="flex flex-row items-center gap-3">
+                <label className="w-[120px] shrink-0 text-right text-sm font-medium">Model *</label>
+                <div className="flex-1 min-w-0">
+                  <Input list="models-list" value={modelName} onChange={(e) => setModelName(e.target.value)} placeholder="e.g. Galaxy S24" autoComplete="off" disabled={!productTypeName} />
+                </div>
                 <datalist id="models-list">
                   {availableModels.map((name: any) => <option key={name} value={name} />)}
                 </datalist>
               </div>
-              <div className="space-y-1">
-                <label className="text-sm font-medium">Series</label>
-                <Input list="series-list" value={seriesName} onChange={(e) => setSeriesName(e.target.value)} placeholder="e.g. Ultra" autoComplete="off" />
+              <div className="flex flex-row items-center gap-3">
+                <label className="w-[120px] shrink-0 text-right text-sm font-medium">Series *</label>
+                <div className="flex-1 min-w-0">
+                  <Input list="series-list" value={seriesName} onChange={(e) => setSeriesName(e.target.value)} placeholder="e.g. Ultra" autoComplete="off" disabled={!modelName} />
+                </div>
                 <datalist id="series-list">
                   {availableSeries.map((name: any) => <option key={name} value={name} />)}
                 </datalist>
@@ -246,20 +259,26 @@ export function ItemFormDialog({ open, onOpenChange, editing, categories }: any)
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className="text-sm font-medium">Colors (comma separated)</label>
-                <Input value={colors} onChange={(e) => setColors(e.target.value)} placeholder="e.g. Titanium Black, Titanium Violet" />
+              <div className="flex flex-row items-center gap-3">
+                <label className="w-[120px] shrink-0 text-right text-sm font-medium">Colors</label>
+                <div className="flex-1 min-w-0">
+                  <Input value={colors} onChange={(e) => setColors(e.target.value)} placeholder="e.g. Titanium Black" />
+                </div>
               </div>
-              <div className="space-y-1">
-                <label className="text-sm font-medium">Storage (comma separated)</label>
-                <Input value={storages} onChange={(e) => setStorages(e.target.value)} placeholder="e.g. 256GB, 512GB, 1TB" />
+              <div className="flex flex-row items-center gap-3">
+                <label className="w-[120px] shrink-0 text-right text-sm font-medium">Storage</label>
+                <div className="flex-1 min-w-0">
+                  <Input value={storages} onChange={(e) => setStorages(e.target.value)} placeholder="e.g. 256GB, 512GB" />
+                </div>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className="text-sm font-medium">RAM (comma separated)</label>
-                <Input value={rams} onChange={(e) => setRams(e.target.value)} placeholder="e.g. 12GB, 16GB" />
+              <div className="flex flex-row items-center gap-3">
+                <label className="w-[120px] shrink-0 text-right text-sm font-medium">RAM</label>
+                <div className="flex-1 min-w-0">
+                  <Input value={rams} onChange={(e) => setRams(e.target.value)} placeholder="e.g. 12GB, 16GB" />
+                </div>
               </div>
             </div>
 

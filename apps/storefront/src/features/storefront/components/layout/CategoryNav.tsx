@@ -43,7 +43,7 @@ export function CategoryNav() {
             >
               <Link
                 href={`/shop/${encodeURIComponent(cat.category)}`}
-                className={`block px-3 py-2 text-[13px] font-bold rounded-md transition-colors whitespace-nowrap
+                className={`block px-2.5 py-1.5 text-[12px] font-bold rounded transition-colors whitespace-nowrap
                   ${activeCat === cat.category
                     ? "text-[#16A34A] bg-[#F0FDF4]"
                     : "text-slate-700 hover:text-[#16A34A] hover:bg-[#F0FDF4]"}`}
@@ -66,7 +66,7 @@ export function CategoryNav() {
                     >
                       <Link
                         href={`/shop/${encodeURIComponent(cat.category)}?sub=${encodeURIComponent(sub.subcategory)}`}
-                        className={`flex items-center justify-between px-4 py-2.5 text-sm transition-colors whitespace-nowrap
+                        className={`flex items-center justify-between px-3 py-1.5 text-[13px] transition-colors whitespace-nowrap
                           ${activeSub === sub.subcategory
                             ? "bg-[#F0FDF4] text-[#16A34A] font-medium"
                             : "text-slate-600 hover:bg-[#F0FDF4] hover:text-[#16A34A]"}`}
@@ -87,7 +87,7 @@ export function CategoryNav() {
                             <Link
                               key={brand}
                               href={`/shop/${encodeURIComponent(cat.category)}?brand=${encodeURIComponent(brand)}`}
-                              className="block px-4 py-2 text-sm text-slate-600 hover:bg-[#F0FDF4] hover:text-[#16A34A] transition-colors whitespace-nowrap"
+                              className="block px-3 py-1.5 text-[13px] text-slate-600 hover:bg-[#F0FDF4] hover:text-[#16A34A] transition-colors whitespace-nowrap"
                             >
                               {brand}
                             </Link>

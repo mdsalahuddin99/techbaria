@@ -95,7 +95,7 @@ export function SmartSearch({ className = "", variant = "header" }: Props) {
   const sizeCls =
     variant === "hero"
       ? "h-14 sm:h-16 text-base pl-14 pr-28 rounded-2xl"
-      : "h-10 sm:h-11 text-sm pl-10 pr-20 rounded-full";
+      : "h-9 sm:h-10 text-sm pl-10 pr-20 rounded-md";
 
   return (
     <div ref={wrapRef} className={`relative ${className}`}>

@@ -300,6 +300,7 @@ export function ProductFormCascadingFields({ form, editing }: Props) {
                   onValueChange={(v) => field.onChange(v)}
                   placeholder="Search brand..."
                   allowClear
+                  disabled={!subcategory}
                   defaultOptions={brands.map((b: any) => ({ value: b.id, label: b.name }))}
                   fetchOptions={async (search) => {
                     const res = await apiFetch<any[]>(
@@ -312,6 +313,7 @@ export function ProductFormCascadingFields({ form, editing }: Props) {
               <Button
                 type="button" size="icon" variant="outline" className="h-10 w-10 shrink-0"
                 onClick={() => openQuickCreate("brands")}
+                disabled={!subcategory}
                 title="Add new brand"
               >
                 <Plus className="h-4 w-4" />
@@ -333,6 +335,7 @@ export function ProductFormCascadingFields({ form, editing }: Props) {
                   value={field.value ?? ""}
                   onValueChange={(v) => field.onChange(v)}
                   placeholder="Search product name..."
+                  disabled={!brand}
                   defaultOptions={products.map((p: any) => ({ value: p.name, label: productDisplayName(p) }))}
                   fetchOptions={async (search) => {
                     const res = await apiFetch<any[]>(
@@ -345,6 +348,7 @@ export function ProductFormCascadingFields({ form, editing }: Props) {
               <Button
                 type="button" size="icon" variant="outline" className="h-10 w-10 shrink-0"
                 onClick={() => openQuickCreate("products")}
+                disabled={!brand}
                 title="Add new product name"
               >
                 <Plus className="h-4 w-4" />
@@ -367,6 +371,7 @@ export function ProductFormCascadingFields({ form, editing }: Props) {
                   onValueChange={(v) => field.onChange(v)}
                   placeholder="Search model..."
                   allowClear
+                  disabled={!productName}
                   defaultOptions={models.map((m: any) => ({ value: m.id, label: m.name }))}
                   fetchOptions={async (search) => {
                     const res = await apiFetch<any[]>(
@@ -379,6 +384,7 @@ export function ProductFormCascadingFields({ form, editing }: Props) {
               <Button
                 type="button" size="icon" variant="outline" className="h-10 w-10 shrink-0"
                 onClick={() => openQuickCreate("models")}
+                disabled={!productName}
                 title="Add new model"
               >
                 <Plus className="h-4 w-4" />
@@ -401,6 +407,7 @@ export function ProductFormCascadingFields({ form, editing }: Props) {
                   onValueChange={(v) => field.onChange(v)}
                   placeholder="Search series..."
                   allowClear
+                  disabled={!model}
                   defaultOptions={seriesList.map((s: any) => ({ value: s.id, label: s.name }))}
                   fetchOptions={async (search) => {
                     const res = await apiFetch<any[]>(
@@ -413,6 +420,7 @@ export function ProductFormCascadingFields({ form, editing }: Props) {
               <Button
                 type="button" size="icon" variant="outline" className="h-10 w-10 shrink-0"
                 onClick={() => openQuickCreate("series")}
+                disabled={!model}
                 title="Add new series"
               >
                 <Plus className="h-4 w-4" />

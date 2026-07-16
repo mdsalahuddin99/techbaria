@@ -153,7 +153,7 @@ export function CheckoutClient({ config }: { config: any }) {
         </div>
 
         <aside className="space-y-3 md:sticky md:top-20 md:self-start">
-          <div className="rounded-2xl bg-white border border-[#E2E8F0] shadow-sm p-4">
+          <div className="rounded-sm bg-white border border-[#E2E8F0] shadow-sm p-4">
             <div className="text-sm font-semibold mb-3 text-[#1E3A5F]">Order summary</div>
             <div className="space-y-2 max-h-60 overflow-y-auto text-xs text-slate-600">
               {lines.map((l) => (
@@ -168,7 +168,7 @@ export function CheckoutClient({ config }: { config: any }) {
           <Button
             type="submit"
             disabled={submitting}
-            className="w-full h-11 bg-[#16A34A] hover:bg-[#15803D] rounded-full text-white shadow-md shadow-green-500/20 disabled:opacity-60"
+            className="w-full h-11 bg-[#16A34A] hover:bg-[#15803D] rounded-sm text-white shadow-md shadow-green-500/20 disabled:opacity-60"
           >
             {submitting ? "Placing order..." : <>Place order <ArrowRight className="h-4 w-4 ml-1" /></>}
           </Button>
@@ -184,7 +184,7 @@ export function CheckoutClient({ config }: { config: any }) {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-2xl bg-white border border-[#E2E8F0] shadow-sm p-4 sm:p-5">
+    <section className="rounded-sm bg-white border border-[#E2E8F0] shadow-sm p-4 sm:p-5">
       <h2 className="text-base font-semibold mb-3 text-[#1E3A5F]">{title}</h2>
       {children}
     </section>
@@ -205,7 +205,7 @@ function Field({
         onChange={onChange}
         type={type}
         placeholder={placeholder}
-        className="w-full h-10 px-3 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0] text-sm focus:outline-none focus:border-[#16A34A]/60 text-[#1E3A5F]"
+        className="w-full h-10 px-3 rounded-sm bg-[#F8FAFC] border border-[#E2E8F0] text-sm focus:outline-none focus:border-[#16A34A]/60 text-[#1E3A5F]"
       />
     </div>
   );
@@ -221,12 +221,12 @@ function Radio({
     <button
       type="button"
       onClick={onChange}
-      className={`w-full flex items-center gap-3 p-3 rounded-xl border transition text-left ${
+      className={`w-full flex items-center gap-3 p-3 rounded-sm border transition text-left ${
         checked ? "border-[#16A34A]/40 bg-[#F0FDF4]" : "border-[#E2E8F0] hover:border-slate-300 bg-white"
       }`}
     >
-      <div className={`h-4 w-4 rounded-full border-2 grid place-items-center shrink-0 ${checked ? "border-[#16A34A]" : "border-slate-300"}`}>
-        {checked && <span className="h-2 w-2 rounded-full bg-[#16A34A]" />}
+      <div className={`h-4 w-4 rounded-sm border-2 grid place-items-center shrink-0 ${checked ? "border-[#16A34A]" : "border-slate-300"}`}>
+        {checked && <span className="h-2 w-2 rounded-sm bg-[#16A34A]" />}
       </div>
       {Icon && <Icon className="h-5 w-5 text-[#16A34A] shrink-0" />}
       <div className="flex-1 min-w-0">

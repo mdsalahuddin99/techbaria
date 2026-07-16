@@ -17,11 +17,11 @@ export const createUiSessionSlice: SliceCreator<import("../types").UiSessionSlic
   selectedCustomerId: null,
 
   // ─── Cart actions ───────────────────────────────────────────────────────
-  addToCart(productId, name?, price?, imageUrl?) {
+  addToCart(productId, name?, price?, imageUrl?, bundleQty?) {
     const { cart } = get();
     const existing = cart.find((c: CartItem) => c.productId === productId);
     if (existing) {
-      set({ cart: cart.map((c: CartItem) => (c.productId === productId ? { ...c, qty: c.qty + 1 } : c)) });
+      set({ cart: cart.map((c: CartItem) => (c.productId === productId ? { ...c, qty: c.qty + (bundleQty ?? 1) } : c)) });
       return;
     }
     set({
@@ -32,7 +32,7 @@ export const createUiSessionSlice: SliceCreator<import("../types").UiSessionSlic
           productId,
           name: name ?? "Unknown",
           price: price ?? 0,
-          qty: 1,
+          qty: bundleQty ?? 1,
           imageUrl: imageUrl ?? undefined,
         },
       ],

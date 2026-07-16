@@ -16,6 +16,7 @@ export function GeneralSettingsForm({ initialData = {} }: { initialData?: any })
     email: initialData?.email || "",
     address: initialData?.address || "",
     logoUrl: initialData?.logoUrl || "",
+    whatsappNumber: initialData?.whatsappNumber || "",
   });
 
   const handleSave = async (e: React.FormEvent) => {
@@ -54,6 +55,14 @@ export function GeneralSettingsForm({ initialData = {} }: { initialData?: any })
           value={data.phone} 
           onChange={(e) => setData({ ...data, phone: e.target.value })} 
           placeholder="e.g. +880 1700-000000" 
+        />
+      </div>
+      <div className="space-y-2">
+        <Label>WhatsApp Number</Label>
+        <Input 
+          value={data.whatsappNumber} 
+          onChange={(e) => setData({ ...data, whatsappNumber: e.target.value })} 
+          placeholder="e.g. 8801700000000" 
         />
       </div>
       <div className="space-y-2">

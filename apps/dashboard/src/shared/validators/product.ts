@@ -55,6 +55,7 @@ export const productBaseSchema = z
     type: productTypeSchema.default("simple"),
     supplierId: z.string().nullable().optional(),
     warrantyStartDate: z.string().trim().max(20).optional(),
+    bundleQty: z.number().int().positive().optional(),
   })
   .strict(); // ⚠️ rejects legacy reorderPoint / reorderQty / preferredSupplierId
 
@@ -101,6 +102,8 @@ export const productCreateSchema = productBaseSchema.transform((input) => {
     wholesalePrice: input.wholesalePrice || 0,
     supplierId: input.supplierId ?? null,
     trackSerials: input.trackSerials,
+    type: input.type,
+    bundleQty: input.bundleQty,
     warrantyStartDate: input.warrantyStartDate,
     warrantyMonths: input.warrantyMonths,
     isTrending: input.isTrending ?? false,
@@ -140,6 +143,8 @@ export const productUpdateSchema = productBaseSchema.partial().transform((input)
   if (input.wholesalePrice !== undefined) result.wholesalePrice = input.wholesalePrice;
   if (input.supplierId !== undefined) result.supplierId = input.supplierId;
   if (input.trackSerials !== undefined) result.trackSerials = input.trackSerials;
+  if (input.type !== undefined) result.type = input.type;
+  if (input.bundleQty !== undefined) result.bundleQty = input.bundleQty;
   if (input.warrantyStartDate !== undefined) result.warrantyStartDate = input.warrantyStartDate;
   // warrantyMonths — now a direct column
   if (input.warrantyMonths !== undefined) result.warrantyMonths = input.warrantyMonths;

@@ -49,7 +49,7 @@ export function useGlobalBarcodeScanner() {
           (p.serials?.some((u) => u.imei === code || u.serialNumber === code) ?? false)
       );
       if (!product) {
-        toast.error(`No product for "${code}"`);
+        toast.error("Product not found");
         return;
       }
       const now = Date.now();
@@ -59,7 +59,7 @@ export function useGlobalBarcodeScanner() {
       lastScanCode = code;
       lastScanAt = now;
       if (pathname.startsWith("/pos")) {
-        addToCart(product.id);
+        addToCart(product.id, undefined, undefined, undefined, product.bundleQty);
         toast.success(`✓ ${product.name}`);
       } else {
         toast.success(`Found: ${product.name}`);

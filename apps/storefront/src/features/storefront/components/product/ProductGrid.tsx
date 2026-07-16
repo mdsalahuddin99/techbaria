@@ -13,7 +13,7 @@ export function ProductGrid({ products, allProducts, emptyHint, loading }: Props
     return (
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
         {Array.from({ length: 8 }).map((_, i) => (
-          <div key={i} className="aspect-[3/4] rounded-2xl bg-card/[0.04] border border-white/5 animate-pulse" />
+          <div key={i} className="aspect-[3/4] rounded-sm bg-card/[0.04] border border-white/5 animate-pulse" />
         ))}
       </div>
     );

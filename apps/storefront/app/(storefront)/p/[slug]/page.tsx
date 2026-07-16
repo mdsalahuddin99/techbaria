@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Suspense, cache } from "react";
 import { productsService } from "@/server/services/productsService";
 import { ProductDetailClient } from "@/features/storefront/components/product/ProductDetailClient";
+import { getSiteConfig } from "@/features/storefront/actions/config.actions";
 
 import { prisma } from "@/server/db/client";
 
@@ -56,6 +57,9 @@ export default async function StorefrontProduct({ params }: { params: Promise<{ 
   try {
     // 1. Fetch main product
     const product = await getProduct(slug);
+    
+    // 2. Fetch general settings
+    const generalSettings = ((await getSiteConfig("general")) as Record<string, any>) || {};
 
     const jsonLd = {
       "@context": "https://schema.org",
@@ -84,7 +88,7 @@ export default async function StorefrontProduct({ params }: { params: Promise<{ 
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
-        <ProductDetailClient product={product}>
+        <ProductDetailClient product={product} whatsappNumber={generalSettings.whatsappNumber}>
         {product.category && (
           <Suspense fallback={
             <section className="mt-16">

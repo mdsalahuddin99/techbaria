@@ -17,15 +17,7 @@ export function safeMinStock(value: unknown, fallback = 0): number {
  * non-bundle products.
  */
 export function bundleAvailableStock(bundle: Product, allProducts: Product[]): number {
-  if (bundle.type !== "bundle" || !bundle.components?.length) return bundle.stock;
-  let min = Infinity;
-  for (const c of bundle.components) {
-    const comp = allProducts.find((p) => p.id === c.productId);
-    if (!comp || c.qty <= 0) return 0;
-    const compStock = comp.type === "bundle" ? bundleAvailableStock(comp, allProducts) : comp.stock;
-    min = Math.min(min, Math.floor(compStock / c.qty));
-  }
-  return Number.isFinite(min) ? min : 0;
+  return bundle.stock;
 }
 
 /**

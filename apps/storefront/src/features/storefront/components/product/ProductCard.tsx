@@ -39,7 +39,6 @@ export function ProductCard({ product, allProducts }: Props) {
   const handleAdd = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (outOfStock) return;
     add({
       productId: product.id,
       name: productDisplayName(product),
@@ -54,7 +53,6 @@ export function ProductCard({ product, allProducts }: Props) {
   const handleBuyNow = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (outOfStock) return;
     add({
       productId: product.id,
       name: productDisplayName(product),
@@ -147,14 +145,6 @@ export function ProductCard({ product, allProducts }: Props) {
           </button>
         </div>
 
-        {/* Out of stock overlay */}
-        {outOfStock && (
-          <div className="absolute inset-0 bg-background/50 backdrop-blur-[2px] flex items-center justify-center z-30">
-            <span className="px-4 py-1.5 rounded-full bg-destructive/10 text-destructive border border-destructive/20 text-xs font-bold shadow-sm">
-              Out of Stock
-            </span>
-          </div>
-        )}
       </div>
 
       {/* Info Area */}
@@ -165,28 +155,36 @@ export function ProductCard({ product, allProducts }: Props) {
         </div>
 
         {/* Title */}
-        <h3 className="text-sm font-semibold line-clamp-2 leading-snug min-h-[2.5rem] mb-2 group-hover:text-primary transition-colors">
+        <h3 className="text-sm font-semibold line-clamp-2 leading-snug mb-1 group-hover:text-primary transition-colors">
           {productDisplayName(product)}
         </h3>
 
         {/* Price & Rating Row */}
-        <div className="flex items-center justify-between mt-auto mb-4">
+        <div className="flex items-center justify-between mb-3">
           <div className="flex flex-col">
-            <div className="flex items-center gap-1.5">
-              <span className="text-lg md:text-xl font-black text-primary tracking-tight">
-                {formatPrice(product.price)}
-              </span>
-              {originalPrice && originalPrice > product.price && (
-                <>
-                  <span className="text-sm font-medium line-through text-muted-foreground/70">
-                    {formatPrice(originalPrice)}
-                  </span>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-100 text-orange-500 dark:bg-orange-950/50 dark:text-orange-400 whitespace-nowrap">
-                    Save {formatPrice(originalPrice - product.price)}
-                  </span>
-                </>
-              )}
-            </div>
+            {outOfStock ? (
+              <div className="flex items-center gap-1.5">
+                <span className="text-lg md:text-xl font-black text-rose-500 tracking-tight">
+                  Out of Stock
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5">
+                <span className="text-lg md:text-xl font-black text-primary tracking-tight">
+                  {formatPrice(product.price)}
+                </span>
+                {originalPrice && originalPrice > product.price && (
+                  <>
+                    <span className="text-sm font-medium line-through text-muted-foreground/70">
+                      {formatPrice(originalPrice)}
+                    </span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-100 text-orange-500 dark:bg-orange-950/50 dark:text-orange-400 whitespace-nowrap">
+                      Save {formatPrice(originalPrice - product.price)}
+                    </span>
+                  </>
+                )}
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-1 bg-amber-50 dark:bg-amber-950/30 px-1.5 py-0.5 rounded text-amber-600 dark:text-amber-500">
             <Star className="h-3 w-3 fill-current" />
@@ -199,9 +197,8 @@ export function ProductCard({ product, allProducts }: Props) {
           {/* Add to Cart (Icon only on mobile, text + icon on tablet/desktop) */}
           <button
             onClick={handleAdd}
-            disabled={outOfStock}
             title="Add to Cart"
-            className="flex items-center justify-center gap-1.5 bg-white text-primary font-bold text-[11px] h-8 sm:h-9 w-8 sm:w-auto sm:flex-1 sm:py-2 rounded border border-primary transition-colors hover:bg-primary/5 shadow-sm disabled:opacity-50 shrink-0"
+            className="flex items-center justify-center gap-1.5 bg-white text-primary font-bold text-[11px] h-8 sm:h-9 w-8 sm:w-auto sm:flex-1 sm:py-2 rounded border border-primary transition-colors hover:bg-primary/5 shadow-sm shrink-0"
           >
             <ShoppingBag className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Add to Cart</span>
@@ -210,10 +207,9 @@ export function ProductCard({ product, allProducts }: Props) {
           {/* Buy Now (Full width on mobile) */}
           <button
             onClick={handleBuyNow}
-            disabled={outOfStock}
-            className="flex-1 flex items-center justify-center gap-1.5 bg-[#16A34A] text-white font-bold text-[11px] h-8 sm:h-9 sm:py-2 rounded transition-colors hover:bg-[#15803D] shadow-sm disabled:opacity-50"
+            className="flex-1 flex items-center justify-center gap-1.5 bg-[#16A34A] text-white font-bold text-[11px] h-8 sm:h-9 sm:py-2 rounded transition-colors hover:bg-[#15803D] shadow-sm"
           >
-            Buy Now
+            {outOfStock ? "Pre Order" : "Buy Now"}
           </button>
         </div>
       </div>

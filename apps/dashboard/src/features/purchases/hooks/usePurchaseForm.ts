@@ -207,7 +207,7 @@ export function usePurchaseForm({
         expectedDate: new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0],
         serials: [],
         trackSerials: product.trackSerials !== false,
-        manualQty: 1,
+        manualQty: product.bundleQty || 1,
       },
       ...prev,
     ]);

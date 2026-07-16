@@ -255,29 +255,29 @@ export default function DashboardClient() {
       </div>
 
       {/* ── KPI metric cards ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="flex flex-wrap justify-center lg:justify-between gap-3">
         {kpis.map((kpi, idx) => {
           const a = accentMap[kpi.accent];
           return (
             <div
               key={kpi.id}
               className={cn(
-                "relative overflow-hidden rounded-xl bg-gradient-to-br p-3 shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl group",
+                "relative overflow-hidden rounded-xl bg-gradient-to-br px-4 py-3 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md group w-full sm:w-[calc(50%-6px)] lg:w-fit lg:min-w-[200px]",
                 a.bg
               )}
-              style={{ animationDelay: `${idx * 100}ms` }}
+              style={{ animationDelay: `${idx * 50}ms` }}
             >
               <div className="absolute top-0 right-0 p-2.5 opacity-20 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-12">
                 <kpi.icon className="h-10 w-10 text-white" />
               </div>
-              <div className="relative z-10 flex items-start justify-between mb-1.5">
-                <div className={cn("h-7 w-7 rounded-md grid place-items-center backdrop-blur-md shadow-inner", a.iconBg)}>
-                  <kpi.icon className="h-3.5 w-3.5" />
+              <div className="relative z-10 flex items-start justify-between mb-1">
+                <div className={cn("h-5 w-5 rounded grid place-items-center backdrop-blur-md shadow-inner", a.iconBg)}>
+                  <kpi.icon className="h-3 w-3" />
                 </div>
                 {kpi.delta !== null && (
                   <span
                     className={cn(
-                      "inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full backdrop-blur-md shadow-sm",
+                      "inline-flex items-center gap-0.5 text-[8.5px] font-bold px-1 rounded-full backdrop-blur-md shadow-sm",
                       kpi.delta >= 0
                         ? "bg-white/20 text-white border border-white/30"
                         : "bg-red-500/20 text-white border border-red-500/30",
@@ -292,13 +292,13 @@ export default function DashboardClient() {
                   </span>
                 )}
               </div>
-              <p className="relative z-10 text-[10px] font-extrabold uppercase tracking-widest text-white/80 mb-0.5">
+              <p className="relative z-10 text-[9px] font-extrabold uppercase tracking-widest text-white/80 mt-1 mb-0">
                 {kpi.label}
               </p>
-              <p className="relative z-10 text-xl font-extrabold text-white tracking-tight tabular-nums drop-shadow-md">
+              <p className="relative z-10 text-lg font-extrabold text-white tracking-tight tabular-nums drop-shadow-sm leading-none mt-0.5">
                 {kpi.value}
               </p>
-              <p className="relative z-10 text-[10px] text-white/90 mt-1 font-medium bg-black/10 inline-block px-2 py-0.5 rounded-md backdrop-blur-sm">
+              <p className="relative z-10 text-[8.5px] text-white/90 mt-1 font-medium bg-black/10 inline-block px-1.5 py-0.5 rounded backdrop-blur-sm">
                 {kpi.sub}
               </p>
             </div>
@@ -309,204 +309,8 @@ export default function DashboardClient() {
       <StorefrontBlock />
 
       {/* ── Main Content Rows ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 items-start">
-
-        {/* Left Column (1/3) */}
+      <div className="grid grid-cols-1 gap-3 items-start">
         <div className="space-y-3 flex flex-col">
-          {/* Stock distribution donut */}
-          <div className="bg-white/60 backdrop-blur-xl rounded-2xl border border-slate-200/60 shadow-xl overflow-hidden flex flex-col">
-          <SectionHeader
-            icon={Package}
-            title="Inventory Health"
-            subtitle="Current stock status"
-            iconBg="bg-emerald-500/10"
-            iconColor="text-emerald-600"
-            href="/dashboard/inventory"
-            linkLabel="Inventory"
-          />
-          <div className="flex-1 p-4 flex flex-col justify-center">
-            {metrics.stock.total === 0 ? (
-              <div className="py-8 flex flex-col items-center justify-center text-slate-400 bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
-                <Package className="h-10 w-10 mb-2 opacity-20" />
-                <p className="text-sm font-medium text-slate-500">No products found</p>
-              </div>
-            ) : (
-              <>
-                <div className="h-36 relative mb-3">
-                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <span className="text-2xl font-extrabold text-slate-800">{metrics.stock.total}</span>
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Total Items</span>
-                  </div>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={metrics.stockDonut}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={45}
-                        outerRadius={65}
-                        paddingAngle={4}
-                        dataKey="value"
-                        strokeWidth={0}
-                      >
-                        {metrics.stockDonut.map((entry, i) => (
-                          <Cell key={i} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        content={({ active, payload }) => {
-                          if (!active || !payload?.length) return null;
-                          const d = payload[0].payload;
-                          return (
-                            <div className="bg-white backdrop-blur-md border border-slate-200 rounded-xl shadow-xl px-4 py-3 text-xs flex items-center gap-3">
-                              <span className="h-3 w-3 rounded-full" style={{ background: d.color }} />
-                              <div>
-                                <p className="font-bold text-slate-800">{d.name}</p>
-                                <p className="text-slate-500 font-medium">{d.value} SKUs</p>
-                              </div>
-                            </div>
-                          );
-                        }}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="grid grid-cols-1 gap-2.5 px-2">
-                  {metrics.stockDonut.map((d) => (
-                    <div key={d.name} className="flex items-center justify-between text-sm bg-slate-50 px-3 py-2 rounded-lg border border-slate-100">
-                      <div className="flex items-center gap-2.5">
-                        <span className="h-2.5 w-2.5 rounded-full shrink-0 shadow-sm" style={{ background: d.color }} />
-                        <span className="text-slate-700 font-semibold">{d.name}</span>
-                      </div>
-                      <span className="font-bold text-slate-900 tabular-nums bg-white px-2 py-0.5 rounded shadow-sm">
-                        {d.value}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Top selling products */}
-        <div className="bg-white/60 backdrop-blur-xl rounded-2xl border border-slate-200/60 shadow-xl overflow-hidden flex-1">
-            <SectionHeader
-              icon={BarChart3}
-              title="Trending Items"
-              subtitle="Top sellers (30 Days)"
-              iconBg="bg-orange-500/10"
-              iconColor="text-orange-600"
-            />
-            {metrics.topProducts.length === 0 ? (
-              <div className="py-6 flex flex-col items-center justify-center text-slate-400 bg-slate-50/50 m-4 rounded-xl border border-dashed border-slate-200">
-                <Package className="h-8 w-8 mb-2 opacity-20" />
-                <p className="text-xs font-semibold">No sales data yet</p>
-              </div>
-            ) : (
-              <div className="p-3 space-y-2.5">
-                {metrics.topProducts.slice(0, 5).map((p, i) => {
-                  const maxQty = metrics.topProducts[0].qty;
-                  const pct = Math.max(12, (p.qty / Math.max(1, maxQty)) * 100);
-                  return (
-                    <div key={i} className="flex items-center gap-3 group">
-                      <div className="h-6 w-6 rounded-md bg-slate-100 text-slate-500 font-extrabold flex items-center justify-center text-[10px] shadow-inner group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors">
-                        {i + 1}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs font-bold text-slate-700 truncate group-hover:text-indigo-700 transition-colors">
-                            {p.name}
-                          </span>
-                          <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full tabular-nums ml-2 shrink-0">
-                            {p.qty} sold
-                          </span>
-                        </div>
-                        <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden shadow-inner">
-                          <div
-                            className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-1000 ease-out"
-                            style={{ width: `${pct}%` }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-        {/* Restock Alerts */}
-        <div className="bg-white/60 backdrop-blur-xl rounded-2xl border border-slate-200/60 shadow-xl overflow-hidden">
-          <SectionHeader
-              icon={AlertTriangle}
-              title="Restock Alerts"
-              subtitle={`${metrics.stock.low} items need attention`}
-              href="/dashboard/restock-orders"
-              linkLabel="Restock"
-              iconBg="bg-red-500/10"
-              iconColor="text-red-600"
-            />
-            {lowStockProducts.length === 0 ? (
-              <div className="py-6 flex flex-col items-center justify-center text-slate-400 bg-slate-50/50 m-3 rounded-xl border border-dashed border-slate-200">
-                <div className="h-10 w-10 rounded-full bg-emerald-50 grid place-items-center mb-2">
-                  <Sparkles className="h-5 w-5 text-emerald-500" />
-                </div>
-                <p className="text-sm font-bold text-slate-700">Inventory looks great</p>
-                <p className="text-xs text-slate-500 mt-0.5">No items currently need restocking.</p>
-              </div>
-            ) : (
-              <div className="divide-y divide-slate-100">
-                {lowStockProducts.map((p) => {
-                  const reorder = effectiveReorderPoint(p);
-                  const suggested = suggestedPoQty(p);
-                  const ratio = Math.min(1, p.stock / Math.max(1, reorder));
-                  return (
-                    <div key={p.id} className="flex items-center gap-3 p-3 hover:bg-slate-50/80 transition-colors">
-                      <div className="h-8 w-8 rounded-lg bg-amber-50 grid place-items-center text-lg shrink-0 shadow-sm border border-amber-100">
-                        {p.emoji || "📦"}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-bold text-slate-800 truncate mb-1">
-                          {productDisplayName(p)}
-                        </p>
-                        <div className="flex items-center gap-2">
-                          <div className="flex-1 h-2 rounded-full bg-slate-100 overflow-hidden shadow-inner">
-                            <div
-                              className={cn(
-                                "h-full rounded-full transition-all duration-500",
-                                ratio <= 0 ? "bg-red-500" : ratio < 0.5 ? "bg-orange-500" : "bg-amber-400",
-                              )}
-                              style={{ width: `${Math.max(8, ratio * 100)}%` }}
-                            />
-                          </div>
-                          <span className="text-[10px] font-bold text-slate-500 tabular-nums">
-                            {p.stock} / {reorder}
-                          </span>
-                        </div>
-                      </div>
-                      <Button
-                        asChild
-                        size="sm"
-                        className="h-8 px-3 text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white shrink-0 shadow-md"
-                      >
-                        <Link
-                          href={`/dashboard/purchases?createPO=${p.id}&qty=${suggested}${p.supplierId ? `&supplier=${p.supplierId}` : ""}`}
-                        >
-                          Order
-                        </Link>
-                      </Button>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-        </div>
-
-        {/* Right Column (2/3) */}
-        <div className="lg:col-span-2 space-y-3 flex flex-col">
           {/* Recent invoices table */}
           <div className="bg-white/60 backdrop-blur-xl rounded-2xl border border-slate-200/60 shadow-xl overflow-hidden">
           <SectionHeader

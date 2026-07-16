@@ -39,6 +39,8 @@ export interface ProductCreateInput {
   trackSerials?: boolean;
   warrantyStartDate?: string;
   warrantyMonths?: number;
+  type?: string;
+  bundleQty?: number;
 }
 
 export interface ProductUpdateInput {
@@ -75,4 +77,6 @@ export interface ProductUpdateInput {
   trackSerials?: boolean;
   warrantyStartDate?: string;
   warrantyMonths?: number;
+  type?: string;
+  bundleQty?: number;
 }

@@ -30,8 +30,8 @@ export function StorefrontHeader() {
   return (
     <>
       {/* Main header — sticky, white/90 frosted glass */}
-      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-slate-200/60 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
-        <div className="max-w-7xl mx-auto px-2 sm:px-6 py-2 sm:py-0 min-h-[4rem] sm:h-20 flex items-center justify-between gap-2 sm:gap-6">
+      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-slate-200/60 shadow-sm">
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 py-1.5 sm:py-0 h-14 sm:h-16 flex items-center justify-between gap-2 sm:gap-4">
           <div className="flex items-center gap-2 sm:gap-4 shrink-0">
           {/* Mobile menu */}
           <Sheet>
@@ -96,7 +96,7 @@ export function StorefrontHeader() {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-1 sm:gap-2.5 shrink-0 group">
             {generalData?.logoUrl ? (
-              <div className="relative h-8 sm:h-10 w-[80px] sm:w-[140px]">
+              <div className="relative h-7 sm:h-8 w-[90px] sm:w-[120px]">
                 <Image 
                   src={generalData.logoUrl} 
                   alt={generalData?.storeName || "Logo"} 
@@ -107,10 +107,10 @@ export function StorefrontHeader() {
               </div>
             ) : (
               <>
-                <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl grid place-items-center font-black text-white shadow-lg bg-gradient-to-br from-emerald-500 to-emerald-700 group-hover:scale-105 transition-transform duration-300 ring-2 ring-emerald-500/20 shrink-0">
+                <div className="h-7 w-7 sm:h-9 sm:w-9 rounded-lg grid place-items-center font-black text-white shadow-md bg-gradient-to-br from-emerald-500 to-emerald-700 group-hover:scale-105 transition-transform duration-300 shrink-0">
                   {generalData?.storeName ? generalData.storeName.charAt(0).toUpperCase() : "A"}
                 </div>
-                <span className="text-base sm:text-xl font-extrabold tracking-tight hidden lg:inline bg-clip-text text-transparent bg-gradient-to-r from-emerald-800 to-emerald-600">
+                <span className="text-sm sm:text-lg font-extrabold tracking-tight hidden lg:inline bg-clip-text text-transparent bg-gradient-to-r from-emerald-800 to-emerald-600">
                   {generalData?.storeName || "AmarShop"}
                 </span>
               </>
@@ -130,10 +130,10 @@ export function StorefrontHeader() {
             {/* Wishlist */}
             <Link
               href="/wishlist"
-              className="relative hidden sm:flex h-11 w-11 items-center justify-center rounded-full transition-all duration-300 hover:bg-slate-100 text-slate-500 hover:text-rose-500"
+              className="relative hidden sm:flex h-9 w-9 items-center justify-center rounded-full transition-all duration-300 hover:bg-slate-100 text-slate-500 hover:text-rose-500"
               aria-label="Wishlist"
             >
-              <Heart className="h-5 w-5" />
+              <Heart className="h-4 w-4" />
               {isMounted && wishCount > 0 && (
                 <span className="absolute top-1.5 right-1.5 h-4 min-w-[16px] px-1 rounded-full bg-rose-500 text-[10px] flex items-center justify-center font-bold text-white shadow-sm ring-2 ring-white">
                   {wishCount}
@@ -144,10 +144,10 @@ export function StorefrontHeader() {
             {/* Compare */}
             <Link
               href="/compare"
-              className="relative hidden sm:flex h-11 w-11 items-center justify-center rounded-full transition-all duration-300 hover:bg-slate-100 text-slate-500 hover:text-emerald-600"
+              className="relative hidden sm:flex h-9 w-9 items-center justify-center rounded-full transition-all duration-300 hover:bg-slate-100 text-slate-500 hover:text-emerald-600"
               aria-label="Compare"
             >
-              <GitCompareArrows className="h-5 w-5" />
+              <GitCompareArrows className="h-4 w-4" />
               {isMounted && cmpCount > 0 && (
                 <span className="absolute top-1.5 right-1.5 h-4 min-w-[16px] px-1 rounded-full bg-emerald-500 text-[10px] flex items-center justify-center font-bold text-white shadow-sm ring-2 ring-white">
                   {cmpCount}
@@ -158,10 +158,10 @@ export function StorefrontHeader() {
             {/* Account / Login - Icon for mobile/tablet */}
             <Link
               href={session?.user ? "/account" : "/login"}
-              className="hidden sm:flex lg:hidden h-11 w-11 items-center justify-center rounded-full transition-all duration-300 hover:bg-slate-100 text-slate-500 hover:text-emerald-600"
+              className="hidden sm:flex lg:hidden h-9 w-9 items-center justify-center rounded-full transition-all duration-300 hover:bg-slate-100 text-slate-500 hover:text-emerald-600"
               aria-label={session?.user ? "Account" : "Login"}
             >
-              {session?.user ? <User className="h-5 w-5" /> : <LogIn className="h-5 w-5" />}
+              {session?.user ? <User className="h-4 w-4" /> : <LogIn className="h-4 w-4" />}
             </Link>
 
             {/* Account / Login - Text for desktop */}
@@ -190,10 +190,10 @@ export function StorefrontHeader() {
             {/* Cart */}
             <Link
               href="/cart"
-              className="relative flex h-11 w-11 items-center justify-center rounded-full transition-all duration-300 hover:bg-emerald-50 text-emerald-600 hover:text-emerald-700 bg-emerald-50/50 sm:bg-transparent sm:ml-2"
+              className="relative flex h-9 w-9 items-center justify-center rounded-full transition-all duration-300 hover:bg-emerald-50 text-emerald-600 hover:text-emerald-700 bg-emerald-50/50 sm:bg-transparent sm:ml-1"
               aria-label="Cart"
             >
-              <ShoppingBag className="h-5 w-5" />
+              <ShoppingBag className="h-4 w-4" />
               {isMounted && cartCount > 0 && (
                 <span className="absolute top-1.5 right-1.5 h-4 min-w-[16px] px-1 rounded-full bg-emerald-600 text-[10px] flex items-center justify-center font-bold text-white shadow-md ring-2 ring-white">
                   {cartCount}

@@ -305,8 +305,12 @@ export function InventoryClient({
       <Tabs defaultValue="overview">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="categories"><Tag className="h-3.5 w-3.5 mr-1" />Categories</TabsTrigger>
-          <TabsTrigger value="adjustments"><History className="h-3.5 w-3.5 mr-1" />Adjustments</TabsTrigger>
+          {!filterOnlineOnly && (
+            <>
+              <TabsTrigger value="categories"><Tag className="h-3.5 w-3.5 mr-1" />Categories</TabsTrigger>
+              <TabsTrigger value="adjustments"><History className="h-3.5 w-3.5 mr-1" />Adjustments</TabsTrigger>
+            </>
+          )}
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4 mt-4">
@@ -325,12 +329,16 @@ export function InventoryClient({
                 <SelectItem value="Out">Out of stock</SelectItem>
               </SelectContent>
             </Select>
-            <Button variant="outline" onClick={openScanForNew} title="Scan barcode to add product" className="h-10 hidden sm:inline-flex">
-              <ScanLine className="h-4 w-4 mr-2" />Scan
-            </Button>
-            <Button variant="outline" onClick={openNew} className="h-10">
-              <PackagePlus className="h-4 w-4 mr-2" /><span className="hidden sm:inline">Add Product</span><span className="sm:hidden">Add</span>
-            </Button>
+            {!filterOnlineOnly && (
+              <>
+                <Button variant="outline" onClick={openScanForNew} title="Scan barcode to add product" className="h-10 hidden sm:inline-flex">
+                  <ScanLine className="h-4 w-4 mr-2" />Scan
+                </Button>
+                <Button variant="outline" onClick={openNew} className="h-10">
+                  <PackagePlus className="h-4 w-4 mr-2" /><span className="hidden sm:inline">Add Product</span><span className="sm:hidden">Add</span>
+                </Button>
+              </>
+            )}
             {!filterOnlineOnly && (
               <Button onClick={() => setAdjOpen(true)} className="bg-primary text-primary-foreground hover:bg-primary/90 h-10">
                 <Plus className="h-4 w-4 mr-2" /><span className="hidden sm:inline">New Adjustment</span><span className="sm:hidden">Adjust</span>
@@ -339,15 +347,17 @@ export function InventoryClient({
           </Card>
 
           {/* Mobile floating scan button */}
-          <button
-            type="button"
-            onClick={openScanForNew}
-            className="md:hidden fixed right-4 z-20 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-sm grid place-items-center active:scale-95 transition-colors"
-            style={{ bottom: "calc(5rem + env(safe-area-inset-bottom))" }}
-            aria-label="Scan barcode"
-          >
-            <ScanLine className="h-6 w-6" />
-          </button>
+          {!filterOnlineOnly && (
+            <button
+              type="button"
+              onClick={openScanForNew}
+              className="md:hidden fixed right-4 z-20 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-sm grid place-items-center active:scale-95 transition-colors"
+              style={{ bottom: "calc(5rem + env(safe-area-inset-bottom))" }}
+              aria-label="Scan barcode"
+            >
+              <ScanLine className="h-6 w-6" />
+            </button>
+          )}
 
           {/* Bulk action bar */}
           {selectedIds.size > 0 && (
@@ -384,6 +394,7 @@ export function InventoryClient({
             onDelete={(id) => setDelId(id)}
             onPrintLabel={(p) => openLabelsFor([p])}
             onQuickEditPrice={openQuickPrice}
+            isOnlineInventory={filterOnlineOnly}
           />
 
           <InventoryProductTable
@@ -393,6 +404,7 @@ export function InventoryClient({
             onDelete={(id) => setDelId(id)}
             onPrintLabel={(p) => openLabelsFor([p])}
             onQuickEditPrice={openQuickPrice}
+            isOnlineInventory={filterOnlineOnly}
             selectedIds={selectedIds}
             onToggleSelect={toggleSelect}
             onToggleAll={(all) =>

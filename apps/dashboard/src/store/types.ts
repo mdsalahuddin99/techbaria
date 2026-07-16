@@ -17,7 +17,7 @@ export interface UiSessionSlice {
   cart: CartItem[];
   discount: number;
   selectedCustomerId: string | null;
-  addToCart: (productId: string, name?: string, price?: number, imageUrl?: string) => void;
+  addToCart: (productId: string, name?: string, price?: number, imageUrl?: string, bundleQty?: number | null) => void;
   setQty: (productId: string, qty: number) => void;
   setCartItemWarranty: (productId: string, months: number | undefined) => void;
   setCartItemSerials: (productId: string, serials: string[]) => void;

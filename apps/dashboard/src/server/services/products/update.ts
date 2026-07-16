@@ -72,6 +72,7 @@ export async function update(ctx: Ctx, id: string, input: ProductUpdateInput) {
   if (input.wholesalePrice !== undefined) data.wholesalePrice = input.wholesalePrice;
   if (input.supplierId !== undefined) data.supplierId = input.supplierId;
   if (input.trackSerials !== undefined) data.trackSerials = input.trackSerials;
+  if (input.bundleQty !== undefined) data.bundleQty = input.bundleQty;
   if (input.warrantyStartDate !== undefined) {
     data.warrantyStartDate = input.warrantyStartDate ? new Date(input.warrantyStartDate) : null;
   }

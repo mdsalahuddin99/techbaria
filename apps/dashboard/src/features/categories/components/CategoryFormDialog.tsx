@@ -155,76 +155,94 @@ export function CategoryFormDialog({
           {isEditMode ? (
             <>
               {editingCategory?.parentId && (
-                <div className="space-y-1.5">
-                  <Label>Parent Category</Label>
-                  <Input value={parents.find((p) => p.id === editingCategory.parentId)?.name ?? ""} disabled />
+                <div className="flex flex-row items-center gap-3">
+                  <Label className="w-[140px] shrink-0 text-right">Parent Category</Label>
+                  <div className="flex-1 min-w-0">
+                    <Input value={parents.find((p) => p.id === editingCategory.parentId)?.name ?? ""} disabled />
+                  </div>
                 </div>
               )}
-              <div className="space-y-1.5">
-                <Label>{editingCategory?.parentId ? "Sub Category Name" : "Category Name"}<span className="text-destructive"> *</span></Label>
-                <Input value={editingCategory?.parentId ? subName : mainName}
-                  onChange={(e) => editingCategory?.parentId ? setSubName(e.target.value) : setMainName(e.target.value)} />
+              <div className="flex flex-row items-center gap-3">
+                <Label className="w-[140px] shrink-0 text-right">{editingCategory?.parentId ? "Sub Category Name" : "Category Name"}<span className="text-destructive"> *</span></Label>
+                <div className="flex-1 min-w-0">
+                  <Input value={editingCategory?.parentId ? subName : mainName}
+                    onChange={(e) => editingCategory?.parentId ? setSubName(e.target.value) : setMainName(e.target.value)} />
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <Label>Image (Optional)</Label>
-                <ImageUpload
-                  value={imageUrl || undefined}
-                  onChange={(url) => setImageUrl(url ?? "")}
-                  allowDataUrlFallback
-                />
+              <div className="flex flex-row items-start gap-3">
+                <Label className="w-[140px] shrink-0 text-right mt-2">Image (Optional)</Label>
+                <div className="flex-1 min-w-0">
+                  <ImageUpload
+                    value={imageUrl || undefined}
+                    onChange={(url) => setImageUrl(url ?? "")}
+                    allowDataUrlFallback
+                  />
+                </div>
               </div>
             </>
           ) : isSubMode ? (
             <>
-              <div className="space-y-1.5">
-                <Label>Parent Category</Label>
-                <Input value={parentName ?? parents.find((p) => p.id === parentId)?.name ?? ""} disabled />
+              <div className="flex flex-row items-center gap-3">
+                <Label className="w-[140px] shrink-0 text-right">Parent Category</Label>
+                <div className="flex-1 min-w-0">
+                  <Input value={parentName ?? parents.find((p) => p.id === parentId)?.name ?? ""} disabled />
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <Label>Sub Category Name <span className="text-destructive">*</span></Label>
-                <Input value={subName} onChange={(e) => setSubName(e.target.value)}
-                  placeholder="e.g. Smart TV / 4K LED" autoFocus />
+              <div className="flex flex-row items-center gap-3">
+                <Label className="w-[140px] shrink-0 text-right">Sub Category Name <span className="text-destructive">*</span></Label>
+                <div className="flex-1 min-w-0">
+                  <Input value={subName} onChange={(e) => setSubName(e.target.value)}
+                    placeholder="e.g. Smart TV / 4K LED" autoFocus />
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <Label>Image (Optional)</Label>
-                <ImageUpload
-                  value={imageUrl || undefined}
-                  onChange={(url) => setImageUrl(url ?? "")}
-                  allowDataUrlFallback
-                />
+              <div className="flex flex-row items-start gap-3">
+                <Label className="w-[140px] shrink-0 text-right mt-2">Image (Optional)</Label>
+                <div className="flex-1 min-w-0">
+                  <ImageUpload
+                    value={imageUrl || undefined}
+                    onChange={(url) => setImageUrl(url ?? "")}
+                    allowDataUrlFallback
+                  />
+                </div>
               </div>
             </>
           ) : (
             <>
-              <div className="space-y-1.5">
-                <Label>Category</Label>
-                <Select value={parentId ?? ROOT_VALUE} onValueChange={(v) => {
-                  if (v === ROOT_VALUE) { setParentId(null); setMainName(""); }
-                  else { setParentId(v); setMainName(parents.find((p) => p.id === v)?.name ?? ""); }
-                }}>
-                  <SelectTrigger><SelectValue placeholder="Select or create new" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={ROOT_VALUE}>+ Create new category</SelectItem>
-                    {parents.map((p) => (<SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>))}
-                  </SelectContent>
-                </Select>
-                {!parentId && (
-                  <Input className="mt-2" placeholder="New category name" value={mainName}
-                    onChange={(e) => setMainName(e.target.value)} />
-                )}
+              <div className="flex flex-row items-start gap-3">
+                <Label className="w-[140px] shrink-0 text-right mt-2">Category</Label>
+                <div className="flex-1 min-w-0">
+                  <Select value={parentId ?? ROOT_VALUE} onValueChange={(v) => {
+                    if (v === ROOT_VALUE) { setParentId(null); setMainName(""); }
+                    else { setParentId(v); setMainName(parents.find((p) => p.id === v)?.name ?? ""); }
+                  }}>
+                    <SelectTrigger><SelectValue placeholder="Select or create new" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={ROOT_VALUE}>+ Create new category</SelectItem>
+                      {parents.map((p) => (<SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>))}
+                    </SelectContent>
+                  </Select>
+                  {!parentId && (
+                    <Input className="mt-2" placeholder="New category name" value={mainName}
+                      onChange={(e) => setMainName(e.target.value)} />
+                  )}
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <Label>Sub Category Name</Label>
-                <Input value={subName} onChange={(e) => setSubName(e.target.value)}
-                  placeholder="e.g. Smart TV" />
+              <div className="flex flex-row items-center gap-3">
+                <Label className="w-[140px] shrink-0 text-right">Sub Category Name</Label>
+                <div className="flex-1 min-w-0">
+                  <Input value={subName} onChange={(e) => setSubName(e.target.value)}
+                    placeholder="e.g. Smart TV" />
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <Label>Image (Optional)</Label>
-                <ImageUpload
-                  value={imageUrl || undefined}
-                  onChange={(url) => setImageUrl(url ?? "")}
-                  allowDataUrlFallback
-                />
+              <div className="flex flex-row items-start gap-3">
+                <Label className="w-[140px] shrink-0 text-right mt-2">Image (Optional)</Label>
+                <div className="flex-1 min-w-0">
+                  <ImageUpload
+                    value={imageUrl || undefined}
+                    onChange={(url) => setImageUrl(url ?? "")}
+                    allowDataUrlFallback
+                  />
+                </div>
               </div>
             </>
           )}

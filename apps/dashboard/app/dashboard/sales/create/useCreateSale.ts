@@ -225,7 +225,7 @@ export function useCreateSale() {
       const currentQty = existing ? existing.qty : 0;
       const avail = (product.stock ?? 0) - currentQty;
       if (avail <= 0) {
-        toast.error(`No more stock available for "${productDisplayName(product)}"`);
+        toast.error("Out of stock");
         return;
       }
 
@@ -247,7 +247,7 @@ export function useCreateSale() {
                 newSerials.push(available[0]);
               }
             }
-            return { ...r, qty: r.qty + 1, serials: newSerials };
+            return { ...r, qty: r.qty + (product.bundleQty || 1), serials: newSerials };
           }),
         );
       } else {
@@ -278,7 +278,7 @@ export function useCreateSale() {
             id: rowId,
             productId: product.id,
             name: productDisplayName(product),
-            qty: 1,
+            qty: product.bundleQty || 1,
             price: Number(product.price),
             serials: initialSerial ? [initialSerial] : [],
             warrantyMonths: defaultWarranty ?? undefined,
@@ -315,12 +315,17 @@ export function useCreateSale() {
           return matchSerials || matchSerialNumbers;
         });
         if (serial) {
+          const matchedSerialObj = serial.serialNumbers?.find((s: any) => (s.serial || "").toLowerCase() === lowerCode);
+          if (matchedSerialObj && matchedSerialObj.status === "SOLD") {
+             toast.error("Already sold");
+             return;
+          }
           addProductToVoucher(serial, code);
           return;
         }
-        toast.error(`No product found for barcode: ${code}`);
+        toast.error("Product not found");
       } catch (err) {
-        toast.error(`Error searching barcode: ${code}`);
+        toast.error("Product not found");
       }
     },
     [selectedWarehouseId, addProductToVoucher],

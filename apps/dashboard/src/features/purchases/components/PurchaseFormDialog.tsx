@@ -335,7 +335,7 @@ export function PurchaseFormDialog({
                 expectedDate: new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0],
                 serials: [],
                 trackSerials: product.trackSerials !== false,
-                manualQty: initialQty || 1,
+                manualQty: initialQty || product.bundleQty || 1,
               },
             ]);
             form.setActiveProductId(product.id);

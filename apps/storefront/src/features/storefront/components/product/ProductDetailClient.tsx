@@ -26,6 +26,7 @@ import {
   ThumbsUp,
   Send,
   Loader2,
+  MessageCircle,
 } from "lucide-react";
 import { Button } from "@/shared/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
@@ -43,9 +44,10 @@ interface Props {
   product: StorefrontProduct;
   related?: StorefrontProduct[];
   children?: React.ReactNode;
+  whatsappNumber?: string;
 }
 
-export function ProductDetailClient({ product, related = [], children }: Props) {
+export function ProductDetailClient({ product, related = [], children, whatsappNumber }: Props) {
   const router = useRouter();
   const stock = useMemo(() => publicStock(product, []), [product]);
   const outOfStock = stock <= 0;
@@ -183,10 +185,10 @@ export function ProductDetailClient({ product, related = [], children }: Props) 
   };
 
   return (
-    <div className="bg-[#F2F4F8] min-h-screen pb-20 pt-4 sm:pt-6">
+    <div className="bg-[#F2F4F8] min-h-screen pb-20 pt-2 sm:pt-3">
       <div className="max-w-7xl mx-auto px-3 sm:px-6">
         {/* Breadcrumbs */}
-        <nav className="flex items-center gap-2 text-xs sm:text-sm text-slate-500 mb-4 overflow-x-auto bg-white px-4 py-2 rounded-lg shadow-sm border border-slate-100">
+        <nav className="flex items-center gap-2 text-xs sm:text-sm text-slate-500 mb-3 overflow-x-auto">
           <Link href="/" className="hover:text-indigo-600 font-medium">Home</Link>
           <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-400" />
           <Link href="/shop" className="hover:text-indigo-600 font-medium">Shop</Link>
@@ -203,19 +205,19 @@ export function ProductDetailClient({ product, related = [], children }: Props) 
         </nav>
 
         {/* Main Product Card */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4 sm:p-6 lg:p-8">
+        <div className="bg-white  rounded-sm  shadow-sm border border-slate-100 p-4 sm:p-6 lg:p-8">
           <button
             onClick={() => router.back()}
-            className="inline-flex items-center gap-1 text-sm font-medium text-slate-500 hover:text-indigo-600 mb-5 md:hidden bg-slate-50 px-3 py-1.5 rounded-md"
+            className="inline-flex items-center gap-1 text-sm font-medium text-slate-500 hover:text-indigo-600 mb-5 md:hidden bg-slate-50 px-3 py-1.5  rounded-sm "
           >
             <ArrowLeft className="h-4 w-4" /> Back
           </button>
 
           <div className="grid md:grid-cols-[45%_1fr] gap-8 lg:gap-12">
             {/* === Gallery === */}
-            <div className="md:sticky md:top-24 self-start space-y-4">
+            <div className="md:sticky md:top-24 self-start space-y-3">
               <div
-                className="group relative aspect-square rounded-xl bg-[#F8F9FA] border border-slate-100 flex items-center justify-center overflow-hidden cursor-zoom-in"
+                className="group relative aspect-[4/3] rounded-sm bg-[#F8F9FA] border border-slate-100 flex items-center justify-center overflow-hidden cursor-zoom-in"
                 onMouseMove={(e) => {
                   const r = e.currentTarget.getBoundingClientRect();
                   setZoom({ active: true, x: ((e.clientX - r.left) / r.width) * 100, y: ((e.clientY - r.top) / r.height) * 100 });
@@ -245,12 +247,12 @@ export function ProductDetailClient({ product, related = [], children }: Props) 
                 {/* Floating badges */}
                 <div className="absolute top-4 left-4 flex flex-col gap-2">
                   {savePct > 0 && (
-                    <span className="text-xs font-bold px-2.5 py-1 rounded-md bg-rose-500 text-white shadow-sm tracking-wide">
+                    <span className="text-xs font-bold px-2.5 py-1  rounded-sm  bg-rose-500 text-white shadow-sm tracking-wide">
                       -{savePct}%
                     </span>
                   )}
                   {product.condition && product.condition !== "New" && (
-                    <span className="text-[10px] font-bold px-2 py-1 rounded-md bg-amber-400 text-amber-900 shadow-sm uppercase tracking-wider">
+                    <span className="text-[10px] font-bold px-2 py-1  rounded-sm  bg-amber-400 text-amber-900 shadow-sm uppercase tracking-wider">
                       {product.condition}
                     </span>
                   )}
@@ -265,7 +267,7 @@ export function ProductDetailClient({ product, related = [], children }: Props) 
                       key={i}
                       onClick={() => setActiveImage(i)}
                       className={cn(
-                        "relative h-16 w-16 shrink-0 rounded-lg overflow-hidden border-2 bg-white transition flex items-center justify-center",
+                        "relative h-16 w-16 shrink-0 rounded-sm overflow-hidden border-2 bg-white transition flex items-center justify-center",
                         i === activeImage ? "border-indigo-600 shadow-sm" : "border-slate-100 hover:border-slate-300",
                       )}
                     >
@@ -277,9 +279,9 @@ export function ProductDetailClient({ product, related = [], children }: Props) 
             </div>
 
         {/* === Info === */}
-        <div className="space-y-6">
-          <div className="space-y-3">
-            <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900 leading-snug">{product.name}</h1>
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <h1 className="text-xl sm:text-2xl font-semibold text-slate-900 leading-snug">{product.name}</h1>
             
             <div className="flex flex-wrap items-center gap-3 text-xs sm:text-sm">
               <span className="bg-slate-100 text-slate-700 px-3 py-1 rounded-full font-medium">Price: {formatPrice(product.price)}</span>
@@ -296,14 +298,14 @@ export function ProductDetailClient({ product, related = [], children }: Props) 
           </div>
           
           {product.shortDescription && (
-            <div className="text-slate-600 text-sm leading-relaxed whitespace-pre-line bg-white/50 border border-slate-100 p-4 rounded-xl">
+            <div className="text-slate-600 text-sm leading-relaxed whitespace-pre-line bg-white/50 border border-slate-100 p-4  rounded-sm ">
               {product.shortDescription}
             </div>
           )}
 
           {/* Key Features (Specs) */}
-          <div className="bg-slate-50 border border-slate-100 rounded-xl p-5">
-            <h3 className="font-semibold text-slate-800 mb-3 text-sm">Key Features</h3>
+          <div className="bg-slate-50 border border-slate-100 rounded-sm p-3 sm:p-4">
+            <h3 className="font-semibold text-slate-800 mb-2 text-sm">Key Features</h3>
             <ul className="space-y-2 text-sm text-slate-600">
               {product.model && <li><span className="font-medium text-slate-800">Model:</span> {product.model}</li>}
               {product.color && <li><span className="font-medium text-slate-800">Color:</span> {product.color}</li>}
@@ -327,30 +329,36 @@ export function ProductDetailClient({ product, related = [], children }: Props) 
           </div>
 
           {/* Buy Box */}
-          <div className="bg-[#F8F9FA] border border-slate-200 rounded-xl p-5 sm:p-6 space-y-5">
+          <div className="bg-[#F8F9FA] border border-slate-200 rounded-sm p-4 space-y-3">
             {/* Price block */}
             <div className="space-y-1">
               <div className="text-xs text-slate-500 font-medium">Payment Options</div>
-              <div className="flex items-end gap-3 flex-wrap">
-                <div className="text-4xl font-extrabold text-[#EF4A23]">{formatPrice(product.price)}</div>
-                {oldPrice && (
-                  <div className="text-base text-slate-500 line-through mb-1">{formatPrice(oldPrice)}</div>
-                )}
-              </div>
+              {outOfStock ? (
+                <div className="flex items-end gap-3 flex-wrap">
+                  <div className="text-4xl font-extrabold text-rose-500">Out of Stock</div>
+                </div>
+              ) : (
+                <div className="flex items-end gap-3 flex-wrap">
+                  <div className="text-4xl font-extrabold text-[#EF4A23]">{formatPrice(product.price)}</div>
+                  {oldPrice && (
+                    <div className="text-base text-slate-500 line-through mb-1">{formatPrice(oldPrice)}</div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Qty + actions */}
-            <div className="flex flex-col sm:flex-row gap-3 pt-2">
-              <div className="inline-flex items-center justify-between rounded-md bg-white border border-slate-200 shadow-sm h-12 w-full sm:w-32 px-1">
+            <div className="flex flex-col sm:flex-row gap-2 pt-1">
+              <div className="inline-flex items-center justify-between rounded-sm bg-white border border-slate-200 shadow-sm h-10 w-full sm:w-28 px-1">
                 <button
-                  className="h-10 w-10 grid place-items-center text-slate-500 hover:text-slate-900 transition-colors"
+                  className="h-8 w-8 grid place-items-center text-slate-500 hover:text-slate-900 transition-colors"
                   onClick={() => setQty((q) => Math.max(1, q - 1))}
                 >
                   <Minus className="h-4 w-4" />
                 </button>
                 <span className="px-2 font-bold text-slate-900 tabular-nums text-center text-base">{qty}</span>
                 <button
-                  className="h-10 w-10 grid place-items-center text-slate-500 hover:text-slate-900 disabled:text-slate-300 transition-colors"
+                  className="h-8 w-8 grid place-items-center text-slate-500 hover:text-slate-900 disabled:text-slate-300 transition-colors"
                   onClick={() => setQty((q) => Math.max(stock, q + 1))}
                   disabled={qty >= stock}
                 >
@@ -359,10 +367,15 @@ export function ProductDetailClient({ product, related = [], children }: Props) 
               </div>
               <Button
                 onClick={handleBuyNow}
-                disabled={outOfStock}
-                className="flex-1 h-12 bg-[#16A34A] hover:bg-[#15803D] text-white rounded-md shadow-md font-bold text-base transition-all"
+                className="flex-1 h-10 bg-[#16A34A] hover:bg-[#15803D] text-white rounded-sm shadow-sm font-bold text-sm transition-all"
               >
-                Buy Now
+                {outOfStock ? "Pre Order" : "Buy Now"}
+              </Button>
+              <Button
+                onClick={() => window.open(`https://wa.me/${whatsappNumber || '8801700000000'}?text=${encodeURIComponent(`Hello, I want to order this product:\n${product.name}\n\nURL: ${window.location.origin}/p/${product.slug || product.id}`)}`, '_blank')}
+                className="flex-1 h-10 bg-[#25D366] hover:bg-[#20bd5a] text-white rounded-sm shadow-sm font-bold text-sm transition-all flex items-center justify-center gap-2"
+              >
+                <MessageCircle className="h-4 w-4" /> WhatsApp
               </Button>
             </div>
           </div>
@@ -379,7 +392,7 @@ export function ProductDetailClient({ product, related = [], children }: Props) 
                         key={c}
                         onClick={() => setSelectedColor(c)}
                         className={cn(
-                          "px-4 h-9 rounded text-sm font-medium border transition",
+                          "px-4 h-9 rounded-sm text-sm font-medium border transition",
                           selectedColor === c ? "border-[#EF4A23] bg-orange-50 text-[#EF4A23]" : "border-slate-200 text-slate-600 hover:border-slate-300 hover:text-slate-900",
                         )}
                       >
@@ -429,12 +442,12 @@ export function ProductDetailClient({ product, related = [], children }: Props) 
 
         {/* Specifications Section */}
         {activeTab === "specification" && (
-          <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <div className="bg-white  rounded-sm  shadow-sm border border-slate-100 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-300">
             <div className="bg-slate-50 border-b border-slate-100 px-5 sm:px-8 py-4">
               <h2 className="text-lg sm:text-xl font-bold text-slate-800">Specification</h2>
             </div>
             <div className="p-5 sm:p-8">
-              <div className="border border-slate-200 rounded-lg overflow-hidden">
+              <div className="border border-slate-200 rounded-sm overflow-hidden">
                 <table className="w-full text-sm text-left">
                   <tbody className="divide-y divide-slate-200">
                     {[
@@ -667,12 +680,15 @@ export function ProductDetailClient({ product, related = [], children }: Props) 
       <div className="fixed bottom-[64px] left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-slate-200/50 p-3 shadow-[0_-8px_30px_rgba(0,0,0,0.08)] md:hidden z-50 flex items-center gap-3">
         <div className="flex-1 min-w-0">
           <div className="text-[10px] text-slate-500 truncate font-semibold uppercase tracking-wider">{product.brand || "Tech Baria"}</div>
-          <div className="font-extrabold text-lg text-primary">{formatPrice(product.price)}</div>
+          {outOfStock ? (
+            <div className="font-extrabold text-lg text-rose-500">Out of Stock</div>
+          ) : (
+            <div className="font-extrabold text-lg text-primary">{formatPrice(product.price)}</div>
+          )}
         </div>
         <div className="flex gap-2">
           <Button
             onClick={handleAdd}
-            disabled={outOfStock}
             variant="outline"
             className="rounded-xl h-12 w-12 p-0 border-primary text-primary hover:bg-primary/5 shadow-sm"
           >
@@ -680,10 +696,9 @@ export function ProductDetailClient({ product, related = [], children }: Props) 
           </Button>
           <Button
             onClick={handleBuyNow}
-            disabled={outOfStock}
             className="bg-[#16A34A] hover:bg-[#15803D] text-white rounded-xl h-12 px-6 font-bold shadow-md transition-transform active:scale-95"
           >
-            Buy Now
+            {outOfStock ? "Pre Order" : "Buy Now"}
           </Button>
         </div>
       </div>
