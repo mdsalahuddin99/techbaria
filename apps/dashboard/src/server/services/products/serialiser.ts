@@ -53,7 +53,7 @@ export function serialiseOne(p: any) {
     serialNumber: "",
     imei: "",
     defaultDiscount: undefined,
-    type: "simple" as const,
+    type: (p.bundleQty != null && p.bundleQty > 0) ? "bundle" : "simple",
     components: [],
     serials: (p.serialNumbers ?? []).map((s: any) => ({
       imei: undefined,
@@ -69,6 +69,7 @@ export function serialiseOne(p: any) {
       note: undefined,
     })),
     warehouseStocks: p.warehouseStocks,
+    searchTags: p.searchTags ?? [],
   };
 }
 
@@ -153,7 +154,7 @@ function serialiseStorefrontOne(p: any): StorefrontProduct {
     defaultDiscount,
     isTrending: p.isTrending ?? false,
     isFlashDeal: p.isFlashDeal ?? false,
-    type: p.type ?? "simple",
+    type: (p.bundleQty != null && p.bundleQty > 0) ? "bundle" : "simple",
     components: p.components ?? [],
   };
 }

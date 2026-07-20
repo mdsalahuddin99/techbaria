@@ -23,7 +23,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/shared/ui/alert-dialog";
 import { formatCurrency, formatDateTime } from "@/shared/lib/format";
-import { Search, Plus, History, Pencil, Trash2, PackagePlus, Tag, Check, X, ScanLine, Printer, ChevronRight, CornerDownRight, Boxes, Layers } from "lucide-react";
+import { Search, Plus, History, Pencil, Trash2, PackagePlus, Tag, Check, X, ScanLine, Printer, ChevronRight, CornerDownRight, Boxes, Layers, Info } from "lucide-react";
 import { Switch } from "@/shared/ui/switch";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/shared/ui/collapsible";
 import { AdjustmentType, Product, Category, ProductCondition, StockAdjustment } from "@/shared/lib/types";
@@ -199,10 +199,17 @@ export function InventoryClient({
         (filter === "Reorder" && p.type !== "bundle" && p.stock <= reorder);
       const q = search.toLowerCase();
       const matchesSearch =
-        p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q);
+        (p.name || "").toLowerCase().includes(q) || 
+        (p.sku || "").toLowerCase().includes(q) ||
+        (p.brand || "").toLowerCase().includes(q) ||
+        (p.model || "").toLowerCase().includes(q) ||
+        (p.category || "").toLowerCase().includes(q);
       return matchesFilter && matchesSearch;
     });
   }, [products, search, filter]);
+
+  const isFilterEmpty = !search.trim() && filter === "All";
+  const displayedProducts = isFilterEmpty ? filtered.slice(0, 5) : filtered;
 
 
 
@@ -280,44 +287,51 @@ export function InventoryClient({
     }
   };
 
+  const renderTabsList = () => (
+    <TabsList className="bg-gray-50/50 border border-gray-100 p-1 h-auto flex-wrap justify-start">
+      <TabsTrigger value="overview" className="px-4 py-1.5 text-sm">Overview</TabsTrigger>
+      {!filterOnlineOnly && (
+        <>
+          <TabsTrigger value="categories" className="px-4 py-1.5 text-sm"><Tag className="h-3.5 w-3.5 mr-1" />Categories</TabsTrigger>
+          <TabsTrigger value="adjustments" className="px-4 py-1.5 text-sm"><History className="h-3.5 w-3.5 mr-1" />Adjustments</TabsTrigger>
+        </>
+      )}
+    </TabsList>
+  );
+
   return (
     <div className="space-y-6">
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-900 via-slate-800 to-indigo-950 p-6 sm:p-8 shadow-xl">
-        <div className="absolute inset-0 bg-[url('/noise.svg')] opacity-10 mix-blend-overlay" />
-        <div className="absolute top-0 right-0 h-64 w-64 bg-indigo-500/20 blur-[100px] rounded-full" />
-        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white mb-2 relative z-10 flex items-center gap-2">
-            <Layers className="h-6 w-6 text-indigo-300" />
-            {filterOnlineOnly ? "E-commerce Catalog" : "Inventory Command Center"}
-          </h1>
-          <p className="text-sm sm:text-base text-indigo-100 max-w-2xl relative z-10 leading-relaxed font-medium">
-            {filterOnlineOnly 
-              ? "Manage products published to your online store and track their availability."
-              : "Track stock value, manage categories, and audit adjustments across your business."}
-          </p>
+      <div className="grid grid-cols-1 xl:grid-cols-4 gap-3 sm:gap-4">
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-900 via-slate-800 to-indigo-950 p-4 sm:p-5 shadow-xl xl:col-span-1 flex flex-col justify-center">
+          <div className="absolute inset-0 bg-[url('/noise.svg')] opacity-10 mix-blend-overlay" />
+          <div className="absolute -top-10 -right-10 h-40 w-40 bg-indigo-500/20 blur-[60px] rounded-full" />
+          <div className="relative z-10">
+            <h1 className="text-lg sm:text-xl font-bold tracking-tight text-white mb-2 relative z-10 flex items-center gap-2">
+              <Layers className="h-5 w-5 text-indigo-300" />
+              {filterOnlineOnly ? "E-commerce Catalog" : "Inventory Command Center"}
+            </h1>
+            <p className="text-xs sm:text-sm text-indigo-100/90 relative z-10 leading-relaxed font-medium">
+              {filterOnlineOnly 
+                ? "Manage published products and track availability."
+                : "Track stock value, categories, and audit adjustments."}
+            </p>
           </div>
+        </div>
+
+        <div className="xl:col-span-3">
+          <InventoryStatsCards stockValue={stockValue} lowCount={lowCount} outCount={outCount} />
         </div>
       </div>
 
-      <InventoryStatsCards stockValue={stockValue} lowCount={lowCount} outCount={outCount} />
-
       <Tabs defaultValue="overview">
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          {!filterOnlineOnly && (
-            <>
-              <TabsTrigger value="categories"><Tag className="h-3.5 w-3.5 mr-1" />Categories</TabsTrigger>
-              <TabsTrigger value="adjustments"><History className="h-3.5 w-3.5 mr-1" />Adjustments</TabsTrigger>
-            </>
-          )}
-        </TabsList>
-
-        <TabsContent value="overview" className="space-y-4 mt-4">
-          <Card className="p-3 sm:p-4 grid grid-cols-2 sm:flex sm:flex-row gap-2 sm:gap-3">
-            <div className="relative col-span-2 sm:flex-1">
+        <TabsContent value="overview" className="space-y-4 m-0">
+          <Card className="p-2 sm:p-3 flex flex-col xl:flex-row gap-2 sm:gap-3 items-start xl:items-center">
+            {renderTabsList()}
+            <div className="h-4 w-px bg-border hidden xl:block" />
+            <div className="flex-1 flex flex-col sm:flex-row w-full gap-2 sm:gap-3">
+              <div className="relative flex-1 min-w-[200px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Search by name or SKU…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-10" />
+              <Input placeholder="Search by name, SKU, brand, or category…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-10" />
             </div>
             <Select value={filter} onValueChange={setFilter}>
               <SelectTrigger className="sm:w-44 h-10"><SelectValue /></SelectTrigger>
@@ -343,7 +357,8 @@ export function InventoryClient({
               <Button onClick={() => setAdjOpen(true)} className="bg-primary text-primary-foreground hover:bg-primary/90 h-10">
                 <Plus className="h-4 w-4 mr-2" /><span className="hidden sm:inline">New Adjustment</span><span className="sm:hidden">Adjust</span>
               </Button>
-            )}
+              )}
+            </div>
           </Card>
 
           {/* Mobile floating scan button */}
@@ -388,7 +403,7 @@ export function InventoryClient({
           )}
 
           <InventoryProductMobileList
-            products={filtered}
+            products={displayedProducts}
             onQuickAdjust={(id) => { setProductId(id); setType("Add"); setAdjOpen(true); }}
             onEdit={openEdit}
             onDelete={(id) => setDelId(id)}
@@ -398,7 +413,7 @@ export function InventoryClient({
           />
 
           <InventoryProductTable
-            products={filtered}
+            products={displayedProducts}
             onQuickAdjust={(id) => { setProductId(id); setType("Add"); setAdjOpen(true); }}
             onEdit={openEdit}
             onDelete={(id) => setDelId(id)}
@@ -414,9 +429,11 @@ export function InventoryClient({
 
         </TabsContent>
 
-        <TabsContent value="categories" className="space-y-4 mt-4">
-          <Card className="p-4">
-            <div className="flex flex-col sm:flex-row gap-2">
+        <TabsContent value="categories" className="space-y-4 m-0">
+          <Card className="p-2 sm:p-3 flex flex-col xl:flex-row gap-2 sm:gap-3 items-start xl:items-center">
+            {renderTabsList()}
+            <div className="h-4 w-px bg-border hidden xl:block" />
+            <div className="flex-1 flex flex-col sm:flex-row w-full gap-2">
               <Select value={newSubParentId || "__root__"} onValueChange={(v) => setNewSubParentId(v === "__root__" ? "" : v)}>
                 <SelectTrigger className="sm:w-56"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -548,7 +565,10 @@ export function InventoryClient({
           </Card>
         </TabsContent>
 
-        <TabsContent value="adjustments" className="space-y-4 mt-4">
+        <TabsContent value="adjustments" className="space-y-4 m-0">
+          <Card className="p-2 sm:p-3 flex flex-col xl:flex-row gap-2 sm:gap-3 items-start xl:items-center">
+            {renderTabsList()}
+          </Card>
           <AdjustmentsHistory adjustments={adjustments} />
         </TabsContent>
       </Tabs>

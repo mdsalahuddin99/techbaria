@@ -56,6 +56,7 @@ export const productBaseSchema = z
     supplierId: z.string().nullable().optional(),
     warrantyStartDate: z.string().trim().max(20).optional(),
     bundleQty: z.number().int().positive().optional(),
+    searchTags: z.array(z.string().trim().min(1)).optional().default([]),
   })
   .strict(); // ⚠️ rejects legacy reorderPoint / reorderQty / preferredSupplierId
 
@@ -108,6 +109,7 @@ export const productCreateSchema = productBaseSchema.transform((input) => {
     warrantyMonths: input.warrantyMonths,
     isTrending: input.isTrending ?? false,
     isFlashDeal: input.isFlashDeal ?? false,
+    searchTags: input.searchTags,
   };
 });
 
@@ -150,6 +152,7 @@ export const productUpdateSchema = productBaseSchema.partial().transform((input)
   if (input.warrantyMonths !== undefined) result.warrantyMonths = input.warrantyMonths;
   if (input.isTrending !== undefined) result.isTrending = input.isTrending;
   if (input.isFlashDeal !== undefined) result.isFlashDeal = input.isFlashDeal;
+  if (input.searchTags !== undefined) result.searchTags = input.searchTags;
   return result;
 });
 

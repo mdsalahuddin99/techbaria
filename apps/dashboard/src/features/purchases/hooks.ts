@@ -187,8 +187,8 @@ export function useFilteredPurchases({ search = "", status = "All" }: PurchaseFi
       const supName = p.supplierName ?? (p.supplier?.name) ?? "";
       return (
         (status === "All" || p.status === status) &&
-        (poNum.toLowerCase().includes(q) ||
-          supName.toLowerCase().includes(q))
+        ((poNum || "").toLowerCase().includes(q) ||
+          (supName || "").toLowerCase().includes(q))
       );
     });
   }, [raw, status, search]);

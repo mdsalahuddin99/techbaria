@@ -63,6 +63,8 @@ export const productSchema = z.object({
     productId: z.string(),
     qty: z.coerce.number().int().positive()
   })).optional().default([]),
+  // ── Compatible model numbers (hidden tags for POS search) ──
+  searchTags: z.array(z.string().trim().min(1)).optional().default([]),
 }).strict();
 
 /**

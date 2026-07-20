@@ -43,9 +43,9 @@ export function useFilteredTransfers({
       if (status && status !== "All" && t.status !== status) return false;
       if (!q) return true;
       return (
-        t.transferNumber.toLowerCase().includes(q) ||
-        t.fromWarehouseName.toLowerCase().includes(q) ||
-        t.toWarehouseName.toLowerCase().includes(q)
+        (t.transferNumber || "").toLowerCase().includes(q) ||
+        (t.fromWarehouseName || "").toLowerCase().includes(q) ||
+        (t.toWarehouseName || "").toLowerCase().includes(q)
       );
     });
   }, [transfers, search, status]);

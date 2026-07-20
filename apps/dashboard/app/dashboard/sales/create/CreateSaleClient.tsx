@@ -70,7 +70,7 @@ export function CreateSaleClient() {
   } = useCreateSale();
 
   return (
-    <div className="w-full max-w-[1600px] mx-auto p-0 space-y-6">
+    <div className="w-full max-w-[1600px] mx-auto p-0 space-y-3">
       {/* ── Premium POS Header (Light Theme) ── */}
       <div className="relative overflow-hidden rounded-xl bg-white/80 backdrop-blur-xl border border-slate-200/60 p-3 sm:px-4 sm:py-3 shadow-sm">
         {/* Subtle background glow for premium feel */}
@@ -289,28 +289,31 @@ export function CreateSaleClient() {
                 <div className="border-t border-border" />
 
                 {/* Line items table */}
-                <InvoiceLineItems
-                  rows={voucherRows}
-                  onChangeQty={changeQty}
-                  onChangeSerials={changeSerials}
-                  onChangeWarranty={changeWarranty}
-                  onChangeDiscount={changeDiscount}
-                  onRemoveRow={removeRow}
-                  searchInputRef={vSearchRef}
-                />
+                <div className="space-y-1.5 -mb-2 md:-mb-3">
+                  {/* Line items table */}
+                  <InvoiceLineItems
+                    rows={voucherRows}
+                    onChangeQty={changeQty}
+                    onChangeSerials={changeSerials}
+                    onChangeWarranty={changeWarranty}
+                    onChangeDiscount={changeDiscount}
+                    onRemoveRow={removeRow}
+                    searchInputRef={vSearchRef}
+                  />
 
-                {/* Invoice subtotal summary (above payment) */}
-                {voucherRows.length > 0 && (
-                  <div className="flex justify-end pt-2">
-                    <div className="text-xs text-slate-500 font-medium">
-                      {voucherRows.length} item{voucherRows.length !== 1 ? "s" : ""} ·{" "}
-                      Subtotal:{" "}
-                      <span className="font-extrabold text-slate-800 tabular-nums">
-                        {formatCurrency(subtotal)}
-                      </span>
+                  {/* Invoice subtotal summary (above payment) */}
+                  {voucherRows.length > 0 && (
+                    <div className="flex justify-end pr-1">
+                      <div className="text-xs text-slate-500 font-medium">
+                        {voucherRows.length} item{voucherRows.length !== 1 ? "s" : ""} ·{" "}
+                        Subtotal:{" "}
+                        <span className="font-extrabold text-slate-800 tabular-nums">
+                          {formatCurrency(subtotal)}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </>
             )}
           </div>

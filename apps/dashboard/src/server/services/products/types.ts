@@ -41,6 +41,7 @@ export interface ProductCreateInput {
   warrantyMonths?: number;
   type?: string;
   bundleQty?: number;
+  searchTags?: string[];
 }
 
 export interface ProductUpdateInput {
@@ -79,4 +80,5 @@ export interface ProductUpdateInput {
   warrantyMonths?: number;
   type?: string;
   bundleQty?: number;
+  searchTags?: string[];
 }

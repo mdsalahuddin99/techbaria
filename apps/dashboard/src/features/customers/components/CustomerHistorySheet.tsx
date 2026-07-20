@@ -50,9 +50,9 @@ export function CustomerHistorySheet({ customer, onClose, onCollect }: CustomerH
     let list = q
       ? customerHistory.filter(
           (s) =>
-            s.invoiceNo.toLowerCase().includes(q) ||
-            s.paymentMethod.toLowerCase().includes(q) ||
-            s.items.some((i) => i.name.toLowerCase().includes(q))
+            (s.invoiceNo || "").toLowerCase().includes(q) ||
+            (s.paymentMethod || "").toLowerCase().includes(q) ||
+            s.items.some((i) => (i.name || "").toLowerCase().includes(q))
         )
       : customerHistory;
     list = list.slice().sort((a, b) => {

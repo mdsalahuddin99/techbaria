@@ -43,8 +43,22 @@ export async function createBrand(ctx: Ctx, name: string, subcategories?: string
   requireRole(ctx, "ADMIN");
   const existing = await prisma.brand.findFirst({
     where: { name: { equals: name, mode: "insensitive" } },
+    include: { subcategories: true },
   });
-  if (existing) throw new ServiceError("CONFLICT", `Brand "${name}" already exists`, 409);
+  // ── Upsert: if already exists, just add new subcategory links ──
+  if (existing) {
+    if (subcategories?.length) {
+      await prisma.brandSubcategory.createMany({
+        data: subcategories.map((s) => ({ brandId: existing.id, subcategory: s })),
+        skipDuplicates: true,
+      });
+    }
+    const refreshed = await prisma.brand.findUniqueOrThrow({
+      where: { id: existing.id },
+      include: { subcategories: true },
+    });
+    return { id: refreshed.id, name: refreshed.name, isPublished: refreshed.isPublished, subcategories: refreshed.subcategories.map((s) => s.subcategory) };
+  }
   const b = await prisma.brand.create({
     data: {
       name,
@@ -135,8 +149,22 @@ export async function createProductName(ctx: Ctx, name: string, brands?: string[
   requireRole(ctx, "ADMIN");
   const existing = await prisma.productType.findFirst({
     where: { name: { equals: name, mode: "insensitive" } },
+    include: { brands: true },
   });
-  if (existing) throw new ServiceError("CONFLICT", `Product name "${name}" already exists`, 409);
+  // ── Upsert: if already exists, just add new brand links ──
+  if (existing) {
+    if (brands?.length) {
+      await prisma.productTypeBrand.createMany({
+        data: brands.map((b) => ({ productTypeId: existing.id, brandId: b })),
+        skipDuplicates: true,
+      });
+    }
+    const refreshed = await prisma.productType.findUniqueOrThrow({
+      where: { id: existing.id },
+      include: { brands: true },
+    });
+    return { id: refreshed.id, name: refreshed.name, isPublished: refreshed.isPublished, brands: refreshed.brands.map((b) => b.brandId) };
+  }
   const p = await prisma.productType.create({
     data: {
       name,
@@ -226,8 +254,22 @@ export async function createModel(ctx: Ctx, name: string, productTypes?: string[
   requireRole(ctx, "ADMIN");
   const existing = await prisma.model.findFirst({
     where: { name: { equals: name, mode: "insensitive" } },
+    include: { productTypes: true },
   });
-  if (existing) throw new ServiceError("CONFLICT", `Model "${name}" already exists`, 409);
+  // ── Upsert: if already exists, just add new product-type links ──
+  if (existing) {
+    if (productTypes?.length) {
+      await prisma.modelProductType.createMany({
+        data: productTypes.map((pt) => ({ modelId: existing.id, productTypeId: pt })),
+        skipDuplicates: true,
+      });
+    }
+    const refreshed = await prisma.model.findUniqueOrThrow({
+      where: { id: existing.id },
+      include: { productTypes: true },
+    });
+    return { id: refreshed.id, name: refreshed.name, isPublished: refreshed.isPublished, productTypes: refreshed.productTypes.map((pt) => pt.productTypeId) };
+  }
   const m = await prisma.model.create({
     data: {
       name,
@@ -317,8 +359,22 @@ export async function createSeries(ctx: Ctx, name: string, models?: string[]): P
   requireRole(ctx, "ADMIN");
   const existing = await prisma.series.findFirst({
     where: { name: { equals: name, mode: "insensitive" } },
+    include: { models: true },
   });
-  if (existing) throw new ServiceError("CONFLICT", `Series "${name}" already exists`, 409);
+  // ── Upsert: if already exists, just add new model links ──
+  if (existing) {
+    if (models?.length) {
+      await prisma.seriesModel.createMany({
+        data: models.map((m) => ({ seriesId: existing.id, modelId: m })),
+        skipDuplicates: true,
+      });
+    }
+    const refreshed = await prisma.series.findUniqueOrThrow({
+      where: { id: existing.id },
+      include: { models: true },
+    });
+    return { id: refreshed.id, name: refreshed.name, isPublished: refreshed.isPublished, models: refreshed.models.map((sm) => sm.modelId) };
+  }
   const s = await prisma.series.create({
     data: {
       name,

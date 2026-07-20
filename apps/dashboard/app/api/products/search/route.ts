@@ -39,7 +39,9 @@ export const GET = apiHandler(async (ctx: Ctx, req: Request) => {
           { sku: { contains: term, mode: "insensitive" as const } },
           { globalBrand: { name: { contains: term, mode: "insensitive" as const } } },
           { globalModel: { name: { contains: term, mode: "insensitive" as const } } },
-          { category: { name: { contains: term, mode: "insensitive" as const } } }
+          { category: { name: { contains: term, mode: "insensitive" as const } } },
+          // ── Compatible model numbers search tags ──
+          { searchTags: { has: term } },
         ]
       }));
 
@@ -48,6 +50,7 @@ export const GET = apiHandler(async (ctx: Ctx, req: Request) => {
           OR: [
             { barcode: { equals: q, mode: "insensitive" as const } },
             { serialNumbers: { some: { serial: { equals: q, mode: "insensitive" as const } } } },
+            { searchTags: { hasSome: [q] } },
             { AND: wordConditions }
           ]
         }

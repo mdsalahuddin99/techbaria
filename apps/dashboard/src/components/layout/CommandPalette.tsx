@@ -81,8 +81,8 @@ export function CommandPalette() {
         const model = typeof p.model === "object" && p.model ? (p.model as any).name : p.model;
 
         return (
-          p.name.toLowerCase().includes(q) ||
-          p.sku.toLowerCase().includes(q) ||
+          (p.name || "").toLowerCase().includes(q) ||
+          (p.sku || "").toLowerCase().includes(q) ||
           (p.barcode && p.barcode.toLowerCase().includes(q)) ||
           (brand && brand.toLowerCase().includes(q)) ||
           (model && model.toLowerCase().includes(q))
@@ -97,8 +97,8 @@ export function CommandPalette() {
     return customers
       .filter((c) => {
         return (
-          c.name.toLowerCase().includes(q) ||
-          c.phone.toLowerCase().includes(q) ||
+          (c.name || "").toLowerCase().includes(q) ||
+          (c.phone || "").toLowerCase().includes(q) ||
           (c.email && c.email.toLowerCase().includes(q))
         );
       })
@@ -111,8 +111,8 @@ export function CommandPalette() {
     return sales
       .filter((s) => {
         return (
-          s.invoiceNo.toLowerCase().includes(q) ||
-          s.customerName.toLowerCase().includes(q) ||
+          (s.invoiceNo || "").toLowerCase().includes(q) ||
+          (s.customerName || "").toLowerCase().includes(q) ||
           (s.customerPhone && s.customerPhone.toLowerCase().includes(q))
         );
       })

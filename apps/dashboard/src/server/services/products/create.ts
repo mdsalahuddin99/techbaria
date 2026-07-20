@@ -69,6 +69,7 @@ export async function create(ctx: Ctx, input: ProductCreateInput) {
       trackSerials: input.trackSerials ?? true,
       supplierId: input.supplierId ?? null,
       bundleQty: input.bundleQty,
+      searchTags: input.searchTags ?? [],
       warrantyStartDate: input.warrantyStartDate ? new Date(input.warrantyStartDate) : undefined,
       ...(input.warrantyMonths !== undefined && { warrantyMonths: input.warrantyMonths }),
       images: {

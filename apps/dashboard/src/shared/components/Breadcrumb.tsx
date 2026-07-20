@@ -99,8 +99,8 @@ export const Breadcrumb = memo(function Breadcrumb() {
   if (crumbs.length <= 1) return null;
 
   return (
-    <nav aria-label="Breadcrumb" className="mb-2 -mt-1">
-      <ol className="flex items-center gap-1.5 text-xs text-muted-foreground">
+    <nav aria-label="Breadcrumb" className="flex items-center">
+      <ol className="flex items-center gap-1.5 text-sm text-muted-foreground">
         {crumbs.map((crumb, idx) => (
           <li key={crumb.href} className="flex items-center gap-1.5">
             {idx > 0 && (

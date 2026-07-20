@@ -15,7 +15,7 @@ export default async function PurchasesPage() {
     accountsRes,
     ledgerRes
   ] = await Promise.all([
-    purchasesService.list(ctx),
+    purchasesService.list(ctx, { limit: 5 }),
     accountsService.list(ctx),
     accountsService.listLedger(ctx),
   ]);

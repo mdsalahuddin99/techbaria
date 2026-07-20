@@ -110,7 +110,11 @@ export function ProductFilterBar({
         const barcode = p.barcode?.toLowerCase() || "";
         const model = (p.globalModel?.name || p.model)?.toLowerCase() || "";
         const brand = (p.globalBrand?.name || p.brand)?.toLowerCase() || "";
-        return pName.includes(q) || sku.includes(q) || barcode === q || model.includes(q) || brand.includes(q);
+        const tagsMatches = Array.isArray(p.searchTags) 
+          ? p.searchTags.some((tag: string) => tag.toLowerCase().includes(q))
+          : false;
+          
+        return pName.includes(q) || sku.includes(q) || barcode === q || model.includes(q) || brand.includes(q) || tagsMatches;
       });
     }
     return list.slice(0, 50);
@@ -159,10 +163,15 @@ export function ProductFilterBar({
         e.preventDefault();
         const query = searchQuery.trim().toLowerCase();
         const firstProduct = filteredProducts[0];
+        const tagsMatches = firstProduct && Array.isArray(firstProduct.searchTags) 
+          ? firstProduct.searchTags.some((tag: string) => tag.toLowerCase().includes(query))
+          : false;
+          
         const isRelevant = firstProduct && query && (
           firstProduct.name?.toLowerCase().includes(query) ||
           firstProduct.sku?.toLowerCase().includes(query) ||
-          firstProduct.barcode?.toLowerCase().includes(query)
+          firstProduct.barcode?.toLowerCase().includes(query) ||
+          tagsMatches
         );
 
         if (showSuggestions && filteredProducts.length > 0 && isRelevant) {

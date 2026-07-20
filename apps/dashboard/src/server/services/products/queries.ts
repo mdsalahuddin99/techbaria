@@ -32,24 +32,20 @@ async function runListQuery(ctx: Ctx, params?: PaginationParams, filter?: Produc
     const terms = q.split(/\s+/).filter(Boolean);
 
     // [SUPERFAST PATH] Pre-fetch relation IDs to avoid massive JOINs in the main query
-    const [matchingModels, matchingBrands, matchingSerials] = await Promise.all([
+    const [matchingModels, matchingBrands] = await Promise.all([
       prisma.model.findMany({ where: { name: { contains: q, mode: "insensitive" } }, select: { id: true }, take: 20 }),
-      prisma.brand.findMany({ where: { name: { contains: q, mode: "insensitive" } }, select: { id: true }, take: 20 }),
-      prisma.serialNumber.findMany({ where: { serial: { equals: q, mode: "insensitive" } }, select: { productId: true }, take: 10 })
+      prisma.brand.findMany({ where: { name: { contains: q, mode: "insensitive" } }, select: { id: true }, take: 20 })
     ]);
 
     const modelIds = matchingModels.map(m => m.id);
     const brandIds = matchingBrands.map(b => b.id);
-    const productIdsBySerial = matchingSerials.map(s => s.productId);
 
     where.AND.push({
       OR: [
         { AND: terms.map(term => ({ name: { contains: term, mode: "insensitive" as const } })) },
         { sku: { contains: q, mode: "insensitive" as const } },
-        { barcode: { equals: q, mode: "insensitive" as const } },
         ...(modelIds.length > 0 ? [{ globalModelId: { in: modelIds } }] : []),
-        ...(brandIds.length > 0 ? [{ globalBrandId: { in: brandIds } }] : []),
-        ...(productIdsBySerial.length > 0 ? [{ id: { in: productIdsBySerial } }] : [])
+        ...(brandIds.length > 0 ? [{ globalBrandId: { in: brandIds } }] : [])
       ]
     });
   }
@@ -308,10 +304,10 @@ async function runPublicStorefrontQuery(
 
 }
 
-/** Products where stock ≤ reorderLevel. */
+/** Products where stock ≤ reorderLevel and stock > 0. */
 export async function lowStock(ctx: Ctx) {
   return prisma.$queryRawUnsafe<any[]>(
-    `SELECT * FROM "Product" WHERE "stock" <= "reorderLevel" ORDER BY ("reorderLevel" - "stock") DESC LIMIT 100`
+    `SELECT * FROM "Product" WHERE "stock" > 0 AND "stock" <= "reorderLevel" ORDER BY ("reorderLevel" - "stock") DESC LIMIT 100`
   );
 }
 

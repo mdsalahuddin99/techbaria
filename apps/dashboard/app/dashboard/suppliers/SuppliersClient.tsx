@@ -218,62 +218,58 @@ export function SuppliersClient({
         }
       />
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-primary/10 grid place-items-center">
-              <Truck className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Total Suppliers</p>
-              <p className="text-2xl font-bold">{suppliers.length}</p>
-            </div>
-          </div>
-        </Card>
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-accent/10 grid place-items-center">
-              <Receipt className="h-5 w-5 text-accent" />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Total Purchased (lifetime)</p>
-              <p className="text-2xl font-bold">{formatCurrency(totalPurchased)}</p>
-            </div>
-          </div>
-        </Card>
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-warning/10 grid place-items-center">
-              <Wallet className="h-5 w-5 text-warning" />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Outstanding Payable</p>
-              <p className="text-2xl font-bold text-warning">{formatCurrency(totalPayable)}</p>
-            </div>
-          </div>
-        </Card>
-      </div>
-
       <Card className="p-3">
-        <div className="flex flex-wrap gap-2 items-center">
-          <div className="relative flex-1 min-w-[200px] max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              id="suppliers-search-input"
-              placeholder="Search by name, phone, email, address…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9"
-            />
-          </div>
-          
-          {isFilterEmpty && (
-            <div className="flex-1 min-w-[280px] flex items-center bg-blue-50/80 border border-blue-100 rounded-md px-3 py-1.5 text-sm text-blue-700 font-medium">
-              <span className="truncate" title="সর্বশেষ ৫টি ডেটা দেখানো হচ্ছে। নির্দিষ্ট ডেটা খুঁজে পেতে সার্চ করুন।">
-                সর্বশেষ ৫টি ডেটা দেখানো হচ্ছে। নির্দিষ্ট ডেটা খুঁজে পেতে সার্চ করুন।
-              </span>
+        <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 justify-between items-start lg:items-center">
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-4 sm:gap-6 divide-x divide-border w-full lg:w-auto">
+            <div className="flex items-center gap-3 pl-0">
+              <div className="h-9 w-9 rounded-md bg-primary/10 grid place-items-center shrink-0">
+                <Truck className="h-4 w-4 text-primary" />
+              </div>
+              <div>
+                <p className="text-[10px] text-muted-foreground uppercase font-semibold">Total Suppliers</p>
+                <p className="text-lg font-bold leading-none mt-1">{suppliers.length}</p>
+              </div>
             </div>
-          )}
+            <div className="flex items-center gap-3 pl-4 sm:pl-6">
+              <div className="h-9 w-9 rounded-md bg-accent/10 grid place-items-center shrink-0">
+                <Receipt className="h-4 w-4 text-accent" />
+              </div>
+              <div>
+                <p className="text-[10px] text-muted-foreground uppercase font-semibold">Total Purchased</p>
+                <p className="text-lg font-bold leading-none mt-1">{formatCurrency(totalPurchased)}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 pl-4 sm:pl-6">
+              <div className="h-9 w-9 rounded-md bg-warning/10 grid place-items-center shrink-0">
+                <Wallet className="h-4 w-4 text-warning" />
+              </div>
+              <div>
+                <p className="text-[10px] text-muted-foreground uppercase font-semibold">Payable</p>
+                <p className="text-lg font-bold text-warning leading-none mt-1">{formatCurrency(totalPayable)}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2 items-center w-full lg:flex-1 lg:justify-end">
+            <div className="relative flex-1 lg:max-w-[240px]">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                id="suppliers-search-input"
+                placeholder="Search suppliers..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-8 h-9 text-sm"
+              />
+            </div>
+            
+            {isFilterEmpty && (
+              <div className="flex-1 lg:flex-none min-w-[240px] flex items-center bg-blue-50/80 border border-blue-100 rounded-md px-3 h-9 text-xs text-blue-700 font-medium">
+                <span className="truncate" title="সর্বশেষ ৫টি ডেটা দেখানো হচ্ছে। নির্দিষ্ট ডেটা খুঁজে পেতে সার্চ করুন।">
+                  সর্বশেষ ৫টি ডেটা দেখানো হচ্ছে। নির্দিষ্ট ডেটা খুঁজে পেতে সার্চ করুন।
+                </span>
+              </div>
+            )}
+          </div>
         </div>
       </Card>
 

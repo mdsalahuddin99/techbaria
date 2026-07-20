@@ -19,6 +19,15 @@ export function ItemListClient({ initialCategories, initialItemLists }: any) {
     }
   }, [searchParams]);
 
+  const renderTabsList = () => (
+    <TabsList className="bg-gray-50/50 border border-gray-100 p-1 h-auto flex-wrap justify-start">
+      <TabsTrigger value="brands" className="px-4 py-1.5 text-sm">Brands</TabsTrigger>
+      <TabsTrigger value="products" className="px-4 py-1.5 text-sm">Product Names</TabsTrigger>
+      <TabsTrigger value="models" className="px-4 py-1.5 text-sm">Models</TabsTrigger>
+      <TabsTrigger value="series" className="px-4 py-1.5 text-sm">Series</TabsTrigger>
+    </TabsList>
+  );
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-gray-100">
@@ -32,27 +41,20 @@ export function ItemListClient({ initialCategories, initialItemLists }: any) {
       </div>
 
       <Tabs defaultValue="brands" className="w-full">
-        <TabsList className="bg-white border border-gray-100 p-1 mb-4 h-auto flex-wrap justify-start">
-          <TabsTrigger value="brands" className="px-4 py-2">Brands</TabsTrigger>
-          <TabsTrigger value="products" className="px-4 py-2">Product Names</TabsTrigger>
-          <TabsTrigger value="models" className="px-4 py-2">Models</TabsTrigger>
-          <TabsTrigger value="series" className="px-4 py-2">Series</TabsTrigger>
-        </TabsList>
-
         <TabsContent value="brands" className="m-0">
-          <CatalogTab entity="brands" title="Brands" />
+          <CatalogTab entity="brands" title="Brands" leftAddon={renderTabsList()} />
         </TabsContent>
 
         <TabsContent value="products" className="m-0">
-          <CatalogTab entity="products" title="Product Names" />
+          <CatalogTab entity="products" title="Product Names" leftAddon={renderTabsList()} />
         </TabsContent>
 
         <TabsContent value="models" className="m-0">
-          <CatalogTab entity="models" title="Models" />
+          <CatalogTab entity="models" title="Models" leftAddon={renderTabsList()} />
         </TabsContent>
 
         <TabsContent value="series" className="m-0">
-          <CatalogTab entity="series" title="Series" />
+          <CatalogTab entity="series" title="Series" leftAddon={renderTabsList()} />
         </TabsContent>
       </Tabs>
 

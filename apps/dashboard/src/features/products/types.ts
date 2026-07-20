@@ -106,6 +106,9 @@ export interface Product {
   // ---- Bundle / Kit (Phase 4) ----
   /** 'simple' (default) or 'bundle' (composed of other products). */
   type?: "simple" | "bundle";
+
+  /** Tags used for searching. */
+  searchTags?: string[];
 }
 
 export type ProductInput = Omit<Product, "id">;

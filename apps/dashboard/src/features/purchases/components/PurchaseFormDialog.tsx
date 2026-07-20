@@ -508,8 +508,12 @@ export function PurchaseFormDialog({
                       {!isCollapsed && (<>
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                         <div>
-                          <label className="text-xs text-muted-foreground">Cost ৳ *</label>
-                          <Input type="number" value={l.baseCost === 0 ? "" : l.baseCost} onChange={(e) => form.updateLine(l.productId, { baseCost: Number(e.target.value) || 0 })} />
+                          <label className="text-xs text-muted-foreground">{l.isBundle ? "Total Cost ৳ *" : "Cost ৳ *"}</label>
+                          {l.isBundle ? (
+                            <Input type="number" value={l.totalCost === 0 ? "" : l.totalCost} onChange={(e) => form.updateLine(l.productId, { totalCost: Number(e.target.value) || 0 })} />
+                          ) : (
+                            <Input type="number" value={l.baseCost === 0 ? "" : l.baseCost} onChange={(e) => form.updateLine(l.productId, { baseCost: Number(e.target.value) || 0 })} />
+                          )}
                         </div>
                         <div>
                           <div className="flex items-center justify-between mb-1">
@@ -564,15 +568,20 @@ export function PurchaseFormDialog({
                         </div>
 
                         <div className="sm:col-span-2 lg:col-span-1">
-                          {!l.trackSerials ? (
-                            <div className="flex flex-col gap-1">
-                              <label className="text-xs text-muted-foreground">Quantity</label>
+                          {(!l.trackSerials || l.isBundle) && (
+                            <div className="flex flex-col gap-1 mb-2">
+                              <label className="text-xs text-muted-foreground">{l.isBundle ? "Bundle Quantity" : "Quantity"}</label>
                               <div className="flex items-center gap-2">
                                 <Input type="number" min={1} className="w-28" value={l.manualQty} onChange={(e) => form.setManualQty(l.productId, Number(e.target.value) || 1)} />
-                                <span className="text-[11px] text-muted-foreground">(এই product serial-tracked না)</span>
+                                <span className="text-[11px] text-muted-foreground">
+                                  {l.isBundle && l.trackSerials 
+                                    ? "(Quantity manually editable for bundles)" 
+                                    : "(এই product serial-tracked না)"}
+                                </span>
                               </div>
                             </div>
-                          ) : (
+                          )}
+                          {l.trackSerials && (
                             <div className="flex flex-col gap-1">
                               <div className="flex items-center justify-between h-[18px]">
                                 <label className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">

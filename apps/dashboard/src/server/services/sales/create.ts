@@ -4,6 +4,7 @@ import { ServiceError } from "@/server/lib/errors";
 import type { Ctx } from "@/server/lib/ctx";
 import { serializeSale, mapPaymentMethodToTenderType } from "@/server/lib/serialize";
 import { auditLogService } from "../auditLogService";
+import { notificationsService } from "../notificationsService";
 import { cache } from "@/lib/cache";
 import { salesAccounting } from "./salesAccounting";
 import { salesSerial } from "./salesSerial";
@@ -92,6 +93,19 @@ async function __postProcess(ctx: Ctx, raw: any, productIds: string[]) {
     cache.invalidateSales(),
     cache.invalidateSpecificProducts(productIds),
   ]);
+
+  const totalItemDiscount = raw.items?.reduce((sum: number, i: any) => sum + (Number(i.discount) || 0), 0) || 0;
+  const totalDiscount = Number(raw.discount) + totalItemDiscount;
+
+  if (totalDiscount > 0) {
+    const invoiceNo = (raw.data as any)?.invoiceNo || raw.id.slice(0, 8);
+    await notificationsService.push(ctx, {
+      type: "sale",
+      title: `Discount Applied: ${invoiceNo}`,
+      message: `A total discount of ৳${totalDiscount} was given. Sale Total: ৳${Number(raw.total)}.`,
+      link: `/dashboard/sales?search=${invoiceNo}`,
+    }).catch((err) => console.error("[sale discount notification error]", err));
+  }
 }
 
 /** Create a new sale — validates stock → creates records → assigns serials → logs. */

@@ -70,8 +70,8 @@ export function useFilteredSales({ search = "", paymentMethod = "All" }: SalesFi
       (s: Sale) =>
         (paymentMethod === "All" || s.paymentMethod === paymentMethod) &&
         (q === "" ||
-          s.invoiceNo.toLowerCase().includes(q) ||
-          s.customerName.toLowerCase().includes(q) ||
+          (s.invoiceNo || "").toLowerCase().includes(q) ||
+          (s.customerName || "").toLowerCase().includes(q) ||
           (s.customerPhone ?? "").toLowerCase().includes(q))
     );
   }, [data, search, paymentMethod]);

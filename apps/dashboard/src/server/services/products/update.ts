@@ -77,6 +77,7 @@ export async function update(ctx: Ctx, id: string, input: ProductUpdateInput) {
     data.warrantyStartDate = input.warrantyStartDate ? new Date(input.warrantyStartDate) : null;
   }
   if (input.warrantyMonths !== undefined) data.warrantyMonths = input.warrantyMonths;
+  if (input.searchTags !== undefined) data.searchTags = input.searchTags;
 
   // Handle imageUrl and galleryImages update via ProductImage relation
   if (input.imageUrl !== undefined || input.galleryImages !== undefined) {

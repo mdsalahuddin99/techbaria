@@ -445,21 +445,11 @@ export function AdminShell({
       {/* Main column */}
       <div className="flex-1 flex flex-col min-w-0 relative z-10 print:block">
         <header className="h-14 border-b border-border/60 bg-card md:bg-card/80 md:backdrop-blur-xl md:sticky md:top-0 z-30 flex items-center justify-between gap-3 px-3 md:px-4 print:hidden">
-          {/* Global command bar — desktop */}
-          <div className="hidden lg:flex flex-1 max-w-[280px] xl:max-w-sm">
-            <button
-              type="button"
-              onClick={() => {
-                window.dispatchEvent(new CustomEvent("cmd:open-palette"));
-              }}
-              className="group w-full inline-flex items-center gap-2.5 px-3.5 h-9 rounded-lg bg-secondary/60 hover:bg-secondary border border-border/70 hover:border-border text-sm text-muted-foreground transition"
-            >
-              <Search className="h-4 w-4 shrink-0" />
-              <span className="flex-1 text-left truncate">Search products, customers, orders…</span>
-              <kbd className="hidden xl:inline-flex items-center gap-1 text-[10px] font-mono px-1.5 py-0.5 rounded bg-background border border-border/80">
-                <Command className="h-2.5 w-2.5" /> K
-              </kbd>
-            </button>
+          {/* Breadcrumb / Spacer */}
+          <div className="flex-1 min-w-0 flex items-center">
+            <div className="print:hidden truncate">
+              <Breadcrumb />
+            </div>
           </div>
 
           {/* Right actions */}
@@ -563,9 +553,6 @@ export function AdminShell({
           "flex-1 px-2 md:px-3 py-2 md:py-3 overflow-y-auto overflow-x-hidden scroll-smooth pb-nav w-full print:p-0 print:overflow-visible print:block",
           getThemeClass(pathname)
         )}>
-          <div className="print:hidden">
-            <Breadcrumb />
-          </div>
           {children}
         </main>
       </div>

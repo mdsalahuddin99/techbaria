@@ -123,41 +123,8 @@ export function ProductsClient({
   );
 
   const products = useMemo(() => {
-    let result = data?.pages.flatMap((page) => page.items) ?? initialProducts;
-
-    // Apply local filter for instant feedback while server fetches
-    if (queryFilter.search) {
-      const s = queryFilter.search.toLowerCase();
-      result = result.filter(
-        (p) => {
-          const catName = (storeCategories.find(c => c.id === p.category)?.name || categoryName(p.category))?.toLowerCase() || "";
-          return (
-            (p.name && p.name.toLowerCase().includes(s)) ||
-            (p.sku && p.sku.toLowerCase().includes(s)) ||
-            (p.barcode && p.barcode.toLowerCase().includes(s)) ||
-            (p.serialNumber && p.serialNumber.toLowerCase().includes(s)) ||
-            (p.subcategory && p.subcategory.toLowerCase().includes(s)) ||
-            (p.brand && p.brand.toLowerCase().includes(s)) ||
-            (p.model && p.model.toLowerCase().includes(s)) ||
-            catName.includes(s)
-          );
-        }
-      );
-    }
-    if (queryFilter.categoryId) {
-      const selectedCat = storeCategories.find(c => c.id === queryFilter.categoryId);
-      result = result.filter((p) => {
-        if (p.category === queryFilter.categoryId) return true;
-        if (selectedCat && p.subcategory && p.subcategory.toLowerCase() === selectedCat.name.toLowerCase()) return true;
-        return false;
-      });
-    }
-    if (queryFilter.lowStock) {
-      result = result.filter((p) => p.stock <= p.minStock);
-    }
-
-    return result;
-  }, [data, initialProducts, queryFilter]);
+    return data?.pages.flatMap((page) => page.items) ?? initialProducts;
+  }, [data, initialProducts]);
 
   const [editing, setEditing] = useState<Product | null>(null);
   const [open, setOpen] = useState(false);

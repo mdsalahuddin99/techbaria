@@ -16,9 +16,9 @@ export function InventoryStatsCards({
 }: InventoryStatsCardsProps) {
   const locale = useLocale();
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 p-5 shadow-lg">
-        <div className="absolute top-0 right-0 p-4 opacity-20 transition-transform hover:scale-110">
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 h-full">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 p-4 shadow-lg h-full flex flex-col justify-center">
+        <div className="absolute top-1/2 -translate-y-1/2 right-0 p-3 opacity-20 transition-transform hover:scale-110">
           <Boxes className="h-16 w-16 text-white" />
         </div>
         <div className="relative z-10">
@@ -31,8 +31,8 @@ export function InventoryStatsCards({
         </div>
       </div>
 
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 p-5 shadow-lg">
-        <div className="absolute top-0 right-0 p-4 opacity-20 transition-transform hover:scale-110">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 p-4 shadow-lg h-full flex flex-col justify-center">
+        <div className="absolute top-1/2 -translate-y-1/2 right-0 p-3 opacity-20 transition-transform hover:scale-110">
           <AlertTriangle className="h-16 w-16 text-white" />
         </div>
         <div className="relative z-10">
@@ -45,8 +45,8 @@ export function InventoryStatsCards({
         </div>
       </div>
 
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-rose-500 to-red-600 p-5 shadow-lg">
-        <div className="absolute top-0 right-0 p-4 opacity-20 transition-transform hover:scale-110">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-rose-500 to-red-600 p-4 shadow-lg h-full flex flex-col justify-center">
+        <div className="absolute top-1/2 -translate-y-1/2 right-0 p-3 opacity-20 transition-transform hover:scale-110">
           <PackageX className="h-16 w-16 text-white" />
         </div>
         <div className="relative z-10">

@@ -2,7 +2,7 @@
 
 import { usePageTitle } from "@/shared/hooks/usePageTitle";
 import { useMemo, useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Card } from "@/shared/ui/card";
 import { Input } from "@/shared/ui/input";
 import { Badge } from "@/shared/ui/badge";
@@ -39,8 +39,10 @@ import { useSettings } from "@/features/settings/hooks";
 export function SalesClient() {
   usePageTitle("Sales");
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialSearch = searchParams.get("search") || "";
   const settings = useSettings();
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(initialSearch);
   const [method, setMethod] = useState("All");
   const [sort, setSort] = useState<"newest" | "oldest" | "total-desc" | "total-asc" | "due-desc" | "due-asc">("newest");
   const [view, setView] = useState<Sale | null>(null);
@@ -79,7 +81,7 @@ export function SalesClient() {
   }, []);
 
   const queryFilter = useMemo(() => ({
-    search: debouncedSearch.trim() || undefined,
+    search: undefined, // Let local filter handle it to correctly search invoiceNo in JSON data
     paymentMethod: method !== "All" ? method : undefined,
     sortKey: sort.split("-")[0],
     sortDir: sort.split("-")[1] as "asc" | "desc",
@@ -114,30 +116,32 @@ export function SalesClient() {
         title="Sales History"
         description="Search, review and reprint past invoices."
         actions={
-          <Button onClick={() => router.push("/dashboard/sales/create")} className="bg-primary text-primary-foreground hover:bg-primary/90">
-            <Plus className="h-4 w-4 mr-2" />
-            New Sale
-          </Button>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-6 w-full sm:w-auto mt-2 sm:mt-0">
+            <div className="flex items-center gap-2 sm:gap-3 mr-auto sm:mr-4">
+              <div className="bg-white/15 backdrop-blur-sm border border-white/20 px-3 py-1.5 rounded-lg">
+                <p className="text-[10px] text-white/80 uppercase font-semibold tracking-wider">Transactions</p>
+                <p className="text-sm font-bold mt-0.5 text-white">{allSales.length}</p>
+              </div>
+              <div className="bg-white/15 backdrop-blur-sm border border-white/20 px-3 py-1.5 rounded-lg">
+                <p className="text-[10px] text-white/80 uppercase font-semibold tracking-wider">Revenue</p>
+                <p className="text-sm font-bold mt-0.5 text-white">{formatCurrency(total)}</p>
+              </div>
+              <div className="bg-white/15 backdrop-blur-sm border border-white/20 px-3 py-1.5 rounded-lg">
+                <p className="text-[10px] text-white/80 uppercase font-semibold tracking-wider">Avg Order</p>
+                <p className="text-sm font-bold mt-0.5 text-white">
+                  {formatCurrency(allSales.length ? total / allSales.length : 0)}
+                </p>
+              </div>
+            </div>
+            <Button onClick={() => router.push("/dashboard/sales/create")} className="bg-primary text-primary-foreground hover:bg-primary/90 shrink-0">
+              <Plus className="h-4 w-4 mr-2" />
+              New Sale
+            </Button>
+          </div>
         }
       />
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card variant="gradient-indigo" className="p-4">
-          <p className="text-sm text-white/80">Transactions</p>
-          <p className="text-2xl font-bold mt-1 text-white">{allSales.length}</p>
-        </Card>
-        <Card variant="gradient-emerald" className="p-4">
-          <p className="text-sm text-white/80">Revenue</p>
-          <p className="text-2xl font-bold mt-1 text-white">{formatCurrency(total)}</p>
-        </Card>
-        <Card variant="gradient-blue" className="p-4">
-          <p className="text-sm text-white/80">Avg Order Value</p>
-          <p className="text-2xl font-bold mt-1 text-white">
-            {formatCurrency(allSales.length ? total / allSales.length : 0)}
-          </p>
-        </Card>
-      </div>
 
-      <Card className="p-4 flex flex-col sm:flex-row gap-3">
+      <Card className="px-4 py-2 flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input id="sales-search-input" placeholder="Search invoice, customer name or phone…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />

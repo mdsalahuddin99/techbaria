@@ -159,28 +159,28 @@ export function InvoiceLineItems({
       <table className="w-full text-sm">
         <thead>
           <tr className="bg-secondary/40 border-b border-border">
-            <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500 w-8">
+            <th className="text-left px-4 py-2 text-[11px] font-bold uppercase tracking-wider text-slate-500 w-8">
               #
             </th>
-            <th className="text-left px-3 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+            <th className="text-left px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-slate-500 w-full">
               Product
             </th>
-            <th className="text-left px-3 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500 w-20">
+            <th className="text-center px-2 py-2 text-[11px] font-bold uppercase tracking-wider text-slate-500 w-20 whitespace-nowrap">
               Warranty
             </th>
-            <th className="text-center px-3 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500 w-36">
+            <th className="text-center px-2 py-2 text-[11px] font-bold uppercase tracking-wider text-slate-500 w-16 whitespace-nowrap">
               Qty
             </th>
-            <th className="text-right px-3 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500 w-24">
+            <th className="text-right px-2 py-2 text-[11px] font-bold uppercase tracking-wider text-slate-500 w-20 whitespace-nowrap">
               Discount
             </th>
-            <th className="text-right px-3 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500 w-28">
+            <th className="text-right px-2 py-2 text-[11px] font-bold uppercase tracking-wider text-slate-500 w-28 whitespace-nowrap">
               Unit Price
             </th>
-            <th className="text-right px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500 w-28">
+            <th className="text-right px-2 py-2 text-[11px] font-bold uppercase tracking-wider text-slate-500 w-28 whitespace-nowrap">
               Total
             </th>
-            <th className="w-20" />
+            <th className="w-12 px-2" />
           </tr>
         </thead>
         <tbody className="divide-y divide-border bg-card">
@@ -200,12 +200,12 @@ export function InvoiceLineItems({
             return (
               <tr key={row.id} className="hover:bg-secondary/15 transition-colors">
                 {/* Row number */}
-                <td className="px-4 py-3 text-xs text-slate-400 font-medium">
+                <td className="px-4 py-2 text-xs text-slate-400 font-medium">
                   {idx + 1}
                 </td>
 
                 {/* Product name & serials */}
-                <td className="px-3 py-3">
+                <td className="px-3 py-2">
                   <p className="font-medium text-slate-700 text-[13px] leading-tight">
                     {row.name}
                   </p>
@@ -242,7 +242,7 @@ export function InvoiceLineItems({
                 </td>
 
                 {/* Warranty months */}
-                <td className="px-3 py-3">
+                <td className="px-2 py-2">
                   <Input
                     type="number"
                     min={0}
@@ -252,26 +252,14 @@ export function InvoiceLineItems({
                       const val = parseInt(e.target.value);
                       onChangeWarranty(row.id, isNaN(val) ? 0 : val);
                     }}
-                    className="w-12 h-7 text-xs border-border bg-card rounded-[4px] text-center px-1 shrink-0"
+                    className="w-12 h-7 text-xs border-border bg-card rounded-[4px] text-center px-1 shrink-0 mx-auto"
                     title="Customer Warranty (Months)"
                   />
                 </td>
 
                 {/* Qty stepper */}
-                <td className="px-3 py-3">
+                <td className="px-2 py-2">
                   <div className="flex items-center justify-center gap-1">
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="ghost"
-                      className="h-7 w-7 border border-border hover:border-border/85 rounded-[4px]"
-                      onClick={() => {
-                        if (row.qty <= 1) onRemoveRow(row.id);
-                        else onChangeQty(row.id, row.qty - 1);
-                      }}
-                    >
-                      <Minus className="h-3 w-3" />
-                    </Button>
                     <Input
                       type="number"
                       value={row.qty}
@@ -300,34 +288,11 @@ export function InvoiceLineItems({
                         if (e.key === "Enter") searchInputRef.current?.focus();
                       }}
                     />
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="ghost"
-                      className="h-7 w-7 border border-border hover:border-border/85 rounded-[4px]"
-                      onClick={() => {
-                        if (row.qty + 1 > stock) {
-                          toast.error(
-                            `Only ${stock} units available for "${product?.name ?? "this product"}"`,
-                          );
-                          return;
-                        }
-                        if (isTracked) {
-                          const available = allSerials.filter((s) => !row.serials.includes(s));
-                          if (available.length > 0) {
-                            onChangeSerials(row.id, [...row.serials, available[0]]);
-                          }
-                        }
-                        onChangeQty(row.id, row.qty + 1);
-                      }}
-                    >
-                      <Plus className="h-3 w-3" />
-                    </Button>
                   </div>
                 </td>
 
                 {/* Discount */}
-                <td className="px-3 py-3">
+                <td className="px-2 py-2">
                   <Input
                     name="row-discount"
                     type="number"
@@ -338,27 +303,27 @@ export function InvoiceLineItems({
                       onChangeDiscount?.(row.id, isNaN(val) ? 0 : val);
                     }}
                     placeholder="0.00"
-                    className="w-20 h-7 text-xs border-border bg-card rounded-[4px] text-right px-2"
+                    className="w-14 h-7 text-xs border-border bg-card rounded-[4px] text-right px-2 ml-auto"
                   />
                 </td>
 
                 {/* Unit price */}
-                <td className="px-3 py-3 text-right">
+                <td className="px-2 py-2 text-right">
                   <span className="text-sm text-slate-700 tabular-nums">
                     {formatCurrency(row.price)}
                   </span>
                 </td>
 
                 {/* Line total */}
-                <td className="px-4 py-3 text-right">
+                <td className="px-2 py-2 text-right">
                   <span className="font-semibold text-slate-700 tabular-nums">
                     {formatCurrency(row.price * row.qty - (row.discount || 0))}
                   </span>
                 </td>
 
                 {/* Action column (Quick-View & Delete) */}
-                <td className="px-2 py-3 text-center">
-                  <div className="flex items-center justify-center gap-1">
+                <td className="px-2 py-2 text-right">
+                  <div className="flex items-center justify-end gap-1">
                     <Popover>
                       <PopoverTrigger asChild>
                         <button

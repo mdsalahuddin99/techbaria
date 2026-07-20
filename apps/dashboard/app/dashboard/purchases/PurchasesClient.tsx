@@ -91,8 +91,9 @@ export function PurchasesClient({
   }, [searchTerm]);
 
   const queryFilter = useMemo(() => ({
-    search: debouncedSearch,
+    search: debouncedSearch.trim() || undefined,
     status: statusFilter,
+    limit: debouncedSearch.trim() ? 1000 : 5,
   }), [debouncedSearch, statusFilter]);
 
   const initialInfiniteData = useMemo(() => {

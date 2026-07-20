@@ -131,7 +131,7 @@ export function NotificationsClient() {
               <div className="flex flex-col gap-1">
                 {n.link && (
                   <Button asChild size="sm" variant="ghost">
-                    <Link href={n.link}>View</Link>
+                    <Link href={n.link.replace("/reports/sales", "/sales")}>View</Link>
                   </Button>
                 )}
                 {!n.read && (

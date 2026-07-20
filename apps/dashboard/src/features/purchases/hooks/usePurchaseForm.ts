@@ -20,6 +20,8 @@ export interface DraftLine {
   serials: string[];
   trackSerials: boolean;
   manualQty: number;
+  isBundle?: boolean;
+  totalCost?: number;
 }
 
 export type Tender = {
@@ -34,7 +36,13 @@ export type Tender = {
 export const methodFromAccountType = (t?: AccountType): PaymentMethod =>
   t === "bank" ? "Card" : t === "mobile_banking" ? "Mobile Banking" : "Cash";
 
-export const lineCost = (l: DraftLine) => l.baseCost;
+export const lineCost = (l: DraftLine) => {
+  if (l.isBundle && l.totalCost !== undefined) {
+    const qty = l.manualQty || 1;
+    return l.totalCost / qty;
+  }
+  return l.baseCost;
+};
 
 export const lineSale = (l: DraftLine, fallback = 0) => {
   const total = lineCost(l);
@@ -160,7 +168,7 @@ export function usePurchaseForm({
     }
   }, [editId, open, supplierId, reference, lines, tenders]);
 
-  const lineUnits = (l: DraftLine) => (l.trackSerials ? l.serials.length : l.manualQty);
+  const lineUnits = (l: DraftLine) => (l.trackSerials && !l.isBundle ? l.serials.length : l.manualQty);
   const subtotal = lines.reduce((s, l) => s + lineUnits(l) * lineCost(l), 0);
   const saleTotal = lines.reduce(
     (s, l) => s + lineUnits(l) * lineSale(l, (products.find((p) => p.id === l.productId)?.price) || 0),
@@ -194,7 +202,8 @@ export function usePurchaseForm({
     if (!product) return toast.error("Pick a product");
     if (lines.some((l) => l.productId === product.id))
       return toast.error("Product already added");
-    
+    const isBundle = product.type === "bundle";
+
     setLines((prev) => [
       {
         productId: product.id,
@@ -208,6 +217,8 @@ export function usePurchaseForm({
         serials: [],
         trackSerials: product.trackSerials !== false,
         manualQty: product.bundleQty || 1,
+        isBundle,
+        totalCost: isBundle ? 0 : undefined,
       },
       ...prev,
     ]);
@@ -366,7 +377,7 @@ export function usePurchaseForm({
         return null;
       }
       
-      const missingFields = lines.find((l) => !l.baseCost || !l.expectedDate);
+      const missingFields = lines.find((l) => !lineCost(l) || !l.expectedDate);
       if (missingFields) {
         toast.error(`"${missingFields.name}" — Cost ও Expected Date আবশ্যক`);
         return null;

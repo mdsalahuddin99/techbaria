@@ -65,13 +65,14 @@ export function useStorefrontProducts(filters: StorefrontFilters = {}) {
     }
     if (filters.search?.trim()) {
       const q = filters.search.toLowerCase();
-      list = list.filter(
-        (p) =>
-          p.name.toLowerCase().includes(q) ||
+      list = list.filter((p) => {
+        const matchesSearch = !q ||
+          (p.name || "").toLowerCase().includes(q) ||
           (p.brand ?? "").toLowerCase().includes(q) ||
           (p.model ?? "").toLowerCase().includes(q) ||
-          p.category.toLowerCase().includes(q),
-      );
+          (p.category || "").toLowerCase().includes(q);
+        return matchesSearch;
+      });
     }
     if (typeof filters.minPrice === "number") {
       list = list.filter((p) => p.price >= filters.minPrice!);

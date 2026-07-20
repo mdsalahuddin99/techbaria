@@ -3,6 +3,8 @@ import { SalesClient } from "./SalesClient";
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import { getQueryClient, queryKeys } from "@/shared/lib";
 
+import { Suspense } from "react";
+
 export default async function SalesHistoryPage() {
   const queryClient = getQueryClient();
 
@@ -22,7 +24,9 @@ export default async function SalesHistoryPage() {
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <SalesClient />
+      <Suspense fallback={null}>
+        <SalesClient />
+      </Suspense>
     </HydrationBoundary>
   );
 }

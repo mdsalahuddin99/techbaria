@@ -285,6 +285,8 @@ model Product {
   trackSerials      Boolean           @default(true)
   warrantyStartDate DateTime?
   warrantyMonths    Int?
+  // ── Compatible model numbers / search aliases (hidden from display) ──
+  searchTags        String[]          @default([])
 
   images        ProductImage[]
   variants      ProductVariant[]

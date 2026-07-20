@@ -14,9 +14,10 @@ type EntityType = "brands" | "products" | "models" | "series";
 interface CatalogTabProps {
   entity: EntityType;
   title: string;
+  leftAddon?: React.ReactNode;
 }
 
-export function CatalogTab({ entity, title }: CatalogTabProps) {
+export function CatalogTab({ entity, title, leftAddon }: CatalogTabProps) {
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [formOpen, setFormOpen] = useState(false);
@@ -101,27 +102,42 @@ export function CatalogTab({ entity, title }: CatalogTabProps) {
     saveMut.mutate({ id: editingItem?.id, name: nameInput.trim() });
   };
 
+  const isFilterEmpty = !searchQuery.trim();
+  const displayedItems = isFilterEmpty ? items.slice(0, 5) : items;
+
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-        <div className="flex items-center gap-4">
-          <div>
-            <h2 className="text-gray-500 text-sm font-medium">Total {title}</h2>
-            <p className="text-2xl font-bold text-gray-900">{items.length}</p>
+      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 bg-white p-3 sm:p-4 rounded-xl shadow-sm border border-gray-100">
+        <div className="flex flex-wrap items-center gap-4 sm:gap-6">
+          {leftAddon}
+          
+          <div className="flex items-center gap-2 border-l pl-4 sm:pl-6 border-gray-200">
+            <div>
+              <h2 className="text-gray-500 text-[10px] font-bold uppercase tracking-wider">Total {title}</h2>
+              <p className="text-xl font-bold text-gray-900 leading-none mt-1">{items.length}</p>
+            </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <div className="relative flex-1 sm:w-64">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:flex-1 sm:justify-end">
+          <div className="relative flex-1 sm:max-w-[240px]">
             <SearchIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
             <Input
               placeholder={`Search ${title}...`}
-              className="pl-8"
+              className="pl-8 h-10"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          </div>
+          
+          {isFilterEmpty && (
+            <div className="flex-1 sm:flex-none min-w-[240px] flex items-center bg-blue-50/80 border border-blue-100 rounded-md px-3 h-10 text-xs text-blue-700 font-medium">
+              <span className="truncate" title="সর্বশেষ ৫টি ডেটা দেখানো হচ্ছে। নির্দিষ্ট ডেটা খুঁজে পেতে সার্চ করুন।">
+                সর্বশেষ ৫টি ডেটা দেখানো হচ্ছে। নির্দিষ্ট ডেটা খুঁজে পেতে সার্চ করুন।
+              </span>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -141,7 +157,7 @@ export function CatalogTab({ entity, title }: CatalogTabProps) {
                   </td>
                 </tr>
               )}
-              {!isLoading && items.map((item: any) => (
+              {!isLoading && displayedItems.map((item: any) => (
                 <tr key={item.id} className="border-b last:border-0 hover:bg-gray-50/50">
                   <td className="px-4 py-3 font-medium text-gray-900">{item.name}</td>
                   <td className="px-4 py-3 text-right space-x-2">

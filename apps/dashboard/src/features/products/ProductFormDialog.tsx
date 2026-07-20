@@ -59,6 +59,7 @@ const defaults: ProductFormValues = {
   trackSerials: false,
   type: "simple",
   bundleQty: "",
+  searchTags: [],
 };
 
 interface Props {
@@ -138,6 +139,7 @@ export function ProductFormDialog({
         imei: rest.imei ?? "",
         type: rest.type ?? "simple",
         bundleQty: (rest as any).bundleQty ?? "",
+        searchTags: (rest as any).searchTags ?? [],
       });
       appliedBarcodeRef.current = undefined;
     } else {
@@ -211,7 +213,8 @@ export function ProductFormDialog({
       trackSerials: values.trackSerials ?? true,
       serials: editing?.serials,
       type: values.type ?? "simple",
-      bundleQty: values.type === "bundle" ? (values.bundleQty ? Number(values.bundleQty) : undefined) : undefined,
+      bundleQty: values.type === "bundle" ? 1 : null,
+      searchTags: values.searchTags ?? [],
     };
   };
 
@@ -346,19 +349,7 @@ function FormFields({
         </FormItem>
       )} />
 
-      {type === "bundle" && (
-        <FormField control={control} name="bundleQty" render={({ field }) => (
-          <FormItem className="sm:col-span-2 space-y-1">
-            <div className="flex flex-row items-center gap-2">
-              <FormLabel className="w-[110px] shrink-0 text-right">Items in Box <span className="text-destructive">*</span></FormLabel>
-              <div className="flex-1 min-w-0">
-                <FormControl><Input type="number" {...field} value={field.value ?? ""} /></FormControl>
-              </div>
-            </div>
-            <FormMessage className="ml-[110px] pl-2" />
-          </FormItem>
-        )} />
-      )}
+
 
 
       <DialogFooter className="sm:col-span-2">

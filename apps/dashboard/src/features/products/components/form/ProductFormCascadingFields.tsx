@@ -1,7 +1,7 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { UseFormReturn, useWatch } from "react-hook-form";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
+import { Plus, X, Tag } from "lucide-react";
 import { toast } from "sonner";
 import { Product } from "@/shared/lib/types";
 import { ProductFormValues } from "../../schemas";
@@ -36,6 +36,23 @@ export function ProductFormCascadingFields({ form, editing }: Props) {
   const brand = useWatch({ name: "brand", control }); // Brand ID
   const productName = useWatch({ name: "name", control }); // Product Name (string)
   const model = useWatch({ name: "model", control }); // Model ID
+  const searchTags = useWatch({ name: "searchTags", control }) as string[] ?? [];
+
+  // ── Compatible model tag input state ──
+  const [tagInput, setTagInput] = useState("");
+
+  const addTag = useCallback((raw: string) => {
+    const newTags = raw.split(/[,،\n]+/).map(t => t.trim()).filter(Boolean);
+    const existing: string[] = form.getValues("searchTags") ?? [];
+    const merged = [...new Set([...existing, ...newTags])];
+    form.setValue("searchTags", merged, { shouldDirty: true });
+    setTagInput("");
+  }, [form]);
+
+  const removeTag = useCallback((tag: string) => {
+    const existing: string[] = form.getValues("searchTags") ?? [];
+    form.setValue("searchTags", existing.filter(t => t !== tag), { shouldDirty: true });
+  }, [form]);
 
   // ── Categories (still hierarchical) ──
   const { data: allCategories = [] } = useQuery({
@@ -143,10 +160,10 @@ export function ProductFormCascadingFields({ form, editing }: Props) {
   };
 
   const quickCreateTitles = {
-    brands: { title: "Add Brand", label: "Brand Name" },
-    products: { title: "Add Product Name", label: "Product Name" },
-    models: { title: "Add Model", label: "Model Name" },
-    series: { title: "Add Series", label: "Series Name" },
+    brands: { title: "Add Brand", label: "Brand Name", hint: "Already exists? It will be linked to this subcategory." },
+    products: { title: "Add Product Name", label: "Product Name", hint: "Already exists? It will be linked to the selected brand automatically." },
+    models: { title: "Add Model", label: "Model Name", hint: "Already exists? It will be linked to the selected product type automatically." },
+    series: { title: "Add Series", label: "Series Name", hint: "Already exists? It will be linked to the selected model automatically." },
   };
 
   const handleQuickCreate = async () => {
@@ -178,15 +195,19 @@ export function ProductFormCascadingFields({ form, editing }: Props) {
       if (quickCreateEntity === "brands") {
         queryClient.invalidateQueries({ queryKey: ["catalog", "brands", subcategory ?? ""] });
         form.setValue("brand", created.id, { shouldDirty: true });
+        toast.success(`Brand "${created.name}" ready`);
       } else if (quickCreateEntity === "products") {
         queryClient.invalidateQueries({ queryKey: ["catalog", "products", brand ?? ""] });
         form.setValue("name", created.name, { shouldDirty: true });
+        toast.success(`"${created.name}" linked to this brand`);
       } else if (quickCreateEntity === "models") {
         queryClient.invalidateQueries({ queryKey: ["catalog", "models", selectedProductTypeId ?? ""] });
         form.setValue("model", created.id, { shouldDirty: true });
+        toast.success(`Model "${created.name}" linked`);
       } else {
         queryClient.invalidateQueries({ queryKey: ["catalog", "series", model ?? ""] });
         form.setValue("series", created.id, { shouldDirty: true });
+        toast.success(`Series "${created.name}" linked`);
       }
       setQuickCreateOpen(false);
       setQuickCreateName("");
@@ -395,6 +416,60 @@ export function ProductFormCascadingFields({ form, editing }: Props) {
         </FormItem>
       )} />
 
+      {/* 5b. Compatible Models — visible only when a model is selected */}
+      {model && (
+        <div className="space-y-1 sm:col-span-1">
+          <div className="flex flex-row items-start gap-2">
+            <label className="w-[110px] shrink-0 text-right text-sm font-medium leading-none pt-2.5 text-muted-foreground flex items-center justify-end gap-1">
+              <Tag className="h-3 w-3" />
+              Compatible
+            </label>
+            <div className="flex-1 min-w-0 space-y-2">
+              {/* Tag chips */}
+              {searchTags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {searchTags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="inline-flex items-center gap-1 rounded-md bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground"
+                    >
+                      {tag}
+                      <button
+                        type="button"
+                        onClick={() => removeTag(tag)}
+                        className="hover:text-destructive transition-colors"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              {/* Input */}
+              <input
+                type="text"
+                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                placeholder="e.g. Note 10, OPPO A10 — Enter or comma to add"
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === ",") {
+                    e.preventDefault();
+                    if (tagInput.trim()) addTag(tagInput);
+                  } else if (e.key === "Backspace" && !tagInput && searchTags.length > 0) {
+                    removeTag(searchTags[searchTags.length - 1]);
+                  }
+                }}
+                onBlur={() => { if (tagInput.trim()) addTag(tagInput); }}
+              />
+              <p className="text-[11px] text-muted-foreground">
+                🔍 POS search-এ ধরা পড়বে — display-এ দেখাবে না
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 6. Series */}
       <FormField control={control} name="series" render={({ field }) => (
         <FormItem className="space-y-1">
@@ -448,9 +523,10 @@ export function ProductFormCascadingFields({ form, editing }: Props) {
           <div className="space-y-4 pt-2">
             <div className="space-y-1.5">
               <Label>{quickCreateTitles[quickCreateEntity].label} <span className="text-destructive">*</span></Label>
+              <p className="text-xs text-muted-foreground">{quickCreateTitles[quickCreateEntity].hint}</p>
               <Input
                 autoFocus
-                placeholder="e.g. Dahua, Smart TV..."
+                placeholder="e.g. Display, 15 Pro..."
                 value={quickCreateName}
                 onChange={(e) => setQuickCreateName(e.target.value)}
                 onKeyDown={(e) => {
