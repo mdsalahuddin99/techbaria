@@ -31,8 +31,9 @@ export function ProductFormBasicFields({ form }: Props) {
     
     setIsGenerating(true);
     try {
-      const description = await generateProductDescriptionAction(name);
-      form.setValue("description", description, { shouldValidate: true, shouldDirty: true });
+      const res = await generateProductDescriptionAction(name);
+      if (!res.success) throw new Error(res.error);
+      form.setValue("description", res.data, { shouldValidate: true, shouldDirty: true });
       toast.success("Description generated successfully!");
     } catch (error: any) {
       toast.error(error.message || "Failed to generate description");

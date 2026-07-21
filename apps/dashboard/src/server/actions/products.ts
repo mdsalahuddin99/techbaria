@@ -35,16 +35,26 @@ export async function getProductByIdAction(id: string) {
 }
 
 export async function createProductAction(input: any) {
-  const ctx = await getActionCtx();
-  // Validates the raw client input and transforms it into the Prisma service shape
-  const valid = productCreateSchema.parse(input) as unknown as ProductCreateInput;
-  return productsService.create(ctx, valid);
+  try {
+    const ctx = await getActionCtx();
+    // Validates the raw client input and transforms it into the Prisma service shape
+    const valid = productCreateSchema.parse(input) as unknown as ProductCreateInput;
+    const result = await productsService.create(ctx, valid);
+    return { success: true, data: result };
+  } catch (error: any) {
+    return { success: false, error: error.message || "Failed to create product" };
+  }
 }
 
 export async function updateProductAction(id: string, patch: any) {
-  const ctx = await getActionCtx();
-  const valid = productUpdateSchema.parse(patch) as unknown as ProductUpdateInput;
-  return productsService.update(ctx, id, valid);
+  try {
+    const ctx = await getActionCtx();
+    const valid = productUpdateSchema.parse(patch) as unknown as ProductUpdateInput;
+    const result = await productsService.update(ctx, id, valid);
+    return { success: true, data: result };
+  } catch (error: any) {
+    return { success: false, error: error.message || "Failed to update product" };
+  }
 }
 
 export async function deleteProductAction(id: string) {

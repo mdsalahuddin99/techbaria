@@ -33,11 +33,17 @@ export const productsApi = {
   },
 
   create(data: any): Promise<Product> {
-    return createProductAction(data) as unknown as Promise<Product>;
+    return createProductAction(data).then((res: any) => {
+      if (res && !res.success && res.error) throw new Error(res.error);
+      return res.data ? res.data : res;
+    }) as unknown as Promise<Product>;
   },
 
   update(id: string, patch: Partial<Product>): Promise<Product | null> {
-    return updateProductAction(id, patch) as unknown as Promise<Product | null>;
+    return updateProductAction(id, patch).then((res: any) => {
+      if (res && !res.success && res.error) throw new Error(res.error);
+      return res.data ? res.data : res;
+    }) as unknown as Promise<Product | null>;
   },
 
   remove(id: string): Promise<void> {

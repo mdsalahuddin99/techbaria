@@ -55,7 +55,7 @@ export const productBaseSchema = z
     type: productTypeSchema.default("simple"),
     supplierId: z.string().nullable().optional(),
     warrantyStartDate: z.string().trim().max(20).optional(),
-    bundleQty: z.number().int().positive().optional(),
+    bundleQty: z.number().int().positive().nullable().optional(),
     searchTags: z.array(z.string().trim().min(1)).optional().default([]),
   })
   .strict(); // ⚠️ rejects legacy reorderPoint / reorderQty / preferredSupplierId
