@@ -1,0 +1,98 @@
+# পার্শিয়াল পারচেজ রিটার্ন ইমপ্লিমেন্টেশন প্ল্যান (Implementation Plan)
+
+এই ডকুমেন্টে সিস্টেমে পার্শিয়াল (আংশিক) এবং সম্পূর্ণ পারচেজ রিটার্ন ফিচার যুক্ত করার জন্য প্রয়োজনীয় আর্কিটেকচারাল পরিবর্তন এবং লজিক তুলে ধরা হলো।
+
+## ব্যাকগ্রাউন্ড কন্টেক্সট
+বর্তমানে সিস্টেমে নতুন পারচেজ (Purchase) রেকর্ড করার সুযোগ থাকলেও সাপ্লায়ারকে পণ্য ফেরত দেওয়ার কোনো সুনির্দিষ্ট পদ্ধতি নেই। সাধারণত একটি ইনভয়েসের সবগুলো পণ্য একসাথে ফেরত দেওয়ার প্রয়োজন পড়ে না, বরং কিছু নির্দিষ্ট অবিক্রিত বা ত্রুটিপূর্ণ পণ্য ফেরত দেওয়া হয় (Partial Return)। 
+
+## আপনার মতামত প্রয়োজন (User Review Required)
+
+> [!IMPORTANT]
+> **সিরিয়াল নম্বর স্ট্যাটাস (Serial Number Status):** যেসব সিরিয়াল নম্বর সাপ্লায়ারকে ফেরত দেওয়া হবে, সেগুলো ট্র্যাক করার জন্য আমাদের `SerialStatus`-এ একটি নতুন স্ট্যাটাস (যেমন: `RETURNED`) যুক্ত করতে হবে।
+> 
+> **সাপ্লায়ার লেজার অ্যাডজাস্টমেন্ট:** পণ্য ফেরত দেওয়ার পর টাকার হিসাবটা সাধারণত আপনারা কীভাবে করেন? 
+> ১. সাপ্লায়ারের আগের পাওনা (Due/Payable) থেকে ওই টাকাটা মাইনাস করেন?
+> ২. সাপ্লায়ার কি সাথে সাথে ক্যাশ বা ব্যাংকে টাকা ফেরত দিয়ে দেয়?
+> ৩. নাকি ওই টাকাটা অ্যাডভান্স হিসেবে জমা থাকে যা ভবিষ্যতের কেনাকাটায় ব্যবহৃত হবে?
+> *প্রাথমিক প্ল্যানে প্রস্তাব করা হয়েছে: একটি `REFUND` ট্রানজেকশন তৈরি করে সাপ্লায়ারের `payable` ব্যালেন্স কমিয়ে দেওয়া হবে। ব্যালেন্স জিরোর নিচে নামলে তা অটোমেটিক্যালি `advanceBalance` হিসেবে জমা হবে।*
+
+## প্রস্তাবিত পরিবর্তনসমূহ (Proposed Changes)
+
+### ১. ডাটাবেস স্কিমা আপডেট (`schema.prisma`)
+
+#### [MODIFY] `schema.prisma`
+- `SerialStatus` এনামে (enum) `RETURNED` যুক্ত করা।
+- নতুন ডাটাবেস টেবিল `PurchaseReturn` এবং `PurchaseReturnItem` তৈরি করা।
+- `Purchase` মডেলে `returns PurchaseReturn[]` রিলেশন যুক্ত করা।
+
+```prisma
+enum SerialStatus {
+  IN_STOCK
+  IN_TRANSIT
+  SOLD
+  EXPIRED
+  DAMAGED
+  RETURNED // <-- নতুন যুক্ত হবে
+}
+
+model PurchaseReturn {
+  id          String               @id @default(cuid())
+  purchaseId  String
+  purchase    Purchase             @relation(fields: [purchaseId], references: [id])
+  date        DateTime             @default(now())
+  totalAmount Decimal              @db.Decimal(12, 2)
+  notes       String?
+  items       PurchaseReturnItem[]
+  
+  @@index([purchaseId])
+}
+
+model PurchaseReturnItem {
+  id               String         @id @default(cuid())
+  purchaseReturnId String
+  purchaseReturn   PurchaseReturn @relation(fields: [purchaseReturnId], references: [id], onDelete: Cascade)
+  purchaseItemId   String
+  purchaseItem     PurchaseItem   @relation(fields: [purchaseItemId], references: [id])
+  productId        String
+  product          Product        @relation(fields: [productId], references: [id])
+  qty              Int
+  unitCost         Decimal        @db.Decimal(12, 2)
+  serials          String[]       // নির্দিষ্ট যেসব সিরিয়াল ফেরত দেওয়া হয়েছে
+}
+```
+
+### ২. ব্যাকএন্ড এপিআই লজিক (Backend API Logic)
+
+#### [NEW] `apps/dashboard/src/app/api/purchases/[id]/return/route.ts`
+যখন কোনো রিটার্ন সাবমিট করা হবে:
+১. **ভ্যালিডেশন (Validation):** নিশ্চিত করতে হবে যেন `returnQty` কেনা পরিমাণের চেয়ে বেশি না হয়। সাথে সিরিয়াল নম্বরগুলো `IN_STOCK` স্ট্যাটাসে আছে কিনা তা চেক করতে হবে।
+২. **রিটার্ন রেকর্ড তৈরি:** `PurchaseReturn` এবং `PurchaseReturnItem`-এ ডাটা সেভ করা।
+৩. **ইনভেন্টরি অ্যাডজাস্টমেন্ট:** 
+   - নির্দিষ্ট ওয়্যারহাউজ থেকে প্রোডাক্টের স্টক কমানো।
+   - মেইন প্রোডাক্টের টোটাল স্টক কমানো।
+৪. **সিরিয়াল নম্বর আপডেট:** ফেরত দেওয়া সিরিয়াল নম্বরগুলোর স্ট্যাটাস পরিবর্তন করে `RETURNED` করে দেওয়া।
+৫. **লেজার অ্যাডজাস্টমেন্ট:** 
+   - সাপ্লায়ারের জন্য একটি `REFUND` টাইপের `SupplierTransaction` তৈরি করা।
+   - সাপ্লায়ারের `payable` (পাওনা) কমানো।
+
+### ৩. ফ্রন্টএন্ড ইউআই (Frontend UI)
+
+#### [MODIFY] `apps/dashboard/src/app/dashboard/purchases/[id]/page.tsx`
+- পারচেজ ডিটেইলস পেজে একটি **"Return Items"** বাটন যুক্ত করা।
+- বাটনে ক্লিক করলে একটি মডাল (Modal) ওপেন হবে।
+
+#### [NEW] `apps/dashboard/src/features/purchases/components/PurchaseReturnModal.tsx`
+- এই মডালে কেনা সবগুলো পণ্যের একটি লিস্ট থাকবে।
+- প্রত্যেকটি পণ্যের পাশে **"Return Quantity"** দেওয়ার একটি ফিল্ড থাকবে (ডিফল্ট 0 থাকবে)।
+- যদি পণ্যের `trackSerials` অন থাকে, তবে একটি ড্রপডাউন থেকে নির্দিষ্ট সিরিয়াল নম্বরগুলো সিলেক্ট করতে হবে।
+- নিচে সর্বমোট কত টাকার পণ্য ফেরত দেওয়া হচ্ছে তার একটি সামারি থাকবে।
+- সবশেষে "Confirm Return" বাটন থাকবে।
+
+## ভেরিফিকেশন প্ল্যান (Verification Plan)
+
+### ম্যানুয়াল টেস্টিং
+- **পারচেজ তৈরি:** ৫ পিস প্রোডাক্ট কিনব (সিরিয়াল ট্র্যাক করা)।
+- **আংশিক রিটার্ন:** ২ পিস প্রোডাক্ট রিটার্ন করব।
+- **ইনভেন্টরি চেক:** প্রোডাক্টের স্টক ২ পিস কমেছে কিনা এবং নির্দিষ্ট ২টি সিরিয়াল নম্বরের স্ট্যাটাস `RETURNED` হয়েছে কিনা তা চেক করব।
+- **লেজার চেক:** সাপ্লায়ারের পাওনা টাকা (Payable) ঠিক রিটার্ন করা ২ পিস পণ্যের দামের সমপরিমাণ কমেছে কিনা তা ভেরিফাই করব।
+- **ভ্যালিডেশন চেক:** কেনা পরিমাণের চেয়ে বেশি রিটার্ন করার চেষ্টা করব এবং সিস্টেম তা আটকে দেয় কিনা তা পরীক্ষা করব।

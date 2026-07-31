@@ -1,0 +1,39 @@
+name: Daily Database Backup
+
+on:
+  schedule:
+    # প্রতিদিন বাংলাদেশ সময় সকাল ৬টায় (00:00 UTC) রান করবে
+    - cron: '0 0 * * *'
+  # GitHub ড্যাশবোর্ড থেকে ম্যানুয়ালি রান করার অপশন
+  workflow_dispatch: 
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Install PostgreSQL Client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Create Backup Directory
+        run: mkdir -p backups
+
+      - name: Export Database from Neon
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          TIMESTAMP=$(date +'%Y-%m-%d_%H-%M-%S')
+          echo "Starting database backup..."
+          pg_dump "$DATABASE_URL" --no-owner --no-privileges --file=backups/db_backup_$TIMESTAMP.sql
+          
+          echo "Compressing backup file..."
+          gzip backups/db_backup_$TIMESTAMP.sql
+          
+          echo "Backup successful: db_backup_$TIMESTAMP.sql.gz"
+
+      - name: Upload Backup as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: database-backup-${{ github.run_id }}
+          path: backups/*.sql.gz
+          retention-days: 30 # ফাইলটি ৩০ দিন পর্যন্ত GitHub এ সেভ থাকবে
