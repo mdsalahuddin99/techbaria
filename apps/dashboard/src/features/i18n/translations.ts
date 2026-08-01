@@ -70,6 +70,14 @@ export const translations = {
   "nav.help": { en: "Help & Support", bn: "হেল্প ও সাপোর্ট" },
   "nav.billing": { en: "Billing", bn: "বিলিং" },
   "nav.trash": { en: "Trash / Recycle Bin", bn: "ট্রাস / রিসাইকেল বিন" },
+  "nav.updates": { en: "System Updates", bn: "সিস্টেম আপডেট" },
+
+  // Updates page
+  "updates.title": { en: "System Updates & Changelog", bn: "সিস্টেম আপডেট ও চেঞ্জলগ" },
+  "updates.description": {
+    en: "See what's new, changed, and fixed in the system.",
+    bn: "সিস্টেমের নতুন ফিচার, পরিবর্তন ও ফিক্সগুলো দেখুন।"
+  },
 
   // Header
   "header.newSale": { en: "New Sale", bn: "নতুন বিক্রয়" },

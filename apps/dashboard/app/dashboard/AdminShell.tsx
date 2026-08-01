@@ -39,6 +39,7 @@ import {
   Plus,
   HelpCircle,
   Trash2,
+  Sparkles,
 } from "lucide-react";
 import type { UserRole } from "@/features/auth/types";
 import { cn } from "@/shared/lib/utils";
@@ -181,6 +182,7 @@ const navGroups: NavGroup[] = [
     items: [
       { to: "/dashboard/settings", labelKey: "nav.settings", icon: Settings },
       { to: "/dashboard/permissions", labelKey: "nav.rolesAndPermissions" as TranslationKey, icon: ShieldCheck },
+      { to: "/dashboard/updates", labelKey: "nav.updates" as TranslationKey, icon: Sparkles },
       { to: "/dashboard/trash", labelKey: "nav.trash" as TranslationKey, icon: Trash2 },
       { to: "/dashboard/help", labelKey: "nav.help" as TranslationKey, icon: HelpCircle },
     ],

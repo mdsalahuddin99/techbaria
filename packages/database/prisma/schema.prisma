@@ -987,3 +987,18 @@ model WarrantyClaim {
   @@index([status])
   @@index([claimNo])
 }
+
+// ============ SYSTEM UPDATES ============
+
+model SystemUpdate {
+  id           String   @id @default(cuid())
+  version      String
+  date         DateTime
+  features     String[] @default([])
+  improvements String[] @default([])
+  fixes        String[] @default([])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([date])
+}
