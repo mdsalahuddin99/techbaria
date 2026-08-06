@@ -102,8 +102,9 @@ export function CatalogTab({ entity, title, leftAddon }: CatalogTabProps) {
     saveMut.mutate({ id: editingItem?.id, name: nameInput.trim() });
   };
 
+  const [limit, setLimit] = useState(15);
   const isFilterEmpty = !searchQuery.trim();
-  const displayedItems = isFilterEmpty ? items.slice(0, 5) : items;
+  const displayedItems = isFilterEmpty ? items.slice(0, limit) : items;
 
   return (
     <div className="space-y-4">
@@ -132,8 +133,8 @@ export function CatalogTab({ entity, title, leftAddon }: CatalogTabProps) {
           
           {isFilterEmpty && (
             <div className="flex-1 sm:flex-none min-w-[240px] flex items-center bg-blue-50/80 border border-blue-100 rounded-md px-3 h-10 text-xs text-blue-700 font-medium">
-              <span className="truncate" title="সর্বশেষ ৫টি ডেটা দেখানো হচ্ছে। নির্দিষ্ট ডেটা খুঁজে পেতে সার্চ করুন।">
-                সর্বশেষ ৫টি ডেটা দেখানো হচ্ছে। নির্দিষ্ট ডেটা খুঁজে পেতে সার্চ করুন।
+              <span className="truncate" title="সর্বশেষ ১৫টি ডেটা দেখানো হচ্ছে। নির্দিষ্ট ডেটা খুঁজে পেতে সার্চ করুন।">
+                সর্বশেষ ১৫টি ডেটা দেখানো হচ্ছে। নির্দিষ্ট ডেটা খুঁজে পেতে সার্চ করুন।
               </span>
             </div>
           )}
@@ -189,6 +190,14 @@ export function CatalogTab({ entity, title, leftAddon }: CatalogTabProps) {
           </table>
         </div>
       </div>
+
+      {isFilterEmpty && items.length > limit && (
+        <div className="flex justify-center mt-4">
+          <Button variant="outline" onClick={() => setLimit((l) => l + 15)} className="bg-white">
+            Load More {title}
+          </Button>
+        </div>
+      )}
 
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
         <DialogContent>

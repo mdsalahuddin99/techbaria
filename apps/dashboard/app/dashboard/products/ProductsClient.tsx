@@ -95,7 +95,7 @@ export function ProductsClient({
   // Use debounced search for the API query
   const [debouncedSearch, setDebouncedSearch] = useState(search);
   useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(search), 500); // 500ms smart debounce
+    const timer = setTimeout(() => setDebouncedSearch(search), 200); // 200ms smart debounce
     return () => clearTimeout(timer);
   }, [search]);
 
@@ -104,13 +104,15 @@ export function ProductsClient({
     categoryId: filter !== "All" ? filter : undefined,
     lowStock: lowStockOnly || undefined,
     ...(filterOnlineOnly ? { isPublished: true } : {}),
-    limit: debouncedSearch.trim() ? 1000 : 5, // No limit (1000) for search, 5 for initial
+    limit: debouncedSearch.trim() ? 1000 : 15, // No limit (1000) for search, 15 for initial
   }), [debouncedSearch, filter, lowStockOnly, filterOnlineOnly]);
 
   const initialInfiniteData = useMemo(() => {
-    // If initialProducts has more than 5, we only take 5 for the empty state
+    const items = initialProducts.slice(0, 15);
+    const hasMore = items.length >= 15;
+    const nextCursor = hasMore ? items[14].id : null;
     return {
-      pages: [{ items: initialProducts.slice(0, 5), nextCursor: null, hasMore: false }],
+      pages: [{ items, nextCursor, hasMore }],
       pageParams: [undefined],
     };
   }, [initialProducts]);
@@ -354,8 +356,8 @@ export function ProductsClient({
           
           {isFilterEmpty && (
             <div className="flex-1 min-w-[280px] flex items-center bg-blue-50/80 border border-blue-100 rounded-md px-3 py-1.5 text-sm text-blue-700 font-medium">
-              <span className="truncate" title="সর্বশেষ ৫টি ডেটা দেখানো হচ্ছে। নির্দিষ্ট ডেটা খুঁজে পেতে সার্চ করুন।">
-                সর্বশেষ ৫টি ডেটা দেখানো হচ্ছে। নির্দিষ্ট ডেটা খুঁজে পেতে সার্চ করুন।
+              <span className="truncate" title="সর্বশেষ ১৫টি ডেটা দেখানো হচ্ছে। নির্দিষ্ট ডেটা খুঁজে পেতে সার্চ করুন।">
+                সর্বশেষ ১৫টি ডেটা দেখানো হচ্ছে। নির্দিষ্ট ডেটা খুঁজে পেতে সার্চ করুন।
               </span>
             </div>
           )}

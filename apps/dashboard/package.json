@@ -43,6 +43,7 @@
     "@sentry/node": "^10.56.0",
     "@sentry/react": "^10.56.0",
     "@tanstack/react-query": "^5.83.0",
+    "@tech-baria/database": "*",
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.38.0",
     "@zxing/browser": "^0.1.5",
@@ -52,6 +53,7 @@
     "cmdk": "^1.1.1",
     "date-fns": "^3.6.0",
     "embla-carousel-react": "^8.6.0",
+    "html-to-image": "^1.11.13",
     "html2pdf.js": "^0.14.0",
     "input-otp": "^1.4.2",
     "jsbarcode": "^3.12.3",
@@ -77,8 +79,7 @@
     "tailwindcss-animate": "^1.0.7",
     "vaul": "^0.9.9",
     "zod": "^3.25.76",
-    "zustand": "^5.0.12",
-    "@tech-baria/database": "*"
+    "zustand": "^5.0.12"
   },
   "devDependencies": {
     "@eslint/js": "^9.32.0",

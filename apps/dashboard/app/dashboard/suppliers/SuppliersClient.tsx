@@ -61,18 +61,21 @@ export function SuppliersClient({
   const [debouncedSearch, setDebouncedSearch] = useState("");
   
   useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(search), 500);
+    const timer = setTimeout(() => setDebouncedSearch(search), 200);
     return () => clearTimeout(timer);
   }, [search]);
 
   const queryFilter = useMemo(() => ({
     search: debouncedSearch.trim() || undefined,
-    limit: debouncedSearch.trim() ? 1000 : 5,
+    limit: debouncedSearch.trim() ? 1000 : 15,
   }), [debouncedSearch]);
 
   const initialInfiniteData = useMemo(() => {
+    const items = initialSuppliers.slice(0, 15);
+    const hasMore = items.length >= 15;
+    const nextCursor = hasMore ? items[14].id : null;
     return {
-      pages: [{ items: initialSuppliers, nextCursor: null, hasMore: false }],
+      pages: [{ items, nextCursor, hasMore }],
       pageParams: [undefined],
     };
   }, [initialSuppliers]);
@@ -264,8 +267,8 @@ export function SuppliersClient({
             
             {isFilterEmpty && (
               <div className="flex-1 lg:flex-none min-w-[240px] flex items-center bg-blue-50/80 border border-blue-100 rounded-md px-3 h-9 text-xs text-blue-700 font-medium">
-                <span className="truncate" title="সর্বশেষ ৫টি ডেটা দেখানো হচ্ছে। নির্দিষ্ট ডেটা খুঁজে পেতে সার্চ করুন।">
-                  সর্বশেষ ৫টি ডেটা দেখানো হচ্ছে। নির্দিষ্ট ডেটা খুঁজে পেতে সার্চ করুন।
+                <span className="truncate" title="সর্বশেষ ১৫টি ডেটা দেখানো হচ্ছে। নির্দিষ্ট ডেটা খুঁজে পেতে সার্চ করুন।">
+                  সর্বশেষ ১৫টি ডেটা দেখানো হচ্ছে। নির্দিষ্ট ডেটা খুঁজে পেতে সার্চ করুন।
                 </span>
               </div>
             )}

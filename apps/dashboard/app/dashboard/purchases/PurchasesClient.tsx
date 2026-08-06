@@ -86,19 +86,22 @@ export function PurchasesClient({
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(searchTerm), 300);
+    const timer = setTimeout(() => setDebouncedSearch(searchTerm), 200);
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
   const queryFilter = useMemo(() => ({
     search: debouncedSearch.trim() || undefined,
     status: statusFilter,
-    limit: debouncedSearch.trim() ? 1000 : 5,
+    limit: debouncedSearch.trim() ? 1000 : 15,
   }), [debouncedSearch, statusFilter]);
 
   const initialInfiniteData = useMemo(() => {
+    const items = initialPurchases.slice(0, 15);
+    const hasMore = items.length >= 15;
+    const nextCursor = hasMore ? items[14].id : null;
     return {
-      pages: [{ items: initialPurchases, nextCursor: null, hasMore: false }],
+      pages: [{ items, nextCursor, hasMore }],
       pageParams: [undefined],
     };
   }, [initialPurchases]);

@@ -4,10 +4,17 @@ import { useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/shared/ui/dialog";
 import { Button } from "@/shared/ui/button";
 import { formatCurrency, formatDate, formatDateTime } from "@/shared/lib/format";
-import { Printer, Download, X } from "lucide-react";
+import { Printer, Download, X, FileText, Image as ImageIcon, Share2 } from "lucide-react";
 import { ScaledIframe } from "@/components/ScaledIframe";
 import { canPrint, printHtml, downloadHtml } from "@/shared/lib/print";
 import { toast } from "sonner";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/shared/ui/dropdown-menu";
 
 interface PurchaseInvoiceDialogProps {
   receipt: any | null;
@@ -30,9 +37,11 @@ export function PurchaseInvoiceDialog({
   const supplier = suppliers.find((s: any) => s.id === receipt.supplierId);
   const activeSettings = settings || {};
 
-  const handleDownload = async () => {
+  const handleDownload = async (format: "pdf" | "jpg" = "pdf") => {
     if (isDownloading.current) return;
     isDownloading.current = true;
+    const toastId = toast.loading(`Preparing ${format.toUpperCase()}...`);
+
     const html = buildStandalonePurchaseInvoice(receipt, activeSettings, supplier, userEmail);
     const host = document.createElement("div");
     host.style.position = "fixed";
@@ -60,27 +69,104 @@ export function PurchaseInvoiceDialog({
       node.style.minHeight = "29.6cm";
       node.style.overflow = "hidden";
       node.style.transform = "none";
-      node.setAttribute('data-pdf-mode', 'true');
+      if (format === "pdf") node.setAttribute('data-pdf-mode', 'true');
     }
 
     try {
-      const mod = await import("html2pdf.js");
-      const html2pdf = (mod as { default: unknown }).default as (
-        el: HTMLElement
-      ) => { set: (opts: Record<string, unknown>) => { save: () => Promise<void> } };
-      await html2pdf(node ?? host)
-        .set({
-          margin: 0,
-          filename: `${receipt.poNumber}.pdf`,
-          image: { type: "jpeg", quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff" },
-          jsPDF: { unit: "pt", format: "a4", orientation: "portrait" },
-        })
-        .save();
+      if (format === "pdf") {
+        const mod = await import("html2pdf.js");
+        const html2pdf = (mod as { default: unknown }).default as any;
+        await html2pdf(node ?? host)
+          .set({
+            margin: 0,
+            filename: `${receipt.poNumber}.pdf`,
+            image: { type: "jpeg", quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff" },
+            jsPDF: { unit: "pt", format: "a4", orientation: "portrait" },
+          })
+          .save();
+      } else {
+        const htmlToImage = await import("html-to-image");
+        const dataUrl = await htmlToImage.toJpeg(node ?? host, { quality: 0.95, backgroundColor: "#ffffff", pixelRatio: 2 });
+        const link = document.createElement("a");
+        link.download = `${receipt.poNumber}.jpg`;
+        link.href = dataUrl;
+        link.click();
+      }
+      toast.success(`Downloaded successfully`, { id: toastId });
     } catch (err) {
-      console.error("PDF generation failed", err);
-      toast.error("Could not generate PDF — downloading HTML instead");
-      downloadHtml(html, receipt.poNumber);
+      console.error(`${format.toUpperCase()} generation failed`, err);
+      toast.error(`Could not generate ${format.toUpperCase()}`, { id: toastId });
+      if (format === "pdf") downloadHtml(html, receipt.poNumber);
+    } finally {
+      host.remove();
+      isDownloading.current = false;
+    }
+  };
+
+  const handleShare = async (platform: "whatsapp" | "imo") => {
+    if (isDownloading.current) return;
+    isDownloading.current = true;
+    const toastId = toast.loading(`Preparing to share via ${platform === "whatsapp" ? "WhatsApp" : "Imo"}...`);
+
+    const htmlStr = buildStandalonePurchaseInvoice(receipt, activeSettings, supplier, userEmail);
+    const host = document.createElement("div");
+    host.style.position = "fixed";
+    host.style.left = "-10000px";
+    host.style.top = "0";
+    host.innerHTML = htmlStr;
+    document.body.appendChild(host);
+    const node = host.querySelector(".page") as HTMLElement | null;
+    
+    const images = Array.from(host.querySelectorAll("img"));
+    await Promise.all(images.map((img) => new Promise((resolve) => {
+        if (img.complete) return resolve(true);
+        img.onload = resolve;
+        img.onerror = resolve;
+    })));
+
+    if (node) {
+      node.style.margin = "0";
+      node.style.boxShadow = "none";
+      node.style.height = "29.6cm";
+      node.style.minHeight = "29.6cm";
+      node.style.overflow = "hidden";
+      node.style.transform = "none";
+    }
+
+    try {
+      const htmlToImage = await import("html-to-image");
+      const dataUrl = await htmlToImage.toJpeg(node ?? host, { quality: 0.95, backgroundColor: "#ffffff", pixelRatio: 2 });
+      
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
+      const file = new File([blob], `${receipt.poNumber}.jpg`, { type: "image/jpeg" });
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: `Invoice ${receipt.poNumber}`,
+        });
+        toast.success("Opened share dialog", { id: toastId });
+      } else {
+        // Fallback for desktops
+        const link = document.createElement("a");
+        link.download = `${receipt.poNumber}.jpg`;
+        link.href = dataUrl;
+        link.click();
+        
+        let shareUrl = "";
+        if (platform === "whatsapp") {
+          shareUrl = `https://web.whatsapp.com/send?text=${encodeURIComponent(`Invoice ${receipt.poNumber} has been downloaded as an image. Please attach and send it.`)}`;
+        }
+        if (shareUrl) {
+          window.open(shareUrl, "_blank");
+        }
+        toast.success("Image downloaded for sharing.", { id: toastId });
+      }
+    } catch (err) {
+      console.error("Sharing failed", err);
+      toast.error("Failed to prepare share", { id: toastId });
     } finally {
       host.remove();
       isDownloading.current = false;
@@ -114,9 +200,28 @@ export function PurchaseInvoiceDialog({
         <div className="flex items-center justify-between gap-2 px-3 sm:px-5 py-2.5 border-b bg-muted/40 print:hidden">
           <DialogTitle className="font-semibold text-sm sm:text-base truncate m-0">Purchase Invoice {receipt.poNumber}</DialogTitle>
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-            <Button size="sm" variant="outline" onClick={handleDownload} className="h-8 px-2 sm:px-3">
-              <Download className="h-4 w-4 sm:mr-1.5" /> <span className="hidden sm:inline">Download</span>
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant="outline" className="h-8 px-2 sm:px-3">
+                  <Download className="h-4 w-4 sm:mr-1.5" /> <span className="hidden sm:inline">Download</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={() => handleDownload("pdf")}>
+                  <FileText className="mr-2 h-4 w-4" /> Download PDF
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleDownload("jpg")}>
+                  <ImageIcon className="mr-2 h-4 w-4" /> Download JPG
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => handleShare("whatsapp")}>
+                  <Share2 className="mr-2 h-4 w-4 text-green-600" /> Share via WhatsApp
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleShare("imo")}>
+                  <Share2 className="mr-2 h-4 w-4 text-blue-500" /> Share via Imo
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button
               size="sm"
               className="bg-primary text-primary-foreground hover:bg-primary/90 h-8 px-2 sm:px-3"

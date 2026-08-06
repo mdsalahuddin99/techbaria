@@ -51,7 +51,7 @@ export function SalesClient() {
   const { delete: deleteSale } = useSaleMutations();
 
   useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    const timer = setTimeout(() => setDebouncedSearch(search), 200);
     return () => clearTimeout(timer);
   }, [search]);
 
@@ -85,7 +85,7 @@ export function SalesClient() {
     paymentMethod: method !== "All" ? method : undefined,
     sortKey: sort.split("-")[0],
     sortDir: sort.split("-")[1] as "asc" | "desc",
-    limit: debouncedSearch.trim() ? 1000 : 5,
+    limit: debouncedSearch.trim() ? 1000 : 15,
   }), [debouncedSearch, method, sort]);
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useInfiniteSalesQuery(queryFilter);

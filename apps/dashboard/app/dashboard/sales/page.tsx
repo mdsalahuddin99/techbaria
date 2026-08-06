@@ -13,12 +13,12 @@ export default async function SalesHistoryPage() {
     paymentMethod: undefined,
     sortKey: "newest",
     sortDir: undefined,
-    limit: 5,
+    limit: 15,
   };
 
   await queryClient.prefetchInfiniteQuery({
     queryKey: [...queryKeys.sales.list(), filter],
-    queryFn: () => listSalesAction(filter, { limit: 5 }),
+    queryFn: () => listSalesAction(filter, { limit: 15 }),
     initialPageParam: undefined,
   });
 
