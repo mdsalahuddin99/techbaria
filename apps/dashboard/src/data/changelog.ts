@@ -8,6 +8,17 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "v1.2.1",
+    date: "2026-08-06",
+    features: [
+      "Added 'Load More' button functionality to all data tables for better pagination."
+    ],
+    improvements: [
+      "Increased default data load limit from 5 to 15 items across all modules.",
+      "Optimized search query speed (debounce reduced to 200ms) for instantly fetching results."
+    ]
+  },
+  {
     version: "v1.2.0",
     date: "2026-08-01",
     features: [
