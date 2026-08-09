@@ -8,6 +8,20 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "v1.2.2",
+    date: "2026-08-09",
+    features: [
+      "Added delete confirmation popup (window.confirm) to prevent accidental deletions in Purchases and Sales."
+    ],
+    improvements: [
+      "Implemented advanced search logic for specific models (e.g., Suppliers) using optimized PostgreSQL indexes (pg_trgm & GIN).",
+      "Fixed database backup failing issue by utilizing Docker for correct PostgreSQL version matching."
+    ],
+    fixes: [
+      "Resolved Prisma 'Decimal' object serialization error crashing the Products page."
+    ]
+  },
+  {
     version: "v1.2.1",
     date: "2026-08-06",
     features: [
