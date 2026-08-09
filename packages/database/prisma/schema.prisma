@@ -1,11 +1,13 @@
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  directUrl  = env("DIRECT_URL")
+  extensions = [pg_trgm]
 }
 
 // ============ AUTH (Auth.js v5 standard) ============
@@ -93,6 +95,7 @@ model Warehouse {
   sales            Sale[]
   purchases        Purchase[]
   serialNumbers    SerialNumber[]
+  inventoryLots    InventoryLot[]
   stockAdjustments StockAdjustment[]
   transfersOut     Transfer[]        @relation("FromWarehouseTransfers")
   transfersIn      Transfer[]        @relation("ToWarehouseTransfers")
@@ -300,6 +303,7 @@ model Product {
   purchaseItems PurchaseItem[]
   restockItems  RestockItem[]
   serialNumbers SerialNumber[]
+  inventoryLots InventoryLot[]
   warehouseStocks WarehouseStock[]
   warrantyClaims  WarrantyClaim[]
   deletedAt     DateTime?
@@ -322,6 +326,10 @@ model Product {
   
   // Optimization: POS / Inventory Barcode scanning
   @@index([sku])
+  
+  // Search Trigram Indexes
+  @@index([name(ops: raw("gin_trgm_ops"))], type: Gin, map: "Product_name_trgm_idx")
+  @@index([sku(ops: raw("gin_trgm_ops"))], type: Gin, map: "Product_sku_trgm_idx")
 }
 
 model ProductImage {
@@ -381,6 +389,10 @@ model Customer {
 
   @@index([name])
   @@index([phone])
+
+  // Search Trigram Indexes
+  @@index([name(ops: raw("gin_trgm_ops"))], type: Gin, map: "Customer_name_trgm_idx")
+  @@index([phone(ops: raw("gin_trgm_ops"))], type: Gin, map: "Customer_phone_trgm_idx")
 }
 
 enum TransactionType {
@@ -441,6 +453,10 @@ model Supplier {
 
   @@index([name])
   @@index([phone])
+
+  // Search Trigram Indexes
+  @@index([name(ops: raw("gin_trgm_ops"))], type: Gin, map: "Supplier_name_trgm_idx")
+  @@index([phone(ops: raw("gin_trgm_ops"))], type: Gin, map: "Supplier_phone_trgm_idx")
 }
 
 model SupplierTransaction {
@@ -511,6 +527,11 @@ model Sale {
   @@index([status])
   @@index([userId])
   @@index([status, createdAt])
+  @@index([createdAt])
+  @@index([deletedAt, createdAt])
+
+  // Search Trigram Indexes
+  @@index([id(ops: raw("gin_trgm_ops"))], type: Gin, map: "Sale_id_trgm_idx")
 }
 
 model SaleItem {
@@ -601,6 +622,9 @@ model Purchase {
 
   @@index([createdAt])
   @@index([supplierId])
+
+  // Search Trigram Indexes
+  @@index([invoiceNo(ops: raw("gin_trgm_ops"))], type: Gin, map: "Purchase_invoiceNo_trgm_idx")
 }
 
 model PurchaseItem {
@@ -703,6 +727,7 @@ model SerialNumber {
   status             SerialStatus  @default(IN_STOCK)
   saleItemId         String?
   saleItem           SaleItem?     @relation(fields: [saleItemId], references: [id])
+  cost               Decimal?      @db.Decimal(12, 2)
   purchaseItemId     String?
   purchaseItem       PurchaseItem? @relation(fields: [purchaseItemId], references: [id], onDelete: SetNull)
   soldAt             DateTime?
@@ -1001,4 +1026,23 @@ model SystemUpdate {
   updatedAt    DateTime @updatedAt
 
   @@index([date])
+}
+
+// ============ INVENTORY VALUATION (FIFO) ============
+
+model InventoryLot {
+  id           String     @id @default(cuid())
+  productId    String
+  product      Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  warehouseId  String?
+  warehouse    Warehouse? @relation(fields: [warehouseId], references: [id])
+  qtyOriginal  Int
+  qtyRemaining Int
+  unitCost     Decimal    @db.Decimal(12, 2)
+  sourceType   String     // "PURCHASE", "RETURN", "ADJUSTMENT", "MIGRATION"
+  sourceId     String?
+  createdAt    DateTime   @default(now())
+
+  @@index([productId, qtyRemaining])
+  @@index([createdAt])
 }

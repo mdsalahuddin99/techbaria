@@ -239,8 +239,7 @@ export function ProductFilterBar({
                       key={p.id}
                       type="button"
                       className="w-full flex items-center justify-between px-2 py-1 hover:bg-secondary/20 transition-colors text-left group border-b border-border/50 last:border-0"
-                      onMouseDown={(e) => {
-                        e.preventDefault(); // keep focus in input
+                      onClick={() => {
                         onAddProduct(p, undefined, matchedTags.length > 0 ? matchedTags[0] : undefined);
                         onSearchChange("", false);
                         setTimeout(() => searchInputRef.current?.focus(), 50);

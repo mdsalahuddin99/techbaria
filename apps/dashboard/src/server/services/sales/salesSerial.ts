@@ -73,6 +73,16 @@ export const salesSerial = {
           where: { id: { in: ids } },
           data: { status: "SOLD", saleItemId: pq.saleItem.id, soldAt: now, warrantyExpiryDate },
         });
+
+        // Update SaleItem cost based on assigned serials (Accurate COGS)
+        const totalSerialCost = candidates.reduce((sum: number, s: any) => sum + Number(s.cost || 0), 0);
+        if (totalSerialCost > 0) {
+          await tx.saleItem.update({
+            where: { id: pq.saleItem.id },
+            data: { cost: totalSerialCost / candidates.length },
+          });
+        }
+
         serialResults.push({ saleItemId: pq.saleItem.id, serials: candidates });
       } else {
         serialResults.push(null);

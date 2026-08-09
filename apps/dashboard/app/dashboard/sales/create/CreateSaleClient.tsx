@@ -182,7 +182,7 @@ export function CreateSaleClient() {
                                   size="icon"
                                   variant="ghost"
                                   className="h-8 w-8 text-destructive/70 hover:text-destructive"
-                                  onClick={() => deleteHeldSale(h.id)}
+                                  onClick={() => window.confirm("Are you sure you want to delete this draft?") && deleteHeldSale(h.id)}
                                   title="Discard"
                                 >
                                   <Trash2 className="h-3.5 w-3.5" />

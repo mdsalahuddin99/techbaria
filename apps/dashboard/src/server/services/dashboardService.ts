@@ -28,31 +28,32 @@ export const dashboardService = {
         prisma.sale.aggregate({ _sum: { total: true }, where: { createdAt: { gte: yesterdayStart, lt: todayStart } } }),
         prisma.customer.count(),
         prisma.customer.count({ where: { group: "VIP" } }),
-        prisma.saleItem.groupBy({
-          by: ['productId', 'name'],
-          where: { sale: { createdAt: { gte: thirtyDaysAgo } } },
-          _sum: { qty: true },
-          orderBy: { _sum: { qty: 'desc' } },
-          take: 5
-        }),
+        prisma.$queryRaw<Array<{ name: string, qty: number }>>`
+          SELECT si.name, SUM(si.qty)::int as qty 
+          FROM "SaleItem" si 
+          JOIN "Sale" s ON si."saleId" = s.id 
+          WHERE s."createdAt" >= ${thirtyDaysAgo} 
+          GROUP BY si.name 
+          ORDER BY qty DESC 
+          LIMIT 5
+        `,
         prisma.$queryRaw<Array<{ status: string, count: number }>>`
           SELECT 
             CASE 
-              WHEN stock = 0 THEN 'outOfStock'
+              WHEN stock <= 0 THEN 'outOfStock'
               WHEN stock > 0 AND stock <= "reorderLevel" THEN 'low'
               ELSE 'healthy'
             END as status,
             COUNT(*)::int as count
           FROM "Product"
-          WHERE "isPublished" = true
           GROUP BY 
             CASE 
-              WHEN stock = 0 THEN 'outOfStock'
+              WHEN stock <= 0 THEN 'outOfStock'
               WHEN stock > 0 AND stock <= "reorderLevel" THEN 'low'
               ELSE 'healthy'
             END
         `,
-        prisma.product.count({ where: { isPublished: true } })
+        prisma.product.count()
       ]);
 
       const totalRevenue = Number(totalSalesAgg._sum.total || 0);
@@ -71,7 +72,7 @@ export const dashboardService = {
 
       const topProducts = recentSaleItems.map(item => ({
         name: item.name.length > 20 ? item.name.slice(0, 20) + "…" : item.name,
-        qty: item._sum.qty || 0
+        qty: Number(item.qty || 0)
       }));
 
       const rest = Math.max(0, totalProductsCount - healthy - low - outOfStock);

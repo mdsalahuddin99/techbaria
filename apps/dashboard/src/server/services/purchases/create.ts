@@ -243,6 +243,7 @@ export async function create(ctx: Ctx, input: PurchaseCreateInput) {
           status: "IN_STOCK" as const,
           purchaseItemId: purchaseItem.id,
           warehouseId: warehouseId || null,
+          cost: item.cost,
         }));
       });
 
@@ -252,6 +253,24 @@ export async function create(ctx: Ctx, input: PurchaseCreateInput) {
       // For tracked products, sync Product.stock = actual IN_STOCK serial count (Fix #4)
       const trackedProductIds = [...new Set(serialEntries.map((s) => s.productId))];
       await inventoryService.syncStockCounts(tx, warehouseId, trackedProductIds);
+    }
+
+    // ── Batch-create InventoryLot records (FIFO) ──
+    const inventoryLotEntries = input.items.map((item) => {
+      const purchaseItem = created.items.find((pi) => pi.productId === item.productId);
+      return {
+        productId: item.productId,
+        warehouseId: warehouseId || null,
+        qtyOriginal: item.qty,
+        qtyRemaining: item.qty,
+        unitCost: item.cost,
+        sourceType: "PURCHASE",
+        sourceId: purchaseItem?.id,
+      };
+    });
+    
+    if (inventoryLotEntries.length > 0) {
+      await tx.inventoryLot.createMany({ data: inventoryLotEntries });
     }
 
     return created;

@@ -42,12 +42,30 @@ export async function refund(ctx: Ctx, id: string, input: RefundInput) {
 
     // Restock items in parallel (only those marked for restock)
     await Promise.all(input.items.filter((i) => i.restock).map(async (refundItem) => {
+      const saleItem = sale.items.find((si) => si.productId === refundItem.productId);
+      
       const ops: Promise<unknown>[] = [
         tx.product.update({
           where: { id: refundItem.productId },
           data: { stock: { increment: refundItem.qty } },
         }),
       ];
+
+      if (saleItem) {
+        ops.push(
+          tx.inventoryLot.create({
+            data: {
+              productId: refundItem.productId,
+              warehouseId: warehouseId || null,
+              qtyOriginal: refundItem.qty,
+              qtyRemaining: refundItem.qty,
+              unitCost: saleItem.cost,
+              sourceType: "RETURN",
+              sourceId: sale.id,
+            }
+          })
+        );
+      }
 
       // Restore warehouse stock if applicable
       if (warehouseId) {

@@ -111,15 +111,26 @@ export default function DashboardClient() {
       subColorClass: undefined,
     },
     {
-      id: "stock",
+      id: "low_stock",
       label: "Low Stock Alerts",
       value: metrics.stock.low.toString(),
-      sub: metrics.stock.low > 0 ? `${metrics.stock.low} item needs reorder` : "All levels healthy",
+      sub: metrics.stock.low > 0 ? `${metrics.stock.low} item needs reorder` : "Levels healthy",
       delta: null,
-      subColorClass: "text-orange-500",
+      subColorClass: "text-amber-500",
       icon: AlertTriangle,
-      iconBgClass: "bg-orange-100",
-      iconColorClass: "text-orange-600",
+      iconBgClass: "bg-amber-100",
+      iconColorClass: "text-amber-600",
+    },
+    {
+      id: "out_of_stock",
+      label: "Out of Stock",
+      value: metrics.stock.outOfStock.toString(),
+      sub: metrics.stock.outOfStock > 0 ? `${metrics.stock.outOfStock} item unavailable` : "All in stock",
+      delta: null,
+      subColorClass: "text-rose-500",
+      icon: Package,
+      iconBgClass: "bg-rose-100",
+      iconColorClass: "text-rose-600",
     },
     {
       id: "customers",
@@ -161,7 +172,7 @@ export default function DashboardClient() {
       </div>
 
       {/* ── KPI metric cards ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         {kpis.map((kpi, idx) => (
           <div
             key={kpi.id}

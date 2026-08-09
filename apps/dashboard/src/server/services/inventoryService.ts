@@ -139,6 +139,26 @@ export const inventoryService = {
         }
       }
 
+      // Handle InventoryLot for FIFO COGS
+      if (input.qtyDelta > 0) {
+        await tx.inventoryLot.create({
+          data: {
+            productId: input.productId,
+            warehouseId: input.warehouseId || null,
+            qtyOriginal: input.qtyDelta,
+            qtyRemaining: input.qtyDelta,
+            unitCost: product.cost,
+            sourceType: "ADJUSTMENT",
+            sourceId: adjustment.id,
+          }
+        });
+      } else if (input.qtyDelta < 0) {
+        // We need to import inventoryLotService at the top of the file if not already done.
+        // Actually, we'll just require it here to avoid top-level circular dependencies or modify top level.
+        const { inventoryLotService } = require("./inventoryLotService");
+        await inventoryLotService.depleteLots(tx, input.productId, Math.abs(input.qtyDelta), input.warehouseId);
+      }
+
       // Sync physical serial count (Fix #4)
       await inventoryService.syncStockCount(tx, input.warehouseId, input.productId);
 

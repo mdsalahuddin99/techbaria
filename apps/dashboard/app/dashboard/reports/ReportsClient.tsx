@@ -327,8 +327,8 @@ export function ReportsClient({
   };
 
   const renderDateFilters = (showMethod = false, onExport: () => void, printLabel: string) => (
-    <div className="flex flex-col xl:flex-row justify-between items-start xl:items-end gap-3 mb-6 bg-slate-50/80 backdrop-blur-md p-4 rounded-2xl border border-slate-200/60 shadow-sm print:hidden">
-      <div className="flex flex-col gap-3 w-full xl:w-auto">
+    <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-3 mb-6 bg-slate-50/80 backdrop-blur-md p-4 rounded-2xl border border-slate-200/60 shadow-sm print:hidden">
+      <div className="flex flex-col xl:flex-row xl:items-center gap-3 w-full xl:w-auto">
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mr-2">Presets:</span>
           {["today", "yesterday", "thisWeek", "thisMonth", "allTime"].map((preset) => {
@@ -352,7 +352,7 @@ export function ReportsClient({
             );
           })}
         </div>
-        <div className="flex flex-wrap items-end gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2 bg-white border border-slate-200/80 rounded-xl p-1.5 shadow-sm">
             <span className="text-[10px] font-bold text-slate-400 uppercase px-1.5">From</span>
             <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="h-7 w-[120px] text-xs bg-transparent border-none shadow-none focus-visible:ring-0 p-0 text-slate-700 font-medium" />
@@ -408,14 +408,16 @@ export function ReportsClient({
         <div className="absolute bottom-0 left-1/3 w-60 h-60 rounded-full blur-3xl bg-violet-500/10 -mb-20 -z-10" />
         
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 w-fit px-3 py-1 rounded-full text-xs font-semibold tracking-wider uppercase">
-              <BarChart3 className="h-3 w-3" /> Shop Analytics
+          <div className="space-y-1.5 w-full">
+            <div className="flex flex-col md:flex-row md:items-center gap-3">
+              <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-transparent">
+                Business Performance Reports
+              </h1>
+              <div className="flex items-center gap-1.5 bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 w-fit px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase">
+                <BarChart3 className="h-3 w-3" /> Shop Analytics
+              </div>
             </div>
-            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-transparent">
-              Business Performance Reports
-            </h1>
-            <p className="text-xs md:text-sm text-slate-400 max-w-xl leading-relaxed">
+            <p className="text-xs md:text-sm text-slate-400 w-full leading-relaxed">
               Track sales, profits, expenses, outstanding dues, and inventory value with server-verified aggregates.
             </p>
           </div>
@@ -424,14 +426,14 @@ export function ReportsClient({
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         
-        {/* Tabs switcher Container */}
-        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 mb-5 print:hidden">
-          <div className="bg-slate-100/80 backdrop-blur-md p-1.5 rounded-2xl border border-slate-200/60 inline-flex overflow-x-auto w-full xl:w-auto shadow-sm shadow-slate-100/50">
-            <TabsList className="bg-transparent gap-1.5 w-full justify-start h-auto p-0">
+        {/* Tabs switcher AND Stats Container */}
+        <div className="flex items-center gap-2.5 mb-5 print:hidden overflow-x-auto pb-2 scrollbar-hide w-full">
+          <div className="bg-slate-100/80 backdrop-blur-md p-1 rounded-2xl border border-slate-200/60 flex shrink-0 shadow-sm shadow-slate-100/50">
+            <TabsList className="bg-transparent gap-1 justify-start h-auto p-0">
               {[
                 { 
                   value: "pl", 
-                  label: "P&L / লাভ-ক্ষতি", 
+                  label: "P&L", 
                   icon: Calculator,
                   activeClass: "data-[state=active]:bg-indigo-50/95 data-[state=active]:text-indigo-700 data-[state=active]:border-indigo-200/60 data-[state=active]:shadow-indigo-100/60",
                   hoverClass: "hover:bg-indigo-50/40 hover:text-indigo-700 hover:border-indigo-200/30",
@@ -439,7 +441,7 @@ export function ReportsClient({
                 },
                 { 
                   value: "sales", 
-                  label: "Sales / বিক্রি", 
+                  label: "Sales", 
                   icon: Receipt,
                   activeClass: "data-[state=active]:bg-emerald-50/95 data-[state=active]:text-emerald-700 data-[state=active]:border-emerald-200/60 data-[state=active]:shadow-emerald-100/60",
                   hoverClass: "hover:bg-emerald-50/40 hover:text-emerald-700 hover:border-emerald-200/30",
@@ -447,7 +449,7 @@ export function ReportsClient({
                 },
                 { 
                   value: "inventory", 
-                  label: "Inventory / স্টক", 
+                  label: "Inventory", 
                   icon: Boxes,
                   activeClass: "data-[state=active]:bg-amber-50/95 data-[state=active]:text-amber-700 data-[state=active]:border-amber-200/60 data-[state=active]:shadow-amber-100/60",
                   hoverClass: "hover:bg-amber-50/40 hover:text-amber-700 hover:border-amber-200/30",
@@ -455,7 +457,7 @@ export function ReportsClient({
                 },
                 { 
                   value: "dues", 
-                  label: "Dues / বকেয়া", 
+                  label: "Dues", 
                   icon: UserMinus,
                   activeClass: "data-[state=active]:bg-violet-50/95 data-[state=active]:text-violet-700 data-[state=active]:border-violet-200/60 data-[state=active]:shadow-violet-100/60",
                   hoverClass: "hover:bg-violet-50/40 hover:text-violet-700 hover:border-violet-200/30",
@@ -463,7 +465,7 @@ export function ReportsClient({
                 },
                 { 
                   value: "expenses", 
-                  label: "Expenses / খরচ", 
+                  label: "Expenses", 
                   icon: CreditCard,
                   activeClass: "data-[state=active]:bg-rose-50/95 data-[state=active]:text-rose-700 data-[state=active]:border-rose-200/60 data-[state=active]:shadow-rose-100/60",
                   hoverClass: "hover:bg-rose-50/40 hover:text-rose-700 hover:border-rose-200/30",
@@ -476,7 +478,7 @@ export function ReportsClient({
                     key={tab.value}
                     value={tab.value}
                     className={cn(
-                      "bg-white/45 text-slate-600 border border-slate-200/30 rounded-xl px-4 py-2 text-[12px] font-bold shadow-sm shadow-slate-100/10 transition-all duration-200 flex items-center h-9 data-[state=active]:shadow-md group",
+                      "bg-white/45 text-slate-600 border border-slate-200/30 rounded-xl px-4 py-2 text-[12px] font-bold shadow-sm shadow-slate-100/10 transition-all duration-200 flex items-center h-9 data-[state=active]:shadow-md group whitespace-nowrap",
                       tab.hoverClass,
                       tab.activeClass
                     )}
@@ -487,20 +489,51 @@ export function ReportsClient({
               })}
             </TabsList>
           </div>
+
+          {/* Dynamic Stats side-by-side with tabs */}
+          <div className="flex items-center gap-1.5 shrink-0 border-l border-slate-200/60 pl-2.5 h-full">
+            {activeTab === "pl" && (
+              <>
+                <SmallStat label="Total Sales" value={formatCurrency(metrics.totalSales)} icon={TrendingUp} color="indigo" />
+                <SmallStat label="Cost of Goods" value={formatCurrency(metrics.cogs)} icon={Layers} color="amber" />
+                <SmallStat label="Total Expenses" value={formatCurrency(metrics.expenseTotal)} icon={TrendingDown} color="rose" />
+                <SmallStat label="Gross Profit" value={formatCurrency(metrics.grossProfit)} icon={Calculator} color="emerald" />
+                <SmallStat label="Net Profit" value={formatCurrency(metrics.netProfit)} icon={TrendingUp} color="emerald" />
+              </>
+            )}
+            {activeTab === "sales" && (
+              <>
+                <SmallStat label="Total Revenue" value={formatCurrency(metrics.totalRevenue)} icon={TrendingUp} color="indigo" />
+                <SmallStat label="Transactions" value={metrics.txnCount.toString()} icon={Receipt} color="violet" />
+                <SmallStat label="Products Sold" value={metrics.topProducts.reduce((sum, p) => sum + p.qty, 0).toString()} icon={Box} color="amber" />
+                <SmallStat label="Avg Order Value" value={formatCurrency(metrics.aov)} icon={Calculator} color="emerald" />
+              </>
+            )}
+            {activeTab === "inventory" && (
+              <>
+                <SmallStat label="Total Asset Value" value={formatCurrency(inventory.stockValue)} icon={Calculator} color="indigo" />
+                <SmallStat label="Low Stock Alerts" value={inventory.lowStock.filter(p => p.stock > 0).length.toString()} icon={TrendingDown} color="amber" />
+                <SmallStat label="Out of Stock" value={inventory.lowStock.filter(p => p.stock <= 0).length.toString()} icon={AlertCircle} color="rose" />
+                <SmallStat label="Dead Stock (90 Days)" value={inventory.deadStock.length.toString()} icon={Box} color="amber" />
+              </>
+            )}
+            {activeTab === "dues" && (
+              <>
+                <SmallStat label="Total Customer Due" value={formatCurrency(dues.totalCustomerDue)} icon={ArrowDownRight} color="rose" />
+                <SmallStat label="Total Supplier Payable" value={formatCurrency(dues.totalSupplierPayable)} icon={ArrowUpRight} color="amber" />
+              </>
+            )}
+            {activeTab === "expenses" && (
+              <>
+                <SmallStat label="Total Expenses" value={formatCurrency(expensesDetailed.totalExpense)} icon={TrendingDown} color="rose" />
+              </>
+            )}
+          </div>
         </div>
 
         {/* ── PROFIT & LOSS ── */}
         <TabsContent value="pl" className="space-y-4 mt-0 print:block">
           {renderDateFilters(false, exportPL, "P&L")}
-
-          {/* Top Summary Stat Cards (Restored Header Boxes) */}
-          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 print:grid-cols-5">
-            <Stat label="Total Sales" value={formatCurrency(metrics.totalSales)} icon={TrendingUp} color="indigo" />
-            <Stat label="Cost of Goods" value={formatCurrency(metrics.cogs)} icon={Layers} color="amber" />
-            <Stat label="Total Expenses" value={formatCurrency(metrics.expenseTotal)} icon={TrendingDown} color="rose" />
-            <Stat label="Gross Profit" value={formatCurrency(metrics.grossProfit)} icon={Calculator} color="emerald" />
-            <Stat label="Net Profit" value={formatCurrency(metrics.netProfit)} icon={TrendingUp} color="emerald" />
-          </div>
 
           {/* Two-Column Details Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -584,12 +617,6 @@ export function ReportsClient({
         {/* ── SALES ── */}
         <TabsContent value="sales" className="space-y-4 mt-0 print:block">
           {renderDateFilters(true, exportSales, "Sales")}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <Stat label="Total Revenue" value={formatCurrency(metrics.totalRevenue)} icon={TrendingUp} color="indigo" />
-            <Stat label="Transactions" value={metrics.txnCount.toString()} icon={Receipt} color="violet" />
-            <Stat label="Products Sold" value={metrics.topProducts.reduce((sum, p) => sum + p.qty, 0).toString()} icon={Box} color="amber" />
-            <Stat label="Avg Order Value" value={formatCurrency(metrics.aov)} icon={Calculator} color="emerald" />
-          </div>
 
 
           <div className="bg-white rounded-2xl border border-slate-200/80 shadow-md shadow-slate-100/50 overflow-hidden print:overflow-visible print:border-none print:shadow-none">
@@ -627,11 +654,6 @@ export function ReportsClient({
 
         {/* ── INVENTORY ── */}
         <TabsContent value="inventory" className="space-y-4 mt-0 print:block">
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-            <Stat label="Total Asset Value" value={formatCurrency(inventory.stockValue)} icon={Calculator} color="indigo" />
-            <Stat label="Low Stock Alerts" value={inventory.lowStock.length.toString()} icon={TrendingDown} color="rose" />
-            <Stat label="Dead Stock (90 Days)" value={inventory.deadStock.length.toString()} icon={Box} color="amber" />
-          </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div className="bg-white rounded-2xl border border-slate-200/80 shadow-md shadow-slate-100/50 overflow-hidden print:overflow-visible flex flex-col h-[450px] print:h-auto print:border-none print:shadow-none">
@@ -675,7 +697,7 @@ export function ReportsClient({
                   </thead>
                   <tbody>
                     {inventory.lowStock
-                      .filter(p => p.name.toLowerCase().includes(searchLowStock.toLowerCase()))
+                      .filter(p => (p.name || '').toLowerCase().includes(searchLowStock.trim().toLowerCase()))
                       .map((p) => (
                       <tr key={p.id} className="border-b border-slate-50 hover:bg-amber-50/20 transition-colors">
                         <td className="px-4 py-1.5 font-medium text-slate-800">{p.name}</td>
@@ -684,7 +706,7 @@ export function ReportsClient({
                         </td>
                       </tr>
                     ))}
-                    {inventory.lowStock.filter(p => p.name.toLowerCase().includes(searchLowStock.toLowerCase())).length === 0 && (
+                    {inventory.lowStock.filter(p => (p.name || '').toLowerCase().includes(searchLowStock.trim().toLowerCase())).length === 0 && (
                       <tr><td colSpan={2} className="px-4 py-6 text-center text-slate-400 font-medium">No items found</td></tr>
                     )}
                   </tbody>
@@ -757,11 +779,6 @@ export function ReportsClient({
                 <Printer className="h-3.5 w-3.5 mr-2" /> Print Dues
               </Button>
             </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 print:grid-cols-2">
-            <Stat label="Total Customer Due" value={formatCurrency(dues.totalCustomerDue)} icon={ArrowDownRight} color="rose" />
-            <Stat label="Total Supplier Payable" value={formatCurrency(dues.totalSupplierPayable)} icon={ArrowUpRight} color="amber" />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -838,11 +855,6 @@ export function ReportsClient({
         {/* ── EXPENSES REPORT ── */}
         <TabsContent value="expenses" className="space-y-4 mt-0 print:block">
           {renderDateFilters(false, exportExpensesDetailed, "Expenses")}
-
-          {/* Summary stats */}
-          <div className="grid grid-cols-1 gap-3">
-            <Stat label="Total Expenses" value={formatCurrency(expensesDetailed.totalExpense)} icon={TrendingDown} color="rose" />
-          </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Left Column: Category Summary breakdown */}
@@ -929,7 +941,37 @@ export function ReportsClient({
   );
 }
 
-function Stat({ label, value, icon: Icon, color = "indigo" }: { label: string; value: string; icon: any; color?: "indigo" | "emerald" | "rose" | "amber" | "violet" }) {
+function SmallStat({ label, value, icon: Icon, color = "indigo" }: { label: string; value: string; icon: any; color?: "indigo" | "emerald" | "rose" | "amber" | "violet" }) {
+  const colorMap = {
+    indigo: "bg-indigo-50 border-indigo-200/60 text-indigo-700",
+    emerald: "bg-emerald-50 border-emerald-200/60 text-emerald-700",
+    rose: "bg-rose-50 border-rose-200/60 text-rose-700",
+    amber: "bg-amber-50 border-amber-200/60 text-amber-700",
+    violet: "bg-violet-50 border-violet-200/60 text-violet-700",
+  };
+  const iconColorMap = {
+    indigo: "text-indigo-500",
+    emerald: "text-emerald-500",
+    rose: "text-rose-500",
+    amber: "text-amber-500",
+    violet: "text-violet-500",
+  };
+
+  const bg = colorMap[color] || colorMap.indigo;
+  const icn = iconColorMap[color] || iconColorMap.indigo;
+
+  return (
+    <div className={cn("flex items-center gap-1.5 px-2.5 py-1 rounded-xl border shadow-sm shrink-0", bg)}>
+      <Icon className={cn("h-3.5 w-3.5", icn)} />
+      <div className="flex flex-col">
+        <span className="text-[8.5px] font-bold uppercase tracking-widest opacity-80 leading-none mb-0.5">{label}</span>
+        <span className="text-[13px] font-extrabold tabular-nums leading-none">{value}</span>
+      </div>
+    </div>
+  );
+}
+
+function Stat({ label, value, icon: Icon, color = "indigo", className = "" }: { label: string; value: string; icon: any; color?: "indigo" | "emerald" | "rose" | "amber" | "violet"; className?: string }) {
   const colorMap = {
     indigo: {
       border: "border-l-indigo-600 focus-within:border-l-indigo-600",
@@ -962,8 +1004,9 @@ function Stat({ label, value, icon: Icon, color = "indigo" }: { label: string; v
 
   return (
     <div className={cn(
-      "relative overflow-hidden rounded-2xl bg-white p-5 border border-slate-200/80 border-l-[5px] transition-all duration-300 hover:shadow-lg hover:shadow-slate-100/80 hover:-translate-y-0.5 flex flex-col justify-between min-h-[110px]",
-      scheme.border
+      "relative overflow-hidden rounded-2xl bg-white p-4 2xl:p-5 border border-slate-200/80 border-l-[5px] transition-all duration-300 hover:shadow-lg hover:shadow-slate-100/80 hover:-translate-y-0.5 flex flex-col justify-between min-h-[100px]",
+      scheme.border,
+      className
     )}>
       {/* Background radial highlight */}
       <div className={cn("absolute right-0 top-0 w-24 h-24 rounded-full blur-2xl bg-gradient-to-br -z-10 opacity-70", scheme.accent)} />

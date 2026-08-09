@@ -206,7 +206,7 @@ export function CustomersClient({
             />
           </div>
           
-          {isFilterEmpty && (
+          {isFilterEmpty && customers.length >= 15 && (
             <div className="flex-1 min-w-[280px] flex items-center bg-blue-50/80 border border-blue-100 rounded-md px-3 py-1.5 text-sm text-blue-700 font-medium">
               <span className="truncate" title="সর্বশেষ ১৫টি ডেটা দেখানো হচ্ছে। নির্দিষ্ট ডেটা খুঁজে পেতে সার্চ করুন।">
                 সর্বশেষ ১৫টি ডেটা দেখানো হচ্ছে। নির্দিষ্ট ডেটা খুঁজে পেতে সার্চ করুন।

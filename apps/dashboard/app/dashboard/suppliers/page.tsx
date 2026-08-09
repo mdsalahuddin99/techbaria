@@ -11,7 +11,7 @@ export default async function SuppliersPage() {
   
   // We can fetch data concurrently
   const [suppliersRes, purchasesRes, accountsRes, ledgerRes] = await Promise.all([
-    listSuppliersAction({ limit: 5 }),
+    listSuppliersAction({ limit: 15 }),
     purchasesService.list(ctx),
     accountsService.list(ctx),
     accountsService.listLedger(ctx),

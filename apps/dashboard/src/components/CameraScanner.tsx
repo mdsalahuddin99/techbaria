@@ -124,6 +124,10 @@ export default function CameraScanner({ open, onClose, onDetected, scanCount = 0
           audio: false,
         };
 
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          throw new Error("HTTP_SECURE_CONTEXT_REQUIRED");
+        }
+
         // Path A: native BarcodeDetector ----------------------------------
         const BD = (window as any).BarcodeDetector;
         if (BD) {
@@ -140,12 +144,9 @@ export default function CameraScanner({ open, onClose, onDetected, scanCount = 0
             }
             setActive(true);
 
+            const supportedFormats = await BD.getSupportedFormats();
             const detector = new BD({
-              formats: [
-                "ean_13", "ean_8", "upc_a", "upc_e",
-                "code_128", "code_39", "code_93",
-                "codabar", "itf", "qr_code",
-              ],
+              formats: supportedFormats.length > 0 ? supportedFormats : undefined,
             });
 
             detectorTimerRef.current = window.setInterval(async () => {
@@ -156,10 +157,10 @@ export default function CameraScanner({ open, onClose, onDetected, scanCount = 0
                 if (codes && codes.length > 0 && codes[0].rawValue) {
                   handleCode(codes[0].rawValue);
                 }
-              } catch {
+              } catch (detectErr) {
                 /* skip frame */
               }
-            }, 200);
+            }, 150);
             return;
           } catch (bdErr) {
             // Fall through to ZXing
@@ -209,7 +210,9 @@ export default function CameraScanner({ open, onClose, onDetected, scanCount = 0
       } catch (err: any) {
         const denied = err?.name === "NotAllowedError" || err?.name === "SecurityError";
         const msg =
-          denied
+          err?.message === "HTTP_SECURE_CONTEXT_REQUIRED"
+            ? "মোবাইলে ক্যামেরা ব্যবহার করতে হলে ওয়েবসাইটটি HTTPS (secure) হতে হবে। লোকাল নেটওয়ার্কে (HTTP) ক্যামেরা সাপোর্ট করে না।"
+            : denied
             ? "ক্যামেরার অনুমতি দেওয়া হয়নি। ব্রাউজার সেটিংস থেকে এই সাইটের জন্য Camera permission Allow করুন।"
             : err?.name === "NotFoundError"
             ? "এই ডিভাইসে কোনো ক্যামেরা পাওয়া যায়নি।"

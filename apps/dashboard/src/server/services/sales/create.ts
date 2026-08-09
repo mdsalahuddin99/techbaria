@@ -234,6 +234,25 @@ export async function create(ctx: Ctx, input: SaleCreateInput) {
       true
     );
 
+    // Deplete FIFO lots for non-serialized products and calculate true COGS
+    const { inventoryLotService } = require("../inventoryLotService");
+    await Promise.all(
+      sale.items.map(async (si: any) => {
+        const product = productMap.get(si.productId);
+        if (product?.trackSerials) return; // Handled in assignSerials
+        if (product?.isService) return; // No COGS for services
+        
+        const totalFifoCost = await inventoryLotService.depleteLots(tx, si.productId, si.qty, warehouseId);
+        if (totalFifoCost > 0 && si.qty > 0) {
+          const avgUnitCost = totalFifoCost / si.qty;
+          await tx.saleItem.update({
+            where: { id: si.id },
+            data: { cost: avgUnitCost },
+          });
+        }
+      })
+    );
+
     return sale;
   }, { timeout: 30000 });
 

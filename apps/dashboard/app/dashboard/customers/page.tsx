@@ -15,7 +15,7 @@ export default async function CustomersPage() {
     salesRes,
     accountsRes
   ] = await Promise.all([
-    listCustomersAction(undefined, { limit: 5 }),
+    listCustomersAction(undefined, { limit: 15 }),
     listSalesAction(),
     accountsService.list(ctx),
   ]);

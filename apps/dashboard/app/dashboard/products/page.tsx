@@ -7,7 +7,7 @@ import { Product } from "@/shared/lib/types";
 
 export default async function ProductsPage() {
   // Fetch initial data on the server (only 5 items for search-first fast load)
-  const productsRes = await listProductsAction(undefined, { limit: 5 });
+  const productsRes = await listProductsAction(undefined, { limit: 15 });
   
   // Create a minimal context since categories service doesn't require user auth for reading
   const session = await auth();

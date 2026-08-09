@@ -42,8 +42,10 @@ export const reportsService = {
       rawCogs,
       expensesAgg,
       rawTopProducts,
-      salesList,
-      expensesByCategory
+      rawTrendData,
+      rawMethodData,
+      expensesByCategory,
+      rawRefundDiscounts
     ] = await Promise.all([
       prisma.sale.aggregate({
         where: completedSaleWhere,
@@ -88,10 +90,25 @@ export const reportsService = {
         ORDER BY qty DESC
         LIMIT 10
       `,
-      prisma.sale.findMany({
-        where: completedSaleWhere,
-        select: { createdAt: true, total: true, tenders: true },
-      }),
+      prisma.$queryRaw<Array<{ date: Date, total: number }>>`
+        SELECT DATE_TRUNC('day', s."createdAt") as date, SUM(s.total) as total 
+        FROM "Sale" s
+        WHERE s.status = 'COMPLETED' 
+          AND s."createdAt" >= ${fromDate} 
+          AND s."createdAt" <= ${toDate}
+          ${pmSql}
+        GROUP BY 1
+      `,
+      prisma.$queryRaw<Array<{ type: string, total: number }>>`
+        SELECT st.type, SUM(st.amount) as total 
+        FROM "SaleTender" st
+        JOIN "Sale" s ON st."saleId" = s.id
+        WHERE s.status = 'COMPLETED' 
+          AND s."createdAt" >= ${fromDate} 
+          AND s."createdAt" <= ${toDate}
+          ${pmSql}
+        GROUP BY st.type
+      `,
       prisma.expense.groupBy({
         by: ['category'],
         where: { date: { gte: fromDate, lte: toDate } },
@@ -145,11 +162,7 @@ export const reportsService = {
     const totalOtherChargesSalesReturn = 0;
     const couponDiscountSalesReturn = 0;
     
-    // We didn't destructure the 10th element from Promise.all, but we can't easily access it without rewriting the destructuring. 
-    // Wait, let's fix the destructuring array directly.
-    // Actually, I can just not worry about refunded item discount right now since refund discounts are rare.
-    // Let's just restore totalDiscountSalesReturn properly.
-    const totalDiscountSalesReturn = Number(refundedSalesAgg._sum.discount || 0);
+    const totalDiscountSalesReturn = Number(refundedSalesAgg._sum.discount || 0) + Number(rawRefundDiscounts[0]?.itemDiscount || 0);
     const returnTotal = Number(refundedSalesAgg._sum.total || 0);
     const paidSalesReturn = Number(refundedSalesAgg._sum.paid || 0);
     const dueSalesReturn = Number(refundedSalesAgg._sum.due || 0);
@@ -166,17 +179,20 @@ export const reportsService = {
     }
 
     const byMethodMap: Record<string, number> = {};
-    salesList.forEach(sale => {
-      const dateKey = sale.createdAt.toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
+    rawTrendData.forEach(row => {
+      const dateKey = new Date(row.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
       if (dateKey in trendMap) {
-        trendMap[dateKey] += Number(sale.total);
+        trendMap[dateKey] += Number(row.total);
       }
-      
-      const methodStr = sale.tenders?.[0]?.type === "CASH" ? "Cash" 
-                      : sale.tenders?.[0]?.type === "CARD" ? "Card" 
-                      : (sale.tenders?.[0]?.type === "BKASH" || sale.tenders?.[0]?.type === "NAGAD") ? "Mobile Banking" 
+    });
+
+    rawMethodData.forEach(row => {
+      const type = row.type;
+      const methodStr = type === "CASH" ? "Cash" 
+                      : type === "CARD" ? "Card" 
+                      : (type === "BKASH" || type === "NAGAD") ? "Mobile Banking" 
                       : "Other";
-      byMethodMap[methodStr] = (byMethodMap[methodStr] || 0) + Number(sale.total);
+      byMethodMap[methodStr] = (byMethodMap[methodStr] || 0) + Number(row.total);
     });
 
     const trend = Object.entries(trendMap).map(([date, total]) => ({ date, total }));
@@ -243,11 +259,18 @@ export const reportsService = {
     const stockValue = Number(rawStockVal[0]?.total || 0);
 
     const rawLowStock = await prisma.$queryRaw<Array<{ id: string, name: string, stock: number, minStock: number }>>`
-      SELECT id, name, stock, "reorderLevel" as "minStock"
+      SELECT id, 
+             CONCAT_WS(' ', 
+               (SELECT name FROM "Brand" WHERE id = "globalBrandId"), 
+               name, 
+               (SELECT name FROM "Model" WHERE id = "globalModelId")
+             ) as name, 
+             stock, 
+             "reorderLevel" as "minStock"
       FROM "Product"
-      WHERE stock > 0 AND stock <= "reorderLevel" ${pubCondition}
+      WHERE stock <= "reorderLevel" ${pubCondition}
       ORDER BY stock ASC
-      LIMIT 100
+      LIMIT 1000
     `;
     const lowStock = rawLowStock.map(p => ({
       id: p.id,
@@ -270,7 +293,13 @@ export const reportsService = {
     }
 
     const rawDeadStock = await prisma.$queryRaw<Array<{ id: string, name: string, category: string, stock: number, unit: string, value: number }>>`
-      SELECT id, name, stock, unit, 
+      SELECT id, 
+             CONCAT_WS(' ', 
+               (SELECT name FROM "Brand" WHERE id = "globalBrandId"), 
+               name, 
+               (SELECT name FROM "Model" WHERE id = "globalModelId")
+             ) as name, 
+             stock, unit, 
              (stock * (CASE WHEN COALESCE(cost, 0) > 0 THEN cost ELSE COALESCE(price, 0) END)) as value,
              (SELECT name FROM "Category" WHERE id = "categoryId") as category
       FROM "Product"
@@ -282,9 +311,10 @@ export const reportsService = {
           JOIN "Sale" s ON s.id = si."saleId"
           WHERE s.status = 'COMPLETED' 
             AND s."createdAt" >= ${filterDate}
+            AND s."createdAt" <= ${toDate}
         )
       ORDER BY stock DESC
-      LIMIT 100
+      LIMIT 1000
     `;
     
     const deadStock = rawDeadStock.map(p => ({

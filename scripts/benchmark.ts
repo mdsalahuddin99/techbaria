@@ -1,7 +1,7 @@
-import { prisma } from "../src/server/db/client";
-import { dashboardService } from "../src/server/services/dashboardService";
-import { reportsService } from "../src/server/services/reportsService";
-import { list as listSales } from "../src/server/services/sales/queries";
+import { prisma } from "../apps/dashboard/src/server/db/client";
+import { dashboardService } from "../apps/dashboard/src/server/services/dashboardService";
+import { reportsService } from "../apps/dashboard/src/server/services/reportsService";
+import { list as listSales } from "../apps/dashboard/src/server/services/sales/queries";
 
 async function benchmark() {
   console.log("Starting Benchmark...");
