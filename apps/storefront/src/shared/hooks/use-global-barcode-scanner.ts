@@ -1,5 +1,5 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { toast } from "sonner";
 import { useProducts } from "@/features/products/hooks";
@@ -19,13 +19,22 @@ export function useGlobalBarcodeScanner() {
   const { data: products = [] } = useProducts();
   const { addToCart } = useCartActions();
 
+  // Keep references to latest props so we don't need to re-bind event listener
+  const latest = useRef({ router, pathname, products, addToCart });
   useEffect(() => {
-    let buffer = "";
-    let lastTime = 0;
-    let timer: number | undefined;
-    let lastScanCode = "";
-    let lastScanAt = 0;
+    latest.current = { router, pathname, products, addToCart };
+  }, [router, pathname, products, addToCart]);
 
+  // Keep scanner state in refs to persist across re-renders
+  const state = useRef({
+    buffer: "",
+    lastTime: 0,
+    timer: undefined as number | undefined,
+    lastScanCode: "",
+    lastScanAt: 0,
+  });
+
+  useEffect(() => {
     const SCANNER_CHAR_THRESHOLD_MS = 50; // chars closer than this = scanner
     const RESET_MS = 150;
     const DEDUPE_MS = 1200;
@@ -39,25 +48,33 @@ export function useGlobalBarcodeScanner() {
     };
 
     const flush = () => {
+      const { buffer, lastScanCode, lastScanAt } = state.current;
       const code = buffer.trim();
-      buffer = "";
+      state.current.buffer = "";
+      
       if (code.length < 4) return;
+      
+      const { products, addToCart, router, pathname } = latest.current;
       const product = products.find(
         (p) =>
           p.barcode === code ||
           p.sku === code ||
           (p.serials?.some((u) => u.imei === code || u.serialNumber === code) ?? false)
       );
+      
       if (!product) {
         toast.error(`No product for "${code}"`);
         return;
       }
+      
       const now = Date.now();
       if (code === lastScanCode && now - lastScanAt < DEDUPE_MS) {
         return; // duplicate of same barcode within dedupe window
       }
-      lastScanCode = code;
-      lastScanAt = now;
+      
+      state.current.lastScanCode = code;
+      state.current.lastScanAt = now;
+      
       if (pathname.startsWith("/pos")) {
         addToCart(product.id);
         toast.success(`✓ ${product.name}`);
@@ -72,11 +89,11 @@ export function useGlobalBarcodeScanner() {
       if (isEditable(e.target)) return;
 
       const now = Date.now();
-      const fast = now - lastTime < SCANNER_CHAR_THRESHOLD_MS;
-      lastTime = now;
+      const fast = now - state.current.lastTime < SCANNER_CHAR_THRESHOLD_MS;
+      state.current.lastTime = now;
 
       if (e.key === "Enter") {
-        if (buffer) {
+        if (state.current.buffer) {
           e.preventDefault();
           flush();
         }
@@ -86,23 +103,23 @@ export function useGlobalBarcodeScanner() {
       // Only single-char printable keys
       if (e.key.length !== 1) return;
 
-      if (!fast && buffer) {
+      if (!fast && state.current.buffer) {
         // Slow keystroke -> not scanner; reset
-        buffer = "";
+        state.current.buffer = "";
       }
 
-      buffer += e.key;
-      window.clearTimeout(timer);
-      timer = window.setTimeout(() => {
-        if (buffer.length >= 6) flush();
-        buffer = "";
+      state.current.buffer += e.key;
+      window.clearTimeout(state.current.timer);
+      state.current.timer = window.setTimeout(() => {
+        if (state.current.buffer.length >= 6) flush();
+        state.current.buffer = "";
       }, RESET_MS);
     };
 
     window.addEventListener("keydown", onKey);
     return () => {
       window.removeEventListener("keydown", onKey);
-      window.clearTimeout(timer);
+      window.clearTimeout(state.current.timer);
     };
-  }, [products, addToCart, router, pathname]);
+  }, []);
 }

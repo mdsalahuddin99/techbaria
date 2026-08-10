@@ -227,7 +227,10 @@ export function ProductFilterBar({
                         e.preventDefault(); // keep focus in input
                         onAddProduct(p);
                         onSearchChange("", false);
-                        setTimeout(() => searchInputRef.current?.focus(), 50);
+                        setTimeout(() => {
+                          searchInputRef.current?.focus();
+                          onShowSuggestions(false);
+                        }, 50);
                       }}
                     >
                       <div className="min-w-0">

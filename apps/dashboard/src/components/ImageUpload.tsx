@@ -40,8 +40,8 @@ export default function ImageUpload({
 
   async function signedUpload(file: File): Promise<string> {
     // 1. Get signature from our server
-    const preset = "ml_default";
-    const folder = "products";
+    const preset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "ml_default";
+    const folder = process.env.NEXT_PUBLIC_CLOUDINARY_FOLDER || "techbaria";
     const signRes = await fetch("/api/upload", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

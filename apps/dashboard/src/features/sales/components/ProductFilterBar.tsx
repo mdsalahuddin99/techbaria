@@ -242,7 +242,10 @@ export function ProductFilterBar({
                       onClick={() => {
                         onAddProduct(p, undefined, matchedTags.length > 0 ? matchedTags[0] : undefined);
                         onSearchChange("", false);
-                        setTimeout(() => searchInputRef.current?.focus(), 50);
+                        setTimeout(() => {
+                          searchInputRef.current?.focus();
+                          onShowSuggestions(false);
+                        }, 50);
                       }}
                     >
                       <div className="min-w-0">
