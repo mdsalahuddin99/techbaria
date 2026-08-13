@@ -221,6 +221,79 @@ export const supplierLedgerService = {
       });
     });
   },
+
+  /**
+   * Pay outstanding payable to a supplier.
+   * Decreases `payable` — does NOT affect `advanceBalance`.
+   * Decreases the financial account balance (money leaves our shop).
+   */
+  async paySupplier(
+    ctx: Ctx,
+    supplierId: string,
+    amount: number,
+    accountId: string,
+    reference?: string,
+    notes?: string,
+    date?: string | Date
+  ) {
+    authorize(ctx, ["ADMIN", "CASHIER"]);
+    const amt = Math.abs(amount);
+
+    return prisma.$transaction(async (tx) => {
+      const supp = await tx.supplier.findUnique({
+        where: { id: supplierId },
+        select: { id: true, payable: true, advanceBalance: true },
+      });
+      if (!supp) throw new ServiceError("NOT_FOUND", "Supplier not found", 404);
+
+      const currentPayable = Number(supp.payable);
+      const currentAdvance = Number(supp.advanceBalance); // For ledger snapshot
+      
+      const newPayable = Math.max(0, currentPayable - amt);
+
+      await tx.supplier.update({
+        where: { id: supplierId },
+        data: { payable: newPayable },
+      });
+
+      // Update financial account (money out to supplier)
+      if (accountId) {
+        await tx.financialAccount.update({
+          where: { id: accountId },
+          data: { balance: { decrement: amt } },
+        });
+      }
+
+      // Record SupplierPayment
+      const payment = await tx.supplierPayment.create({
+        data: {
+          supplierId,
+          amount: amt,
+          accountId: accountId ?? null,
+          notes: notes ?? `Payment to supplier: ${amt}`,
+          ...(date ? { date: new Date(date) } : {}),
+        },
+      });
+
+      // Record SupplierTransaction for ledger (balance track advanceBalance)
+      await tx.supplierTransaction.create({
+        data: {
+          supplierId,
+          type: "PAYMENT",
+          amount: amt,
+          balanceBefore: currentAdvance,
+          balanceAfter: currentAdvance, // wallet advance unchanged
+          accountId: accountId ?? null,
+          reference: reference ?? null,
+          notes: notes ?? `Supplier payment: ${amt} (payable: ${currentPayable} → ${newPayable})`,
+          createdById: ctx.userId,
+          ...(date ? { createdAt: new Date(date) } : {}),
+        },
+      });
+
+      return { payment, supplierId, newPayable };
+    });
+  },
 };
 
 // ─── Internal helpers ───────────────────────────────────────────────────────

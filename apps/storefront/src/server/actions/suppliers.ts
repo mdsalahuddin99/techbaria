@@ -4,6 +4,7 @@ import { auth } from "@/server/auth/config";
 import { buildCtx } from "@/server/lib/ctx";
 import { ServiceError } from "@/server/lib/errors";
 import { suppliersService, type SupplierCreateInput, type SupplierUpdateInput } from "@/server/services/suppliersService";
+import { supplierLedgerService } from "@/server/services/supplierLedgerService";
 import { supplierCreateSchema, supplierUpdateSchema } from "@/shared/validators/supplier";
 import type { PaginationParams } from "@/server/lib/paginate";
 
@@ -71,4 +72,19 @@ export async function deleteSupplierAction(id: string) {
   const ctx = await getActionCtx();
   await suppliersService.remove(ctx, id);
   return { success: true };
+}
+
+/**
+ * Pay outstanding payable to a supplier
+ */
+export async function paySupplierAction(
+  supplierId: string,
+  amount: number,
+  accountId: string,
+  reference?: string,
+  notes?: string,
+  date?: string | Date
+) {
+  const ctx = await getActionCtx();
+  return supplierLedgerService.paySupplier(ctx, supplierId, amount, accountId, reference, notes, date);
 }

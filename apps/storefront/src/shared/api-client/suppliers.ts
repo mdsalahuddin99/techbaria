@@ -8,7 +8,8 @@ import {
   createSupplierAction, 
   updateSupplierAction, 
   deleteSupplierAction,
-  getSupplierProfileAction
+  getSupplierProfileAction,
+  paySupplierAction
 } from "@/server/actions/suppliers";
 
 export interface PaginatedResponse<T> {
@@ -59,6 +60,10 @@ export const suppliersApi = {
     });
     if (!res.ok) throw new Error(await res.text());
     return res.json();
+  },
+
+  paySupplier(data: { supplierId: string; amount: number; accountId: string; reference?: string; notes?: string; date?: string }) {
+    return paySupplierAction(data.supplierId, data.amount, data.accountId, data.reference, data.notes, data.date);
   },
 
   async withdrawAdvance(data: { supplierId: string; amount: number; accountId: string; reference?: string; notes?: string; date?: string }) {

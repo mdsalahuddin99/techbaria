@@ -250,22 +250,17 @@ export function ProductFilterBar({
                     >
                       <div className="min-w-0">
                         <p className="text-xs font-semibold text-slate-700 truncate">
-                          {p.name}
+                          {[
+                            p.globalBrand?.name || (typeof p.brand === "object" && p.brand ? (p.brand as any).name : p.brand),
+                            p.name,
+                            p.globalModel?.name || (typeof p.model === "object" && p.model ? (p.model as any).name : p.model),
+                            (p as any).globalSeries?.name || (typeof p.series === "object" && p.series ? (p.series as any).name : p.series),
+                          ]
+                            .filter(Boolean)
+                            .join(" ")}
                         </p>
                         <p className="text-[10px] text-slate-500">
-                          {(() => {
-                            const brandModelStr = Array.from(
-                              new Set(
-                                [
-                                  p.globalBrand?.name,
-                                  p.globalModel?.name,
-                                  typeof p.brand === "object" && p.brand ? (p.brand as any).name : p.brand,
-                                  typeof p.model === "object" && p.model ? (p.model as any).name : p.model,
-                                ].filter(Boolean)
-                              )
-                            ).join(" ");
-                            return brandModelStr ? `${brandModelStr} • SKU: ${p.sku}` : `SKU: ${p.sku}`;
-                          })()}
+                          SKU: {p.sku}
                         </p>
                         {matchedTags.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-1">

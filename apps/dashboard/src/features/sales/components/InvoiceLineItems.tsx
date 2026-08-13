@@ -157,35 +157,35 @@ export function InvoiceLineItems({
   }
 
   return (
-    <div className="rounded-[4px] border border-border">
-      <table className="w-full text-sm block sm:table">
-        <thead className="block sm:table-header-group">
-          <tr className="flex flex-wrap sm:table-row bg-secondary/40 border-b border-border">
-            <th className="block sm:table-cell order-1 w-8 text-left px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+    <div className="rounded-[4px] border border-border overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead className="bg-secondary/40 border-b border-border">
+          <tr>
+            <th className="w-4 sm:w-8 text-left px-0.5 sm:px-2 py-1.5 text-[8px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-500">
               #
             </th>
-            <th className="block sm:table-cell order-2 flex-1 sm:w-auto min-w-[150px] text-left px-1 sm:px-2 py-1.5 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-500 truncate">
+            <th className="w-auto min-w-[80px] sm:min-w-[150px] text-left px-0.5 sm:px-2 py-1.5 text-[8px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-500 truncate">
               Product
             </th>
-            <th className="block sm:table-cell order-4 sm:order-none w-12 sm:w-16 text-center px-1 sm:px-2 py-1.5 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-500 whitespace-nowrap">
+            <th className="w-8 sm:w-16 text-center px-0.5 sm:px-2 py-1.5 text-[8px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-500 whitespace-nowrap">
               War
             </th>
-            <th className="block sm:table-cell order-5 sm:order-none w-16 sm:w-14 text-center px-1 sm:px-2 py-1.5 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-500 whitespace-nowrap">
+            <th className="w-10 sm:w-14 text-center px-0.5 sm:px-2 py-1.5 text-[8px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-500 whitespace-nowrap">
               Qty
             </th>
-            <th className="block sm:table-cell order-6 sm:order-none w-16 sm:w-16 text-right px-1 sm:px-2 py-1.5 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-500 whitespace-nowrap">
+            <th className="w-10 sm:w-16 text-right px-0.5 sm:px-2 py-1.5 text-[8px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-500 whitespace-nowrap">
               Disc
             </th>
-            <th className="block sm:table-cell order-7 sm:order-none flex-1 sm:flex-none sm:w-24 text-right px-1 sm:px-2 py-1.5 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-500 whitespace-nowrap">
+            <th className="w-14 sm:w-24 text-right px-0.5 sm:px-2 py-1.5 text-[8px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-500 whitespace-nowrap">
               Price
             </th>
-            <th className="block sm:table-cell order-8 sm:order-none flex-1 sm:flex-none sm:w-24 text-right px-1 sm:px-2 py-1.5 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-500 whitespace-nowrap">
+            <th className="w-14 sm:w-24 text-right px-0.5 sm:px-2 py-1.5 text-[8px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-500 whitespace-nowrap">
               Total
             </th>
-            <th className="block sm:table-cell order-3 sm:order-none w-8 sm:w-10 px-0 sm:px-1" />
+            <th className="w-6 sm:w-10 px-0.5 sm:px-1" />
           </tr>
         </thead>
-        <tbody className="block sm:table-row-group divide-y divide-border bg-card">
+        <tbody className="divide-y divide-border bg-card">
           {rows.map((row, idx) => {
             const product = row.originalProduct;
             const isTracked = product?.trackSerials ?? true;
@@ -254,17 +254,17 @@ export function InvoiceLineItems({
             );
 
             return (
-              <tr key={row.id} className="flex flex-wrap sm:table-row hover:bg-secondary/30 transition-colors border-b border-border/50 last:border-0 p-1 sm:p-0">
+              <tr key={row.id} className="hover:bg-secondary/30 transition-colors">
                 {/* Row number */}
-                <td className="block sm:table-cell order-1 w-8 px-2 py-1.5 text-[11px] text-slate-500 font-medium align-top">
+                <td className="w-4 sm:w-8 px-0.5 sm:px-2 py-1.5 text-[9px] sm:text-[11px] text-slate-500 font-medium align-top">
                   {idx + 1}
                 </td>
 
                 {/* Product name & serials */}
-                <td className="block sm:table-cell order-2 flex-1 sm:w-auto min-w-[150px] px-1 sm:px-2 sm:py-1.5 align-top">
+                <td className="w-auto min-w-[80px] sm:min-w-[150px] px-0.5 sm:px-2 py-1.5 align-top">
                   <div className="flex justify-between items-start gap-2">
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-slate-800 text-[12px] sm:text-[11px] leading-tight">
+                      <p className="font-semibold text-slate-800 text-[9px] sm:text-[11px] leading-tight">
                         {row.name}
                       </p>
 
@@ -274,7 +274,7 @@ export function InvoiceLineItems({
                             {row.serials.map((serial, i) => (
                               <span
                                 key={i}
-                                className="inline-flex items-center gap-0.5 bg-secondary/25 text-slate-800 text-[9px] font-semibold pl-1 pr-0.5 py-[1px] rounded-[2px] border border-border leading-none"
+                                className="inline-flex items-center gap-0.5 bg-secondary/25 text-slate-800 text-[7px] sm:text-[9px] font-semibold pl-1 pr-0.5 py-[1px] rounded-[2px] leading-none"
                               >
                                 {serial}
                                 <button
@@ -302,10 +302,7 @@ export function InvoiceLineItems({
                 </td>
 
                 {/* Warranty months */}
-                <td className="block sm:table-cell order-4 sm:order-none w-12 sm:w-16 px-1 py-1 sm:px-2 sm:py-1.5 align-top">
-                  <div className="flex justify-center">
-                    <div className="sm:hidden">{MarginPopover}</div>
-                  </div>
+                <td className="w-8 sm:w-16 px-0.5 sm:px-2 py-1.5 align-top">
                   <Input
                     type="number"
                     min={0}
@@ -315,13 +312,13 @@ export function InvoiceLineItems({
                       const val = parseInt(e.target.value);
                       onChangeWarranty(row.id, isNaN(val) ? 0 : val);
                     }}
-                    className="w-8 sm:w-10 h-6 text-[10px] sm:text-[11px] border-border bg-card rounded-[2px] text-center px-0.5 sm:px-1 mx-auto"
+                    className="w-7 sm:w-10 h-5 sm:h-6 text-[9px] sm:text-[11px] border-border bg-card rounded-[2px] text-center px-0 mx-auto [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     title="Customer Warranty (Months)"
                   />
                 </td>
 
                 {/* Qty stepper */}
-                <td className="block sm:table-cell order-5 sm:order-none w-16 sm:w-14 px-1 py-1 sm:px-2 sm:py-1.5 align-top">
+                <td className="w-10 sm:w-14 px-0.5 sm:px-2 py-1.5 align-top">
                   <div className="flex items-center justify-center gap-1">
                     <Input
                       type="number"
@@ -329,7 +326,7 @@ export function InvoiceLineItems({
                       min={1}
                       max={stock}
                       disabled={product?.isService}
-                      className="w-12 text-center h-6 text-[11px] font-semibold border-border bg-card rounded-[2px] px-1 disabled:opacity-50"
+                      className="w-9 sm:w-12 text-center h-5 sm:h-6 text-[9px] sm:text-[11px] font-semibold border-border bg-card rounded-[2px] px-0 disabled:opacity-50 mx-auto [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       onChange={(e) => {
                         const qty = Math.max(1, parseInt(e.target.value) || 1);
                         if (qty > stock) {
@@ -356,7 +353,7 @@ export function InvoiceLineItems({
                 </td>
 
                 {/* Discount */}
-                <td className="block sm:table-cell order-6 sm:order-none w-16 sm:w-16 px-1 py-1 sm:px-2 sm:py-1.5 align-top">
+                <td className="w-10 sm:w-16 px-0.5 sm:px-2 py-1.5 align-top">
                   <Input
                     name="row-discount"
                     type="number"
@@ -367,12 +364,12 @@ export function InvoiceLineItems({
                       onChangeDiscount?.(row.id, isNaN(val) ? 0 : val);
                     }}
                     placeholder="0.00"
-                    className="w-10 sm:w-14 h-6 text-[10px] sm:text-[11px] border-border bg-card rounded-[2px] text-right px-0.5 sm:px-1.5 mx-auto"
+                    className="w-9 sm:w-14 h-5 sm:h-6 text-[9px] sm:text-[11px] border-border bg-card rounded-[2px] text-right px-0.5 sm:px-1.5 mx-auto [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                 </td>
 
                 {/* Unit price */}
-                <td className="block sm:table-cell order-7 sm:order-none flex-1 sm:flex-none sm:w-24 px-1 py-1 sm:px-2 sm:py-1.5 text-right align-top">
+                <td className="w-14 sm:w-24 px-0.5 sm:px-2 py-1.5 text-right align-top">
                   {onChangePrice && product?.isService ? (
                     <Input
                       type="number"
@@ -386,31 +383,31 @@ export function InvoiceLineItems({
                       placeholder="0.00"
                     />
                   ) : (
-                    <span className="text-[10px] sm:text-[11px] text-slate-800 font-semibold tabular-nums block text-right mt-1 sm:mt-0">
+                    <span className="text-[9px] sm:text-[11px] text-slate-800 font-semibold tabular-nums block text-right break-all sm:break-normal">
                       {formatCurrency(row.price)}
                     </span>
                   )}
                 </td>
 
                 {/* Line total */}
-                <td className="block sm:table-cell order-8 sm:order-none flex-1 sm:flex-none sm:w-24 px-1 py-1 sm:px-2 sm:py-1.5 text-right align-top">
-                  <span className="font-bold text-slate-900 text-[10px] sm:text-[11px] tabular-nums block text-right mt-1 sm:mt-0">
+                <td className="w-14 sm:w-24 px-0.5 sm:px-2 py-1.5 text-right align-top">
+                  <span className="font-bold text-slate-900 text-[9px] sm:text-[11px] tabular-nums block text-right break-all sm:break-normal">
                     {formatCurrency(row.price * row.qty - (row.discount || 0))}
                   </span>
                 </td>
 
                 {/* Action column (Quick-View & Delete) */}
-                <td className="block sm:table-cell order-3 sm:order-none w-8 sm:w-10 px-0 sm:px-1 py-1 sm:py-1.5 text-right align-top">
-                  <div className="flex items-center justify-end gap-0.5 sm:gap-1">
+                <td className="w-6 sm:w-10 px-0 sm:px-1 py-1.5 text-right align-top">
+                  <div className="flex items-center justify-end gap-1">
                     <div className="hidden sm:block">{MarginPopover}</div>
 
                     <button
                       type="button"
                       onClick={() => onRemoveRow(row.id)}
-                      className="h-6 w-6 rounded-[2px] grid place-items-center text-slate-400 hover:text-destructive hover:bg-destructive/10 transition-colors"
+                      className="h-5 w-5 sm:h-6 sm:w-6 rounded-[2px] grid place-items-center text-slate-400 hover:text-destructive hover:bg-destructive/10 transition-colors"
                       title="Remove item"
                     >
-                      <X className="h-3.5 w-3.5" />
+                      <X className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                     </button>
                   </div>
                 </td>

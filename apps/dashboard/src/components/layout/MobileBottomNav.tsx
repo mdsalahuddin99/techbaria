@@ -22,6 +22,9 @@ import {
   Bell,
   Settings,
   ShieldCheck,
+  Sparkles,
+  Trash2,
+  HelpCircle,
 } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
 import {
@@ -73,7 +76,16 @@ const MORE_GROUPS: Array<{ label: string; items: Item[] }> = [
     items: [
       { to: "/dashboard/reports", label: "Reports", icon: BarChart3 },
       { to: "/dashboard/notifications", label: "Notifications", icon: Bell },
+    ],
+  },
+  {
+    label: "System",
+    items: [
       { to: "/dashboard/settings", label: "Settings", icon: Settings },
+      { to: "/dashboard/permissions", label: "Roles & Permissions", icon: ShieldCheck },
+      { to: "/dashboard/updates", label: "System Updates", icon: Sparkles },
+      { to: "/dashboard/trash", label: "Trash", icon: Trash2 },
+      { to: "/dashboard/help", label: "Help", icon: HelpCircle },
     ],
   },
 ];

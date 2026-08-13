@@ -98,6 +98,7 @@ export default function DashboardClient() {
       iconBgClass: "bg-emerald-100",
       iconColorClass: "text-emerald-600",
       subColorClass: undefined,
+      href: "/dashboard/reports",
     },
     {
       id: "orders",
@@ -109,6 +110,7 @@ export default function DashboardClient() {
       iconBgClass: "bg-purple-100",
       iconColorClass: "text-purple-600",
       subColorClass: undefined,
+      href: "/dashboard/sales",
     },
     {
       id: "low_stock",
@@ -120,6 +122,7 @@ export default function DashboardClient() {
       icon: AlertTriangle,
       iconBgClass: "bg-amber-100",
       iconColorClass: "text-amber-600",
+      href: "/dashboard/reports",
     },
     {
       id: "out_of_stock",
@@ -131,6 +134,7 @@ export default function DashboardClient() {
       icon: Package,
       iconBgClass: "bg-rose-100",
       iconColorClass: "text-rose-600",
+      href: "/dashboard/reports",
     },
     {
       id: "customers",
@@ -142,6 +146,7 @@ export default function DashboardClient() {
       icon: Users,
       iconBgClass: "bg-blue-100",
       iconColorClass: "text-blue-600",
+      href: "/dashboard/customers",
     },
   ] as const;
 
@@ -156,7 +161,7 @@ export default function DashboardClient() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
         <div>
           <h1 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            {greeting}, Mizan <span className="inline-block origin-[70%_70%] animate-[wave_2s_ease-in-out_infinite]">👋</span>
+            {greeting}, Tech Baria <span className="inline-block origin-[70%_70%] animate-[wave_2s_ease-in-out_infinite]">👋</span>
           </h1>
           <p className="text-sm text-slate-500 mt-1 font-medium">Here's what's happening with your store today.</p>
         </div>
@@ -172,11 +177,12 @@ export default function DashboardClient() {
       </div>
 
       {/* ── KPI metric cards ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2 sm:gap-4">
         {kpis.map((kpi, idx) => (
-          <div
+          <Link
+            href={kpi.href}
             key={kpi.id}
-            className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm flex flex-col"
+            className="bg-white rounded-xl border border-slate-200 p-3 sm:p-5 shadow-sm flex flex-col hover:shadow-md transition-shadow cursor-pointer block"
             style={{ animationDelay: `${idx * 50}ms` }}
           >
             <div className="flex items-center gap-3 mb-3">
@@ -198,7 +204,7 @@ export default function DashboardClient() {
                 <span className={kpi.subColorClass}>{kpi.sub}</span>
               )}
             </div>
-          </div>
+          </Link>
         ))}
       </div>
 

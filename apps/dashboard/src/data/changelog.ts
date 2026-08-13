@@ -8,6 +8,25 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "v1.2.3",
+    date: "2026-08-13",
+    features: [
+      "Updated POS product search dropdown display format to include Brand, Name, Model, and Series.",
+      "Added all missing 'System' navigation menus to the mobile bottom navigation drawer."
+    ],
+    improvements: [
+      "Redesigned the POS invoice table for mobile screens to fit within a single line and added horizontal scrolling.",
+      "Removed default up/down arrows from all POS number input fields (Qty, Discount, Warranty) to maximize space.",
+      "Optimized Dashboard KPI metric cards to display in a 2-column grid layout on mobile.",
+      "Made Dashboard KPI metric cards fully clickable, automatically redirecting to relevant reports or pages.",
+      "Personalized dashboard greeting to display the project name 'Tech Baria'."
+    ],
+    fixes: [
+      "Fixed `SupplierPayment` hook parameter typo (`data.notes` to `data.note`) preventing application build.",
+      "Resolved mobile login issue by properly configuring `AUTH_URL` and `AUTH_TRUST_HOST` for local network access."
+    ]
+  },
+  {
     version: "v1.2.2",
     date: "2026-08-09",
     features: [

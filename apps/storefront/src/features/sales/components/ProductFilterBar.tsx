@@ -235,18 +235,17 @@ export function ProductFilterBar({
                     >
                       <div className="min-w-0">
                         <p className="text-sm font-medium text-slate-700 truncate">
-                          {p.name}
-                        </p>
-                        <p className="text-[11px] text-slate-400">
                           {[
-                            p.globalBrand?.name,
-                            p.globalModel?.name,
-                            typeof p.brand === "object" && p.brand ? (p.brand as any).name : p.brand,
-                            typeof p.model === "object" && p.model ? (p.model as any).name : p.model,
+                            p.globalBrand?.name || (typeof p.brand === "object" && p.brand ? (p.brand as any).name : p.brand),
+                            p.name,
+                            p.globalModel?.name || (typeof p.model === "object" && p.model ? (p.model as any).name : p.model),
+                            (p as any).globalSeries?.name || (typeof p.series === "object" && p.series ? (p.series as any).name : p.series),
                           ]
                             .filter(Boolean)
-                            .join(" ")}{" "}
-                          &bull; SKU: {p.sku}
+                            .join(" ")}
+                        </p>
+                        <p className="text-[11px] text-slate-400">
+                          SKU: {p.sku}
                         </p>
                       </div>
                       <div className="text-right shrink-0 ml-3">
