@@ -54,9 +54,10 @@ export const salesAccounting = {
       // Fetch current customer state for ledger snapshots
       const cust = await tx.customer.findUniqueOrThrow({
         where: { id: customerId },
-        select: { due: true, creditLimit: true },
+        select: { due: true, creditLimit: true, balance: true },
       });
       let runningDue = Number(cust.due);
+      const currentBalance = Number(cust.balance);
 
       // Revert old due — create a compensating ADJUSTMENT ledger entry
       if (oldDue > 0) {
@@ -71,11 +72,11 @@ export const salesAccounting = {
             customerId,
             type: "ADJUSTMENT",
             amount: -oldDue, // negative = due reduced
-            balanceBefore: runningDue,
-            balanceAfter: dueAfterRevert,
+            balanceBefore: currentBalance,
+            balanceAfter: currentBalance, // SALE/ADJUSTMENT on due doesn't affect wallet balance
             saleId: sale.id,
             reference: `EDIT-${sale.id.slice(0, 8).toUpperCase()}`,
-            notes: `Sale edited — old due ৳${oldDue} reversed`,
+            notes: `Sale edited — old due ৳${oldDue} reversed (Due changed: ${runningDue} -> ${dueAfterRevert})`,
             createdById: ctx.userId,
           },
         });
@@ -102,11 +103,11 @@ export const salesAccounting = {
             customerId,
             type: "SALE",
             amount: due,
-            balanceBefore: runningDue,
-            balanceAfter: newDue,
+            balanceBefore: currentBalance,
+            balanceAfter: currentBalance,
             saleId: sale.id,
             reference: `EDIT-${sale.id.slice(0, 8).toUpperCase()}`,
-            notes: `Sale edited — new due ৳${due}`,
+            notes: `Sale edited — new due ৳${due} (Due changed: ${runningDue} -> ${newDue})`,
             createdById: ctx.userId,
           },
         });
@@ -114,11 +115,12 @@ export const salesAccounting = {
     } else if (due > 0) {
       const cust = await tx.customer.findUniqueOrThrow({
         where: { id: customerId },
-        select: { due: true, creditLimit: true },
+        select: { due: true, creditLimit: true, balance: true },
       });
       const currentDue = Number(cust.due);
       const newDue = math.add(currentDue, due);
       const creditLimit = Number(cust.creditLimit);
+      const currentBalance = Number(cust.balance);
  
       if (creditLimit > 0 && newDue > creditLimit) {
         throw new ServiceError(
@@ -138,10 +140,11 @@ export const salesAccounting = {
           customerId: customerId,
           type: "SALE",
           amount: due,
-          balanceBefore: currentDue,
-          balanceAfter: newDue,
+          balanceBefore: currentBalance,
+          balanceAfter: currentBalance,
           saleId: sale.id,
           reference: `SALE-${sale.id.slice(0, 8).toUpperCase()}`,
+          notes: `Sale generated due ৳${due} (Due changed: ${currentDue} -> ${newDue})`,
           createdById: ctx.userId,
         },
       });
@@ -159,8 +162,9 @@ export const salesAccounting = {
   ): Promise<void> {
     const cust = await tx.customer.findUniqueOrThrow({
       where: { id: customerId },
-      select: { due: true },
+      select: { due: true, balance: true },
     });
+    const currentBalance = Number(cust.balance);
 
     if (isDelete) {
       await tx.customer.update({
@@ -172,12 +176,12 @@ export const salesAccounting = {
         data: {
           customerId: customerId,
           type: "ADJUSTMENT",
-          amount: dueAmount,
-          balanceBefore: 0,
-          balanceAfter: 0,
+          amount: dueAmount, // or -dueAmount, though usually ADJUSTMENT is signed
+          balanceBefore: currentBalance,
+          balanceAfter: currentBalance,
           saleId,
           reference: `DELETE-${saleId.slice(0, 8).toUpperCase()}`,
-          notes: "Sale deleted",
+          notes: `Sale deleted — due ৳${dueAmount} reversed`,
           createdById: ctx.userId,
         },
       });

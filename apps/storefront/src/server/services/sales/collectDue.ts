@@ -41,12 +41,8 @@ export async function collectDue(ctx: Ctx, saleId: string, input: CollectDueInpu
       throw new ServiceError("VALIDATION", "This sale has no due", 400);
     }
 
-    if (input.amount > currentDue) {
-      throw new ServiceError(
-        "VALIDATION",
-        `Payment amount (${input.amount}) exceeds the remaining due (${currentDue})`,
-        400
-      );
+    if (currentDue <= 0) {
+      throw new ServiceError("VALIDATION", "This sale has no due", 400);
     }
 
     // 2. Validate account
@@ -58,8 +54,11 @@ export async function collectDue(ctx: Ctx, saleId: string, input: CollectDueInpu
     }
 
     // 3. Update Sale
-    const newPaid = math.add(currentPaid, input.amount);
-    const newDue = math.sub(currentDue, input.amount);
+    const appliedAmount = Math.min(currentDue, input.amount);
+    const overpayment = math.sub(input.amount, appliedAmount);
+
+    const newPaid = math.add(currentPaid, appliedAmount);
+    const newDue = math.sub(currentDue, appliedAmount);
 
     const updatedSale = await tx.sale.update({
       where: { id: saleId },
@@ -69,7 +68,7 @@ export async function collectDue(ctx: Ctx, saleId: string, input: CollectDueInpu
         tenders: {
           create: {
             type: mapPaymentMethodToTenderType(input.type),
-            amount: input.amount,
+            amount: appliedAmount,
             accountId: input.accountId,
             ref: `DUE-COLLECT`,
           },
@@ -88,15 +87,20 @@ export async function collectDue(ctx: Ctx, saleId: string, input: CollectDueInpu
     if (sale.customerId) {
       const cust = await tx.customer.findUniqueOrThrow({
         where: { id: sale.customerId },
-        select: { due: true },
+        select: { due: true, balance: true },
       });
       
       const runningDue = Number(cust.due);
-      const newCustomerDue = Math.max(0, math.sub(runningDue, input.amount));
+      const newCustomerDue = Math.max(0, math.sub(runningDue, appliedAmount));
+
+      let newBalance = Number(cust.balance);
+      if (overpayment > 0) {
+        newBalance = math.add(newBalance, overpayment);
+      }
 
       await tx.customer.update({
         where: { id: sale.customerId },
-        data: { due: newCustomerDue },
+        data: { due: newCustomerDue, balance: newBalance },
       });
 
       // Log payment in customer transaction ledger
@@ -106,12 +110,12 @@ export async function collectDue(ctx: Ctx, saleId: string, input: CollectDueInpu
           customerId: sale.customerId,
           type: "PAYMENT",
           amount: input.amount,
-          balanceBefore: runningDue,
-          balanceAfter: newCustomerDue,
+          balanceBefore: Number(cust.balance),
+          balanceAfter: newBalance,
           saleId: sale.id,
           accountId: input.accountId,
           reference: `COLLECT-${sale.id.slice(0, 8).toUpperCase()}`,
-          notes: input.notes || `Collected due for Invoice ${invoiceNo}`,
+          notes: input.notes || `Collected due for Invoice ${invoiceNo}` + (overpayment > 0 ? ` (Overpayment: ৳${overpayment})` : ""),
           createdById: ctx.userId,
         },
       });

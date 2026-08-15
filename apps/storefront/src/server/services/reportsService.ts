@@ -160,8 +160,10 @@ export const reportsService = {
       }
       
       const methodStr = sale.tenders?.[0]?.type === "CASH" ? "Cash" 
-                      : sale.tenders?.[0]?.type === "CARD" ? "Card" 
-                      : (sale.tenders?.[0]?.type === "BKASH" || sale.tenders?.[0]?.type === "NAGAD") ? "Mobile Banking" 
+                      : sale.tenders?.[0]?.type === "CARD" || sale.tenders?.[0]?.type === "BANK" ? "Card" 
+                      : (sale.tenders?.[0]?.type === "BKASH" || sale.tenders?.[0]?.type === "NAGAD" || sale.tenders?.[0]?.type === "ROCKET") ? "Mobile Banking" 
+                      : sale.tenders?.[0]?.type === "DUE" ? "Due"
+                      : sale.tenders?.[0]?.type === "WALLET" ? "Wallet"
                       : "Other";
       byMethodMap[methodStr] = (byMethodMap[methodStr] || 0) + Number(sale.total);
     });

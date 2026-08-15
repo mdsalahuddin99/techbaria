@@ -144,6 +144,8 @@ export const shiftsService = {
         Cash: 0,
         Card: 0,
         "Mobile Banking": 0,
+        Due: 0,
+        Wallet: 0,
       };
 
       for (const sale of sales) {
@@ -155,10 +157,14 @@ export const shiftsService = {
               const change = Math.max(0, Number(sale.paid) - Number(sale.total));
               cashIn += Math.max(0, amount - change);
               salesTotals.Cash += Math.max(0, amount - change);
-            } else if (t.type === "CARD") {
+            } else if (t.type === "CARD" || t.type === "BANK") {
               salesTotals.Card += amount;
             } else if (["BKASH", "NAGAD", "ROCKET"].includes(t.type)) {
               salesTotals["Mobile Banking"] += amount;
+            } else if (t.type === "DUE") {
+              salesTotals.Due += amount;
+            } else if (t.type === "WALLET") {
+              salesTotals.Wallet += amount;
             }
           }
         } else if (sale.status === "REFUNDED") {

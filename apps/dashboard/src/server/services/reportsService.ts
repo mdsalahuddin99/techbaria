@@ -189,8 +189,10 @@ export const reportsService = {
     rawMethodData.forEach(row => {
       const type = row.type;
       const methodStr = type === "CASH" ? "Cash" 
-                      : type === "CARD" ? "Card" 
-                      : (type === "BKASH" || type === "NAGAD") ? "Mobile Banking" 
+                      : type === "CARD" || type === "BANK" ? "Card" 
+                      : (type === "BKASH" || type === "NAGAD" || type === "ROCKET") ? "Mobile Banking" 
+                      : type === "DUE" ? "Due"
+                      : type === "WALLET" ? "Wallet"
                       : "Other";
       byMethodMap[methodStr] = (byMethodMap[methodStr] || 0) + Number(row.total);
     });

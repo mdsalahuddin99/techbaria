@@ -123,7 +123,8 @@ function mapTenderTypeToPaymentMethod(type: string): PaymentMethod {
     NAGAD: "Mobile Banking",
     ROCKET: "Mobile Banking",
     CARD: "Card",
-    DUE: "Cash",
+    DUE: "Due",
+    WALLET: "Wallet",
   };
   return map[type] ?? "Cash";
 }

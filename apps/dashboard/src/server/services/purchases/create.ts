@@ -186,8 +186,8 @@ export async function create(ctx: Ctx, input: PurchaseCreateInput) {
       });
     }
 
-    const walletTenders = (input.tenders ?? []).filter(t => t.type === "WALLET" || t.type === "Wallet");
-    const accountTenders = (input.tenders ?? []).filter(t => t.type !== "WALLET" && t.type !== "Wallet" && t.accountId && t.amount > 0);
+    const walletTenders = (input.tenders ?? []).filter(t => t.type === "WALLET");
+    const accountTenders = (input.tenders ?? []).filter(t => t.type !== "WALLET" && t.accountId && t.amount > 0);
 
     // Deduct from Supplier advance
     if (walletTenders.length > 0 && input.supplierId) {

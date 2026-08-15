@@ -25,7 +25,10 @@ export async function update(ctx: Ctx, id: string, input: PurchaseUpdateInput) {
       id: true,
       invoiceNo: true,
       paid: true,
+      due: true,
+      supplierId: true,
       warehouseId: true,
+      expense: { select: { id: true } },
       items: { select: { productId: true, qty: true } },
     },
   });
@@ -105,12 +108,26 @@ export async function update(ctx: Ctx, id: string, input: PurchaseUpdateInput) {
         total,
         paid,
         due,
+        extraCost: input.extraCost ?? 0,
+        expense: (input.extraCost ?? 0) > 0 
+          ? {
+              upsert: {
+                create: {
+                  category: "Purchase Extra Cost",
+                  amount: input.extraCost!,
+                  notes: `Extra cost for Purchase`
+                },
+                update: {
+                  amount: input.extraCost!,
+                }
+              }
+            }
+          : existing.expense ? { delete: true } : undefined,
         items: {
           create: input.items.map((item) => ({
             productId: item.productId,
             qty: item.qty,
             cost: item.cost,
-            extraCost: item.extraCost,
             name: item.name,
             salePrice: item.salePrice,
             serials: item.serials ?? [],
@@ -121,6 +138,29 @@ export async function update(ctx: Ctx, id: string, input: PurchaseUpdateInput) {
       },
       include: { items: true, tenders: true, supplier: true },
     });
+
+    // Update supplier payable if due changed
+    const netDueChange = math.sub(due, Number(existing.due || 0));
+    const finalSupplierId = input.supplierId || existing.supplierId;
+    if (netDueChange !== 0 && finalSupplierId) {
+      if (input.supplierId && input.supplierId !== existing.supplierId && existing.supplierId) {
+        // Decrease from old
+        await tx.supplier.update({
+          where: { id: existing.supplierId },
+          data: { payable: { decrement: Number(existing.due || 0) } }
+        });
+        // Increase to new
+        await tx.supplier.update({
+          where: { id: input.supplierId },
+          data: { payable: { increment: due } }
+        });
+      } else {
+        await tx.supplier.update({
+          where: { id: finalSupplierId },
+          data: { payable: { increment: netDueChange } }
+        });
+      }
+    }
 
     // 5. Get fresh items + create new serials
     const freshItems = await tx.purchaseItem.findMany({

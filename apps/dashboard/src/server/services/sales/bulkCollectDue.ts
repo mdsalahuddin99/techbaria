@@ -52,7 +52,8 @@ export async function bulkCollectDue(ctx: Ctx, input: BulkCollectDueInput): Prom
     }
     
     if (input.amount > currentCustomerDue) {
-      throw new ServiceError("VALIDATION", `Payment amount (${input.amount}) exceeds total due (${currentCustomerDue})`, 400);
+      // In bulk collect, we will accept overpayment, but let's log a warning or just let it pass
+      // Actually we will allow it to be stored as advance, so no error here.
     }
 
     // 2. Validate account
@@ -136,7 +137,13 @@ export async function bulkCollectDue(ctx: Ctx, input: BulkCollectDueInput): Prom
     }
 
     // 5. Update Customer due and balance
-    const newCustomerDue = Math.max(0, math.sub(currentCustomerDue, input.amount));
+    const appliedAmount = math.sub(input.amount, remainingAmount);
+    const newCustomerDue = Math.max(0, math.sub(currentCustomerDue, appliedAmount));
+    
+    // If there is an overpayment (or unused wallet amount), add it back to customer balance
+    if (remainingAmount > 0) {
+      customerBalance = math.add(customerBalance, remainingAmount);
+    }
     
     await tx.customer.update({
       where: { id: input.customerId },
@@ -148,12 +155,12 @@ export async function bulkCollectDue(ctx: Ctx, input: BulkCollectDueInput): Prom
       data: {
         customerId: input.customerId,
         type: "PAYMENT",
-        amount: input.amount,
-        balanceBefore: isWallet ? Number(customer.balance) : currentCustomerDue,
-        balanceAfter: isWallet ? customerBalance : newCustomerDue,
+        amount: input.amount, // Log the full input amount
+        balanceBefore: Number(customer.balance), // Always actual wallet balance
+        balanceAfter: customerBalance,
         accountId: isWallet ? undefined : input.accountId,
         reference: bulkRef,
-        notes: input.notes || `Bulk collected due across ${invoicesAffected.length} invoices` + (isWallet ? ' from wallet' : ''),
+        notes: input.notes || `Bulk collected due across ${invoicesAffected.length} invoices` + (isWallet ? ' from wallet' : '') + (remainingAmount > 0 && !isWallet ? ` (Overpayment: ৳${remainingAmount})` : ''),
         createdById: ctx.userId,
       },
     });

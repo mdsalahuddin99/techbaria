@@ -25,6 +25,8 @@ export async function update(ctx: Ctx, id: string, input: PurchaseUpdateInput) {
       id: true,
       invoiceNo: true,
       paid: true,
+      due: true,
+      supplierId: true,
       warehouseId: true,
       expense: { select: { id: true } },
       items: { select: { productId: true, qty: true } },
@@ -148,6 +150,31 @@ export async function update(ctx: Ctx, id: string, input: PurchaseUpdateInput) {
       },
       include: { items: true, tenders: true, supplier: true },
     });
+
+    // Update supplier payable if due changed
+    const netDueChange = math.sub(due, Number(existing.due || 0));
+    const finalSupplierId = input.supplierId || existing.supplierId;
+    if (netDueChange !== 0 && finalSupplierId) {
+      // If supplier changed, this might be more complex, but assuming supplierId rarely changes
+      // or we just update the final supplier. Properly we should deduct from old and add to new.
+      if (input.supplierId && input.supplierId !== existing.supplierId && existing.supplierId) {
+        // Decrease from old
+        await tx.supplier.update({
+          where: { id: existing.supplierId },
+          data: { payable: { decrement: Number(existing.due || 0) } }
+        });
+        // Increase to new
+        await tx.supplier.update({
+          where: { id: input.supplierId },
+          data: { payable: { increment: due } }
+        });
+      } else {
+        await tx.supplier.update({
+          where: { id: finalSupplierId },
+          data: { payable: { increment: netDueChange } }
+        });
+      }
+    }
 
     // 5. Get fresh items + create new serials
     const freshItems = await tx.purchaseItem.findMany({

@@ -34,13 +34,17 @@ export async function addPayment(ctx: Ctx, id: string, payment: {
   }
 
   await prisma.$transaction(async (tx) => {
+    const currentDue = Math.max(0, Number(purchase.total) - Number(purchase.paid));
+    const appliedAmount = Math.min(payment.amount, currentDue);
+    const overpayment = Math.max(0, payment.amount - appliedAmount);
+
     // Create the tender record
     await tx.purchaseTender.create({
       data: {
         purchaseId: id,
         type: mapPaymentMethodToTenderType(payment.method),
-        amount: payment.amount,
-        accountId: payment.accountId,
+        amount: appliedAmount, // Only apply up to the due amount
+        accountId: payment.accountId === "WALLET" ? undefined : payment.accountId,
         ref: payment.note,
       },
     });
@@ -51,10 +55,43 @@ export async function addPayment(ctx: Ctx, id: string, payment: {
         where: { id: payment.accountId },
         data: { balance: { decrement: payment.amount } },
       });
+
+      // If overpayment, add it to supplier advance balance
+      if (overpayment > 0) {
+        const rawPurchase = await tx.purchase.findFirst({
+          where: { id },
+          select: { supplierId: true, invoiceNo: true },
+        });
+        if (rawPurchase?.supplierId) {
+          const supp = await tx.supplier.findUnique({
+            where: { id: rawPurchase.supplierId },
+            select: { advanceBalance: true }
+          });
+          const currentAdvance = Number(supp?.advanceBalance || 0);
+          const newAdvance = currentAdvance + overpayment;
+          
+          await tx.supplier.update({
+            where: { id: rawPurchase.supplierId },
+            data: { advanceBalance: newAdvance }
+          });
+          
+          await tx.supplierTransaction.create({
+            data: {
+              supplierId: rawPurchase.supplierId,
+              type: "PAYMENT", // or ADJUSTMENT
+              amount: overpayment,
+              balanceBefore: currentAdvance,
+              balanceAfter: newAdvance,
+              purchaseId: id,
+              notes: `Overpayment on purchase invoice ${rawPurchase.invoiceNo || id.slice(0, 8)} added to advance`
+            }
+          });
+        }
+      }
     }
 
     // Update purchase paid + due
-    const newPaid = Number(purchase.paid) + payment.amount;
+    const newPaid = Number(purchase.paid) + appliedAmount;
     const newDue = Math.max(0, Number(purchase.total) - newPaid);
     await tx.purchase.update({
       where: { id },

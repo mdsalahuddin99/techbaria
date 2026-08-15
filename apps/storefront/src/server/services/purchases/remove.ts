@@ -98,6 +98,46 @@ export async function remove(ctx: Ctx, id: string) {
       }
     }
 
+    // ── 3.5. Refund paid amounts ──────────────────────────────────────────────
+    if (purchase.tenders.length > 0) {
+      for (const tender of purchase.tenders) {
+        if (!tender.accountId && tender.type === "WALLET") {
+          // Refund to supplier advance
+          if (purchase.supplierId) {
+            const supp = await tx.supplier.findUnique({
+              where: { id: purchase.supplierId },
+              select: { advanceBalance: true }
+            });
+            const currentAdvance = Number(supp?.advanceBalance || 0);
+            const newAdvance = currentAdvance + Number(tender.amount);
+            
+            await tx.supplier.update({
+              where: { id: purchase.supplierId },
+              data: { advanceBalance: newAdvance }
+            });
+            
+            await tx.supplierTransaction.create({
+              data: {
+                supplierId: purchase.supplierId,
+                type: "REFUND", // or WRITE_OFF
+                amount: tender.amount,
+                balanceBefore: currentAdvance,
+                balanceAfter: newAdvance,
+                purchaseId: purchase.id,
+                notes: `Advance refunded from deleted purchase invoice ${purchase.invoiceNo || purchase.id.slice(0, 8)}`
+              }
+            });
+          }
+        } else if (tender.accountId) {
+          // Refund to financial account
+          await tx.financialAccount.update({
+            where: { id: tender.accountId },
+            data: { balance: { increment: tender.amount } },
+          });
+        }
+      }
+    }
+
     // ── 4. Delete the purchase (cascades to items, tenders, supplierTransactions) ──
     await tx.purchase.delete({ where: { id } });
   }, { timeout: 30000 });
