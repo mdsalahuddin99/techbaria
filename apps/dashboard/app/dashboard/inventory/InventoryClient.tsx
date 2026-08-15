@@ -23,7 +23,10 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/shared/ui/alert-dialog";
 import { formatCurrency, formatDateTime } from "@/shared/lib/format";
-import { Search, Plus, History, Pencil, Trash2, PackagePlus, Tag, Check, X, ScanLine, Printer, ChevronRight, CornerDownRight, Boxes, Layers, Info } from "lucide-react";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from "@/shared/ui/dropdown-menu";
+import { Search, Plus, History, Pencil, Trash2, PackagePlus, Tag, Check, X, ScanLine, Printer, ChevronRight, CornerDownRight, Boxes, Layers, Info, Download, Share2 } from "lucide-react";
 import { Switch } from "@/shared/ui/switch";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/shared/ui/collapsible";
 import { AdjustmentType, Product, Category, ProductCondition, StockAdjustment } from "@/shared/lib/types";
@@ -85,19 +88,38 @@ export function InventoryClient({
 
   const warehouseProducts = useMemo(() => {
     if (!selectedWarehouseId || selectedWarehouseId === "all") return products;
-    return products.map(p => {
-      const wStock = p.warehouseStocks?.find((w: any) => w.warehouseId === selectedWarehouseId);
-      return {
-        ...p,
-        stock: wStock ? Number(wStock.qty) : 0,
-      };
-    });
-  }, [products, selectedWarehouseId]);
+    
+    // Identify the default warehouse (usually the first one, or "Main Showroom")
+    const defaultWarehouseId = warehouses[0]?.id;
+    const isDefaultWarehouse = selectedWarehouseId === defaultWarehouseId;
+
+    return products
+      .filter(p => {
+        const hasAnyWarehouseRecord = p.warehouseStocks && p.warehouseStocks.length > 0;
+        const hasRecordForSelected = p.warehouseStocks?.some((w: any) => w.warehouseId === selectedWarehouseId);
+        
+        // If it explicitly exists in the selected warehouse, show it
+        if (hasRecordForSelected) return true;
+        
+        // If it doesn't have ANY warehouse records, assume it's in the default warehouse
+        if (!hasAnyWarehouseRecord && isDefaultWarehouse) return true;
+        
+        return false;
+      })
+      .map(p => {
+        const wStock = p.warehouseStocks?.find((w: any) => w.warehouseId === selectedWarehouseId);
+        return {
+          ...p,
+          stock: wStock ? Number(wStock.qty) : (isDefaultWarehouse ? Number(p.stock ?? 0) : 0),
+        };
+      });
+  }, [products, selectedWarehouseId, warehouses]);
 
   const outCount = warehouseProducts.filter(p => p.stock === 0).length;
 
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<string>("All");
+  const [categoryFilter, setCategoryFilter] = useState<string>("__ALL__");
 
   // Adjustment dialog
   const [adjOpen, setAdjOpen] = useState(false);
@@ -206,12 +228,6 @@ export function InventoryClient({
   const filtered = useMemo(() => {
     return warehouseProducts.filter((p) => {
       const reorder = effectiveReorderPoint(p);
-      const matchesFilter =
-        filter === "All" ||
-        (filter === "Low" && p.stock > 0 && p.stock <= reorder) ||
-        (filter === "Out" && p.stock === 0) ||
-        (filter === "OK" && p.stock > reorder) ||
-        (filter === "Reorder" && p.type !== "bundle" && p.stock <= reorder);
       const q = search.toLowerCase();
       const matchesSearch =
         (p.name || "").toLowerCase().includes(q) || 
@@ -219,14 +235,130 @@ export function InventoryClient({
         (p.brand || "").toLowerCase().includes(q) ||
         (p.model || "").toLowerCase().includes(q) ||
         (p.category || "").toLowerCase().includes(q);
-      return matchesFilter && matchesSearch;
-    });
-  }, [warehouseProducts, search, filter]);
 
-  const isFilterEmpty = !search.trim() && filter === "All";
+      const matchesFilter =
+        filter === "All"
+          ? true
+          : filter === "Low"
+          ? p.stock > 0 && p.stock <= reorder
+          : filter === "Reorder"
+          ? p.stock <= reorder
+          : filter === "Out"
+          ? p.stock === 0
+          : p.stock > reorder;
+
+      const matchesCategory = categoryFilter === "__ALL__" || (p.category && p.category.toLowerCase() === categoryFilter.toLowerCase());
+
+      return matchesFilter && matchesSearch && matchesCategory;
+    });
+  }, [warehouseProducts, search, filter, categoryFilter]);
+
+  const isFilterEmpty = !search.trim() && filter === "All" && categoryFilter === "__ALL__";
   const displayedProducts = isFilterEmpty ? filtered.slice(0, 5) : filtered;
 
+  const ensureHtml2Canvas = (): Promise<any> => {
+    return new Promise((resolve, reject) => {
+      if ((window as any).html2canvas) return resolve((window as any).html2canvas);
+      const script = document.createElement("script");
+      script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
+      script.onload = () => resolve((window as any).html2canvas);
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
+  };
 
+  const getHtmlContent = () => `
+    <html>
+      <head>
+        <title>Price List</title>
+        <style>
+          body { font-family: system-ui, -apple-system, sans-serif; padding: 20px; color: #1e293b; background: white; }
+          h2 { text-align: center; margin-bottom: 5px; font-size: 24px; text-transform: uppercase; letter-spacing: 1px; color: #0f172a; }
+          .date { text-align: center; color: #64748b; font-size: 13px; margin-bottom: 30px; font-weight: 500; }
+          table { width: 100%; border-collapse: collapse; font-size: 14px; }
+          th, td { border-bottom: 1px solid #e2e8f0; padding: 12px 16px; text-align: left; }
+          th { color: #475569; text-transform: uppercase; font-size: 12px; font-weight: 700; border-bottom: 2px solid #e2e8f0; }
+          td.right, th.right { text-align: right; }
+          @page { margin: 15mm; }
+        </style>
+      </head>
+      <body>
+        <h2>Product Price List</h2>
+        <div class="date">Generated on: ${new Date().toLocaleDateString('en-GB')}</div>
+        <table>
+          <thead>
+            <tr><th>Product Name</th><th>Category</th><th class="right">Price</th></tr>
+          </thead>
+          <tbody>
+            ${filtered.map(p => `<tr><td>${p.name} ${p.brand || ''} ${p.model || ''}</td><td>${p.category || '-'}</td><td class="right">${formatCurrency(p.price)}</td></tr>`).join('')}
+          </tbody>
+        </table>
+      </body>
+    </html>
+  `;
+
+  const printListDirectly = () => {
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    document.body.appendChild(iframe);
+    
+    const content = getHtmlContent() + '<script>window.onload = () => { setTimeout(() => { window.print(); }, 500); }</script>';
+    
+    const doc = iframe.contentWindow?.document;
+    if (doc) {
+      doc.open();
+      doc.write(content);
+      doc.close();
+    }
+    setTimeout(() => { if (document.body.contains(iframe)) document.body.removeChild(iframe); }, 10000);
+  };
+
+  const downloadJpgDirectly = async () => {
+    const toastId = toast.loading("Generating JPG...");
+    try {
+      const html2canvas = await ensureHtml2Canvas();
+      const container = document.createElement("div");
+      container.style.position = "absolute";
+      container.style.left = "-9999px";
+      container.style.top = "0";
+      container.style.width = "800px";
+      container.innerHTML = getHtmlContent();
+      document.body.appendChild(container);
+      
+      const canvas = await html2canvas(container, { scale: 2, useCORS: true, logging: false });
+      const a = document.createElement("a");
+      a.href = canvas.toDataURL("image/jpeg", 0.95);
+      a.download = "PriceList.jpg";
+      a.click();
+      
+      document.body.removeChild(container);
+      toast.success("JPG Downloaded", { id: toastId });
+    } catch (e) {
+      toast.error("Failed to generate JPG", { id: toastId });
+    }
+  };
+
+  const shareListDirectly = async () => {
+    if (navigator.share) {
+      let text = "*📦 PRODUCT PRICE LIST*\\n\\n";
+      filtered.forEach(p => {
+        text += `▪️ ${p.name} ${p.brand || ''} ${p.model || ''}`.trim() + "\\n";
+        text += `   Price: ${formatCurrency(p.price)}\\n\\n`;
+      });
+      try {
+        await navigator.share({ title: 'Product Price List', text });
+      } catch (err) {
+        console.log("Error sharing", err);
+      }
+    } else {
+      toast.error("Sharing is not supported on this device/browser.");
+    }
+  };
 
   // Category management
   const [newCatName, setNewCatName] = useState("");
@@ -302,30 +434,20 @@ export function InventoryClient({
     }
   };
 
-  const renderTabsList = () => (
-    <TabsList className="bg-gray-50/50 border border-gray-100 p-1 h-auto flex w-full justify-between sm:justify-start sm:w-auto">
-      <TabsTrigger value="overview" className="flex-1 sm:flex-none px-2 sm:px-4 py-1.5 text-[11px] sm:text-sm">Overview</TabsTrigger>
-      {!filterOnlineOnly && (
-        <>
-          <TabsTrigger value="categories" className="flex-1 sm:flex-none px-2 sm:px-4 py-1.5 text-[11px] sm:text-sm"><Tag className="hidden sm:inline-block h-3.5 w-3.5 mr-1" />Categories</TabsTrigger>
-          <TabsTrigger value="adjustments" className="flex-1 sm:flex-none px-2 sm:px-4 py-1.5 text-[11px] sm:text-sm"><History className="hidden sm:inline-block h-3.5 w-3.5 mr-1" />Adjustments</TabsTrigger>
-        </>
-      )}
-    </TabsList>
-  );
+  const renderTabsList = () => null; // Tabs removed as per request
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-3 sm:gap-4">
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-900 via-slate-800 to-indigo-950 p-4 sm:p-5 shadow-xl xl:col-span-1 flex flex-col justify-center">
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-900 via-slate-800 to-indigo-950 p-3 sm:p-4 shadow-xl xl:col-span-1 flex flex-col justify-center">
           <div className="absolute inset-0 bg-[url('/noise.svg')] opacity-10 mix-blend-overlay" />
           <div className="absolute -top-10 -right-10 h-40 w-40 bg-indigo-500/20 blur-[60px] rounded-full" />
           <div className="relative z-10">
-            <h1 className="text-lg sm:text-xl font-bold tracking-tight text-white mb-2 relative z-10 flex items-center gap-2">
+            <h1 className="text-base sm:text-lg font-bold tracking-tight text-white mb-1 relative z-10 flex items-center gap-2">
               <Layers className="h-5 w-5 text-indigo-300" />
               {filterOnlineOnly ? "E-commerce Catalog" : "Inventory Command Center"}
             </h1>
-            <p className="text-xs sm:text-sm text-indigo-100/90 relative z-10 leading-relaxed font-medium">
+            <p className="text-[11px] sm:text-xs text-indigo-100/90 relative z-10 leading-relaxed font-medium">
               {filterOnlineOnly 
                 ? "Manage published products and track availability."
                 : "Track stock value, categories, and audit adjustments."}
@@ -341,12 +463,21 @@ export function InventoryClient({
       <Tabs defaultValue="overview">
         <TabsContent value="overview" className="space-y-4 m-0">
           <Card className="p-2 sm:p-3 flex flex-col xl:flex-row gap-2 sm:gap-3 items-start xl:items-center">
-            {renderTabsList()}
-            <div className="h-4 w-px bg-border hidden xl:block" />
             <div className="flex-1 flex flex-col sm:flex-row w-full gap-2 sm:gap-3">
-              <div className="relative flex-1 min-w-[200px]">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Search by name, SKU, brand, or category…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-9 sm:h-10 text-sm" />
+              <div className="flex flex-1 gap-2 min-w-[200px]">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input placeholder="Search name, SKU, brand…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-9 sm:h-10 text-sm" />
+                </div>
+                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                  <SelectTrigger className="w-32 sm:w-40 h-9 sm:h-10 text-xs sm:text-sm"><SelectValue placeholder="Category" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__ALL__">All Categories</SelectItem>
+                    {categories.map(c => (
+                      <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               
               <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -370,6 +501,28 @@ export function InventoryClient({
                     <SelectItem value="Out">Out of stock</SelectItem>
                   </SelectContent>
                 </Select>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="h-9 sm:h-10 px-3 sm:px-4 shrink-0 text-slate-700">
+                      <Printer className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Price List</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem onClick={printListDirectly}>
+                      <Printer className="mr-2 h-4 w-4 text-indigo-600" />
+                      <span>Print / Save PDF</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={downloadJpgDirectly}>
+                      <Download className="mr-2 h-4 w-4 text-emerald-600" />
+                      <span>Download JPG</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={shareListDirectly}>
+                      <Share2 className="mr-2 h-4 w-4 text-blue-600" />
+                      <span>Share List</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
 
                 {!filterOnlineOnly && (
                   <Button onClick={() => setAdjOpen(true)} className="bg-primary text-primary-foreground hover:bg-primary/90 h-9 sm:h-10 px-3 sm:px-4 shrink-0">

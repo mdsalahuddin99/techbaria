@@ -120,12 +120,12 @@ export function useRecordSupplierPayment() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (data: Omit<SupplierPayment, "id" | "date">) => {
-      const supplier = await suppliersService.getById(data.supplierId);
-      if (supplier) {
-        await suppliersService.update(data.supplierId, {
-          payableBalance: supplier.payableBalance - data.amount,
-        } as any);
-      }
+      await suppliersApi.recordPayment({
+        supplierId: data.supplierId,
+        amount: data.amount,
+        accountId: data.accountId,
+        notes: data.note,
+      });
       return { success: true };
     },
     onSuccess: (_, vars) => {

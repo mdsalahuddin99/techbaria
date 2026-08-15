@@ -9,7 +9,14 @@ import type { StockAudit, AuditLine, AuditCreateInput } from "@/features/audit/t
 // Completed audits post StockAdjustment records; draft data lives in-memory.
 // This can be upgraded to a DB table when the audit volume justifies it.
 
-const auditsByShop = new Map<string, StockAudit[]>();
+const globalForAudits = globalThis as unknown as {
+  auditsByShop: Map<string, StockAudit[]> | undefined;
+};
+
+const auditsByShop = globalForAudits.auditsByShop ?? new Map<string, StockAudit[]>();
+if (process.env.NODE_ENV !== "production") {
+  globalForAudits.auditsByShop = auditsByShop;
+}
 
 function getAudits(shopId: string): StockAudit[] {
   if (!auditsByShop.has(shopId)) auditsByShop.set(shopId, []);

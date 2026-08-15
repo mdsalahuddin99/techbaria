@@ -8,7 +8,8 @@ import {
   createSupplierAction, 
   updateSupplierAction, 
   deleteSupplierAction,
-  getSupplierProfileAction
+  getSupplierProfileAction,
+  recordSupplierPaymentAction
 } from "@/server/actions/suppliers";
 
 export interface PaginatedResponse<T> {
@@ -75,5 +76,9 @@ export const suppliersApi = {
     const res = await fetch(`/api/suppliers/${id}/ledger?page=${page}`);
     if (!res.ok) throw new Error(await res.text());
     return res.json();
+  },
+
+  async recordPayment(data: { supplierId: string; amount: number; accountId?: string; notes?: string }) {
+    return recordSupplierPaymentAction(data);
   },
 };

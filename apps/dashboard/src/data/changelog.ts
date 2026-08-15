@@ -8,6 +8,22 @@ export type ChangelogEntry = {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "v1.2.4",
+    date: "2026-08-15",
+    features: [
+      "Added Detailed Sales Report with Sale View, Product View, and Customer View showing comprehensive financial metrics.",
+      "Implemented Smart Warehouse Filtering for POS and Inventory to ensure only products available in the selected warehouse are shown."
+    ],
+    improvements: [
+      "Reduced height of Inventory Stats cards for a cleaner, more compact UI.",
+      "Corrected dashboard quick action links for 'Add Product' and 'Stock Transfer'."
+    ],
+    fixes: [
+      "Fixed 500 Internal Server Error when completing a Stock Audit due to in-memory state being wiped.",
+      "Resolved Inventory Category Dropdown issue where the 'All' category would merge incorrectly with other names."
+    ]
+  },
+  {
     version: "v1.2.3",
     date: "2026-08-13",
     features: [

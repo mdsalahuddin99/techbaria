@@ -89,6 +89,9 @@ export function ReportsClient({
 
   const [activeTab, setActiveTab] = useState("pl");
   const [searchLowStock, setSearchLowStock] = useState("");
+  const [searchOutOfStock, setSearchOutOfStock] = useState("");
+  const [searchDeadStock, setSearchDeadStock] = useState("");
+  const [filterCategory, setFilterCategory] = useState("All");
   const [searchExpense, setSearchExpense] = useState("");
 
   const isInitialDateRange = initialFromDate && initialToDate && from === initialFromDate && to === initialToDate && method === "All";
@@ -180,11 +183,28 @@ export function ReportsClient({
       ["Low Stock Report"],
       ["Generated on", new Date().toLocaleDateString()],
       [""],
-      ["Product Name", "Current Stock", "Reorder Level"],
-      ...inventory.lowStock.map(p => [p.name, p.stock, p.minStock])
+      ["Product Name", "Current Stock", "Reorder Level", "Category"],
+      ...inventory.lowStock
+        .filter((p: any) => p.stock > 0 && (filterCategory === "All" || p.category === filterCategory))
+        .map((p: any) => [p.name, p.stock, p.minStock, p.category])
     ];
     downloadCSV(`low_stock_report.csv`, rows);
     toast.success("Low stock report downloaded!");
+  };
+
+  const exportOutOfStock = () => {
+    if (!inventory) return;
+    const rows: (string | number)[][] = [
+      ["Out of Stock Report"],
+      ["Generated on", new Date().toLocaleDateString()],
+      [""],
+      ["Product Name", "Current Stock", "Reorder Level", "Category"],
+      ...inventory.lowStock
+        .filter((p: any) => p.stock <= 0 && (filterCategory === "All" || p.category === filterCategory))
+        .map((p: any) => [p.name, p.stock, p.minStock, p.category])
+    ];
+    downloadCSV(`out_of_stock_report.csv`, rows);
+    toast.success("Out of stock report downloaded!");
   };
 
   const exportDeadStock = () => {
@@ -194,7 +214,9 @@ export function ReportsClient({
       [`Inactivity Range: ${from} to ${to}`],
       [""],
       ["Product Name", "Category", "Current Stock", "Value"],
-      ...inventory.deadStock.map(p => [p.name, p.category, p.stock, p.value])
+      ...inventory.deadStock
+        .filter((p: any) => filterCategory === "All" || p.category === filterCategory)
+        .map((p: any) => [p.name, p.category, p.stock, p.value])
     ];
     downloadCSV(`dead_stock_report.csv`, rows);
     toast.success("Dead stock report downloaded!");
@@ -443,7 +465,7 @@ export function ReportsClient({
                   value: "sales", 
                   label: "Sales", 
                   icon: Receipt,
-                  activeClass: "data-[state=active]:bg-emerald-50/95 data-[state=active]:text-emerald-700 data-[state=active]:border-emerald-200/60 data-[state=active]:shadow-emerald-100/60",
+                  activeClass: "data-[state=active]:bg-emerald-50/95 data-[state=active]:text-emerald-700 data-[state=active]:border-emerald-200/60 data-[state=emerald-100/60",
                   hoverClass: "hover:bg-emerald-50/40 hover:text-emerald-700 hover:border-emerald-200/30",
                   iconColor: "text-emerald-500 group-hover:text-emerald-600"
                 },
@@ -654,8 +676,26 @@ export function ReportsClient({
 
         {/* ── INVENTORY ── */}
         <TabsContent value="inventory" className="space-y-4 mt-0 print:block">
+          
+          <div className="flex items-center gap-2 mb-4 print:hidden">
+            <span className="text-sm font-medium text-slate-700">Filter by Category:</span>
+            <Select value={filterCategory} onValueChange={setFilterCategory}>
+              <SelectTrigger className="w-[180px] bg-white border-slate-200">
+                <SelectValue placeholder="All Categories" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="All">All Categories</SelectItem>
+                {inventory && Array.from(new Set([
+                  ...inventory.lowStock.map((p: any) => p.category),
+                  ...inventory.deadStock.map((p: any) => p.category)
+                ])).filter(Boolean).sort().map((c: any) => (
+                  <SelectItem key={c} value={c}>{c}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <div className="bg-white rounded-2xl border border-slate-200/80 shadow-md shadow-slate-100/50 overflow-hidden print:overflow-visible flex flex-col h-[450px] print:h-auto print:border-none print:shadow-none">
               <div className="px-4 py-3 border-b border-slate-100/50 bg-amber-50/30 print:bg-transparent print:px-0 flex flex-col gap-2">
                 <div className="flex items-center justify-between">
@@ -697,16 +737,74 @@ export function ReportsClient({
                   </thead>
                   <tbody>
                     {inventory.lowStock
-                      .filter(p => (p.name || '').toLowerCase().includes(searchLowStock.trim().toLowerCase()))
-                      .map((p) => (
+                      .filter((p: any) => p.stock > 0 && (filterCategory === "All" || p.category === filterCategory) && (p.name || '').toLowerCase().includes(searchLowStock.trim().toLowerCase()))
+                      .map((p: any) => (
                       <tr key={p.id} className="border-b border-slate-50 hover:bg-amber-50/20 transition-colors">
-                        <td className="px-4 py-1.5 font-medium text-slate-800">{p.name}</td>
+                        <td className="px-4 py-1.5">
+                          <p className="font-medium text-slate-800 text-[12px]">{p.name}</p>
+                          <p className="text-[10px] text-slate-500">{p.category}</p>
+                        </td>
                         <td className="px-4 py-1.5 text-right">
                           <span className="text-amber-700 font-bold bg-amber-100/50 px-2 py-0.5 rounded text-[11px] border border-amber-100">{p.stock} / {p.minStock}</span>
                         </td>
                       </tr>
                     ))}
-                    {inventory.lowStock.filter(p => (p.name || '').toLowerCase().includes(searchLowStock.trim().toLowerCase())).length === 0 && (
+                    {inventory.lowStock.filter((p: any) => p.stock > 0 && (filterCategory === "All" || p.category === filterCategory) && (p.name || '').toLowerCase().includes(searchLowStock.trim().toLowerCase())).length === 0 && (
+                      <tr><td colSpan={2} className="px-4 py-6 text-center text-slate-400 font-medium">No items found</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-slate-200/80 shadow-md shadow-slate-100/50 overflow-hidden print:overflow-visible flex flex-col h-[450px] print:h-auto print:border-none print:shadow-none">
+              <div className="px-4 py-3 border-b border-slate-100/50 bg-rose-50/30 print:bg-transparent print:px-0 flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-[12px] font-bold text-rose-900 print:text-slate-900 uppercase tracking-wide">Out of Stock Queue</h3>
+                  <div className="flex gap-1 print:hidden">
+                    <Button size="icon" variant="ghost" className="h-6 w-6 text-rose-700 hover:bg-rose-100" onClick={exportOutOfStock}>
+                      <Download className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button size="icon" variant="ghost" className="h-6 w-6 text-rose-700 hover:bg-rose-100" onClick={handlePrint}>
+                      <Printer className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+                <div className="flex flex-col xl:flex-row gap-2 print:hidden">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-rose-600/50" />
+                    <Input 
+                      placeholder="Search out of stock..." 
+                      value={searchOutOfStock}
+                      onChange={(e) => setSearchOutOfStock(e.target.value)}
+                      className="h-7 text-[11px] bg-white border-rose-200/50 pl-7 placeholder:text-rose-700/40 text-rose-900"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="flex-1 overflow-y-auto print:overflow-visible">
+                <table className="w-full text-[13px]">
+                  <thead className="bg-slate-50/50 sticky top-0 z-10 border-b border-slate-100">
+                    <tr className="text-slate-500">
+                      <th className="text-left px-4 py-2 text-[10px] font-bold uppercase tracking-wider">Product</th>
+                      <th className="text-right px-4 py-2 text-[10px] font-bold uppercase tracking-wider">Stock</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {inventory.lowStock
+                      .filter((p: any) => p.stock <= 0 && (filterCategory === "All" || p.category === filterCategory) && (p.name || '').toLowerCase().includes(searchOutOfStock.trim().toLowerCase()))
+                      .map((p: any) => (
+                      <tr key={p.id} className="border-b border-slate-50 hover:bg-rose-50/20 transition-colors">
+                        <td className="px-4 py-1.5">
+                          <p className="font-medium text-slate-800 text-[12px]">{p.name}</p>
+                          <p className="text-[10px] text-slate-500">{p.category}</p>
+                        </td>
+                        <td className="px-4 py-1.5 text-right">
+                          <span className="text-rose-700 font-bold bg-rose-100/50 px-2 py-0.5 rounded text-[11px] border border-rose-100">{p.stock}</span>
+                        </td>
+                      </tr>
+                    ))}
+                    {inventory.lowStock.filter((p: any) => p.stock <= 0 && (filterCategory === "All" || p.category === filterCategory) && (p.name || '').toLowerCase().includes(searchOutOfStock.trim().toLowerCase())).length === 0 && (
                       <tr><td colSpan={2} className="px-4 py-6 text-center text-slate-400 font-medium">No items found</td></tr>
                     )}
                   </tbody>
@@ -727,11 +825,22 @@ export function ReportsClient({
                     </Button>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 bg-white/50 p-1 rounded border border-rose-100/60 w-fit print:hidden">
-                  <span className="text-[9px] font-bold text-rose-800 uppercase pl-1">From</span>
-                  <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="h-6 w-[100px] text-[11px] bg-white border-rose-100/60 px-1" />
-                  <span className="text-[9px] font-bold text-rose-800 uppercase px-1">To</span>
-                  <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="h-6 w-[100px] text-[11px] bg-white border-rose-100/60 px-1" />
+                <div className="flex flex-col xl:flex-row gap-2 print:hidden">
+                  <div className="flex items-center gap-2 bg-white/50 p-1 rounded border border-rose-100/60 w-fit">
+                    <span className="text-[9px] font-bold text-rose-800 uppercase pl-1">From</span>
+                    <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="h-6 w-[100px] text-[11px] bg-white border-rose-100/60 px-1" />
+                    <span className="text-[9px] font-bold text-rose-800 uppercase px-1">To</span>
+                    <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="h-6 w-[100px] text-[11px] bg-white border-rose-100/60 px-1" />
+                  </div>
+                  <div className="relative flex-1">
+                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-rose-600/50" />
+                    <Input 
+                      placeholder="Search dead stock..." 
+                      value={searchDeadStock}
+                      onChange={(e) => setSearchDeadStock(e.target.value)}
+                      className="h-7 text-[11px] bg-white border-rose-200/50 pl-7 placeholder:text-rose-700/40 text-rose-900"
+                    />
+                  </div>
                 </div>
               </div>
               <div className="flex-1 overflow-y-auto print:overflow-visible">
@@ -744,17 +853,19 @@ export function ReportsClient({
                     </tr>
                   </thead>
                   <tbody>
-                    {inventory.deadStock.map((p) => (
+                    {inventory.deadStock
+                      .filter((p: any) => (filterCategory === "All" || p.category === filterCategory) && (p.name || '').toLowerCase().includes(searchDeadStock.trim().toLowerCase()))
+                      .map((p: any) => (
                       <tr key={p.id} className="border-b border-slate-50 hover:bg-rose-50/20 transition-colors">
                         <td className="px-4 py-1.5">
-                          <span className="font-medium text-slate-800">{p.name}</span>
-                          <span className="ml-2 text-[9px] font-bold text-slate-400 uppercase tracking-widest">{p.category}</span>
+                          <span className="font-medium text-slate-800 text-[12px]">{p.name}</span>
+                          <span className="block text-[10px] text-slate-500 mt-0.5">{p.category}</span>
                         </td>
-                        <td className="px-4 py-1.5 text-center text-slate-600 font-medium">{p.stock}</td>
-                        <td className="px-4 py-1.5 text-right font-bold text-rose-700">{formatCurrency(p.value)}</td>
+                        <td className="px-4 py-1.5 text-center text-rose-700 font-semibold">{p.stock}</td>
+                        <td className="px-4 py-1.5 text-right font-bold text-slate-800">{formatCurrency(p.value)}</td>
                       </tr>
                     ))}
-                    {inventory.deadStock.length === 0 && (
+                    {inventory.deadStock.filter((p: any) => (filterCategory === "All" || p.category === filterCategory) && (p.name || '').toLowerCase().includes(searchDeadStock.trim().toLowerCase())).length === 0 && (
                       <tr><td colSpan={3} className="px-4 py-6 text-center text-slate-400 font-medium">No dead stock found</td></tr>
                     )}
                   </tbody>

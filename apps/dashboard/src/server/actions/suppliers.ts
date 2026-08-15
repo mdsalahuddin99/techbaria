@@ -72,3 +72,11 @@ export async function deleteSupplierAction(id: string) {
   await suppliersService.remove(ctx, id);
   return { success: true };
 }
+
+/**
+ * Record a payment to a supplier
+ */
+export async function recordSupplierPaymentAction(input: { supplierId: string; amount: number; accountId?: string; notes?: string }) {
+  const ctx = await getActionCtx();
+  return suppliersService.recordPayment(ctx, input);
+}

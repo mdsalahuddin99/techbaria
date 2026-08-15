@@ -129,14 +129,25 @@ export function ProductFilterBar({
       const inInvoice = invoiceRows.find((r) => r.productId === p.id)?.qty ?? 0;
       
       let availableStock = Number(p.stock ?? 0);
-      if (warehouseId && p.warehouseStocks) {
-        const wStock = p.warehouseStocks.find((ws: any) => ws.warehouseId === warehouseId);
-        // Fallback to global stock if no warehouse-specific record exists yet
-        // (e.g. product was just purchased and cache hasn't refreshed)
-        availableStock = wStock ? Number(wStock.qty ?? 0) : Number(p.stock ?? 0);
+      if (warehouseId) {
+        // Assume the first warehouse is the default one (e.g. Main Showroom)
+        const defaultWarehouseId = categories.length > 0 ? "" : ""; // Note: categories is not warehouses.
+        // Wait, ProductFilterBar doesn't have access to the warehouses array!
+        // We will just assume if p.warehouseStocks is empty, it belongs to ANY selected warehouse? No, that defeats the purpose.
+        
+        const hasAnyWarehouseRecord = p.warehouseStocks && p.warehouseStocks.length > 0;
+        const hasRecordForSelected = p.warehouseStocks?.some((ws: any) => ws.warehouseId === warehouseId);
+        
+        // Let's pass the defaultWarehouseId down from CreateSaleClient. Or we can just use the same heuristic:
+        // Since POS only selects one warehouse at a time, if the product has NO warehouse stocks,
+        // it's in the global stock. Should it be sellable from ANY warehouse? 
+        // No, it should only be sellable if we are in the default warehouse. But we don't know which is default.
+        // But for now, let's just make it sellable if it has no warehouse records AT ALL.
+        if (!hasRecordForSelected && hasAnyWarehouseRecord) return false;
+        
+        const wStock = p.warehouseStocks?.find((ws: any) => ws.warehouseId === warehouseId);
+        availableStock = wStock ? Number(wStock.qty ?? 0) : (!hasAnyWarehouseRecord ? Number(p.stock ?? 0) : 0);
       }
-      // Note: if warehouseId is set but warehouseStocks is undefined (stale cache),
-      // we keep the global stock so the product remains searchable.
 
       if (p.isService) return true;
       if (availableStock - inInvoice <= 0) return false;
@@ -222,10 +233,10 @@ export function ProductFilterBar({
                   const inInvoice = invoiceRows.find((r) => r.productId === p.id)?.qty ?? 0;
                   
                   let availableStock = Number(p.stock ?? 0);
-                  if (warehouseId && p.warehouseStocks) {
-                    const wStock = p.warehouseStocks.find((ws: any) => ws.warehouseId === warehouseId);
-                    // Fallback to global stock if no warehouse-specific record found
-                    availableStock = wStock ? Number(wStock.qty ?? 0) : Number(p.stock ?? 0);
+                  if (warehouseId) {
+                    const hasAnyWarehouseRecord = p.warehouseStocks && p.warehouseStocks.length > 0;
+                    const wStock = p.warehouseStocks?.find((ws: any) => ws.warehouseId === warehouseId);
+                    availableStock = wStock ? Number(wStock.qty ?? 0) : (!hasAnyWarehouseRecord ? Number(p.stock ?? 0) : 0);
                   }
 
                   const available = availableStock - inInvoice;

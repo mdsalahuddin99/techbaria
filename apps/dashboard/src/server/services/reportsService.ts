@@ -258,7 +258,7 @@ export const reportsService = {
     `;
     const stockValue = Number(rawStockVal[0]?.total || 0);
 
-    const rawLowStock = await prisma.$queryRaw<Array<{ id: string, name: string, stock: number, minStock: number }>>`
+    const rawLowStock = await prisma.$queryRaw<Array<{ id: string, name: string, stock: number, minStock: number, category: string }>>`
       SELECT id, 
              CONCAT_WS(' ', 
                (SELECT name FROM "Brand" WHERE id = "globalBrandId"), 
@@ -266,7 +266,8 @@ export const reportsService = {
                (SELECT name FROM "Model" WHERE id = "globalModelId")
              ) as name, 
              stock, 
-             "reorderLevel" as "minStock"
+             "reorderLevel" as "minStock",
+             (SELECT name FROM "Category" WHERE id = "categoryId") as category
       FROM "Product"
       WHERE stock <= "reorderLevel" ${pubCondition}
       ORDER BY stock ASC
@@ -277,6 +278,7 @@ export const reportsService = {
       name: p.name,
       stock: Number(p.stock),
       minStock: Number(p.minStock),
+      category: p.category || "Uncategorized",
     }));
 
     let filterDate = new Date();

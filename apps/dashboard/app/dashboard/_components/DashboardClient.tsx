@@ -325,7 +325,7 @@ export default function DashboardClient() {
             </Link>
           </Button>
           <Button asChild variant="ghost" className="bg-slate-50 hover:bg-slate-100 text-slate-700 font-semibold h-10 px-4 rounded-lg border border-slate-200">
-            <Link href="/dashboard/products/create">
+            <Link href="/dashboard/products?new=true">
               <Package className="h-4 w-4 mr-2 text-indigo-500" /> Add Product
             </Link>
           </Button>
@@ -345,7 +345,7 @@ export default function DashboardClient() {
             </Link>
           </Button>
           <Button asChild variant="ghost" className="bg-slate-50 hover:bg-slate-100 text-slate-700 font-semibold h-10 px-4 rounded-lg border border-slate-200">
-            <Link href="/dashboard/inventory/transfer">
+            <Link href="/dashboard/inventory/transfers">
               <ArrowRightLeft className="h-4 w-4 mr-2 text-emerald-500" /> Stock Transfer
             </Link>
           </Button>
