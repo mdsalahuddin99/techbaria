@@ -12,7 +12,7 @@ import type { ExchangeInput } from "./types";
 import * as math from "@/server/lib/math";
 
 export async function exchange(ctx: Ctx, input: ExchangeInput) {
-  requireRole(ctx, "MANAGER");
+  requireRole(ctx, "ADMIN");
 
   if (!input.newItems?.length && !input.returnItems?.length) {
     throw new ServiceError("INVALID_INPUT", "Must provide items to return or exchange");
@@ -131,8 +131,8 @@ export async function exchange(ctx: Ctx, input: ExchangeInput) {
           : [],
       ]);
 
-      const newWarehouseStockMap = new Map(newWarehouseStocks.map((ws) => [ws.productId, ws]));
-      const serialCounts = new Map(serialCountRows.map((c) => [c.productId, c._count.productId]));
+      const newWarehouseStockMap = new Map(newWarehouseStocks.map((ws) => [ws.productId, ws] as const));
+      const serialCounts = new Map(serialCountRows.map((c) => [c.productId, c._count.productId] as const));
       const productSnapshots = new Map<string, { cost: number; name: string }>();
 
       for (const item of input.newItems) {

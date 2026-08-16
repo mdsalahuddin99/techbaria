@@ -71,6 +71,7 @@ export function serialiseOne(p: any) {
       warrantyMonths: s.purchaseItem?.warrantyMonths ?? undefined,
       soldInSaleId: undefined,
       note: undefined,
+      warehouseId: s.warehouseId ?? null,
     })),
     warehouseStocks: p.warehouseStocks,
     searchTags: p.searchTags ?? [],
