@@ -185,7 +185,7 @@ export const defaultSettings: ShopSettings = {
   loyaltyEnabled: true,
   loyaltyPointsPerCurrency: 1, // 1 point per 100 BDT
   loyaltyRedeemRate: 1,        // 1 BDT per point
-  paymentMethodsEnabled: { Cash: true, Card: true, "Mobile Banking": true, Due: true, Wallet: true },
+  paymentMethodsEnabled: { Cash: true, Card: true, "Mobile Banking": true, Due: true, Wallet: true, Partial: true },
   cloudinaryCloudName: "",
   cloudinaryUploadPreset: "",
   defaultReceiptMode: "ask",

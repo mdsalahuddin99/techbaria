@@ -20,7 +20,7 @@ const DEFAULT_SHOP_SETTINGS: Partial<ShopSettings> = {
   loyaltyEnabled: false,
   loyaltyPointsPerCurrency: 1,
   loyaltyRedeemRate: 1,
-  paymentMethodsEnabled: { Cash: true, Card: true, "Mobile Banking": true, Due: true, Wallet: true },
+  paymentMethodsEnabled: { Cash: true, Card: true, "Mobile Banking": true, Due: true, Wallet: true, Partial: true },
   defaultReceiptMode: "ask",
   hapticFeedback: true,
 };
@@ -61,6 +61,7 @@ export const settingsService = {
             "Mobile Banking": true,
             Due: true,
             Wallet: true,
+            Partial: true,
             ...((stored.paymentMethodsEnabled as Record<string, boolean>) ?? {}),
           },
           invoiceReturnPolicy: stored.invoiceReturnPolicy as string | undefined,

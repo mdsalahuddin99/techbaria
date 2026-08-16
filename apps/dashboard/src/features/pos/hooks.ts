@@ -158,7 +158,7 @@ export function usePosScreenData(warehouseId?: string | null) {
     loyaltyEnabled: false,
     loyaltyPointsPerCurrency: 1,
     loyaltyRedeemRate: 1,
-    paymentMethodsEnabled: { Cash: true, Card: true, "Mobile Banking": true, Due: true, Wallet: true },
+    paymentMethodsEnabled: { Cash: true, Card: true, "Mobile Banking": true, Due: true, Wallet: true, Partial: true },
     salesPersons: data?.settings?.salesPersons ?? [],
   };
   return { products, customers, warehouses, categories, users, settings, isLoading };
@@ -189,7 +189,7 @@ export function usePosCoreData() {
     loyaltyEnabled: false,
     loyaltyPointsPerCurrency: 1,
     loyaltyRedeemRate: 1,
-    paymentMethodsEnabled: { Cash: true, Card: true, "Mobile Banking": true, Due: true, Wallet: true },
+    paymentMethodsEnabled: { Cash: true, Card: true, "Mobile Banking": true, Due: true, Wallet: true, Partial: true },
     salesPersons: data?.settings?.salesPersons ?? [],
   };
   return { warehouses, categories, users, settings, isLoading };

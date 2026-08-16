@@ -21,7 +21,7 @@ const DEFAULT_SETTINGS: ShopSettings = {
   loyaltyEnabled: false,
   loyaltyPointsPerCurrency: 1,
   loyaltyRedeemRate: 1,
-  paymentMethodsEnabled: { Cash: true, Card: true, "Mobile Banking": true, Due: true, Wallet: true },
+  paymentMethodsEnabled: { Cash: true, Card: true, "Mobile Banking": true, Due: true, Wallet: true, Partial: true },
   defaultReceiptMode: "ask",
   hapticFeedback: true,
   invoiceReturnPolicy: "",
