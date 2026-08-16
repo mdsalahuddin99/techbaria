@@ -8,4 +8,3 @@ export { InvoiceLineItems, type VoucherRow } from "./InvoiceLineItems";
 export { QuotationsClient } from "./QuotationsClient";
 export { PaymentCollector } from "./PaymentCollector";
 export { CustomerSidebar } from "./CustomerSidebar";
-export { ExchangeDialog } from "./ExchangeDialog";

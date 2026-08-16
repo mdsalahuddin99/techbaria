@@ -17,17 +17,16 @@ import {
 } from "@/shared/ui/table";
 import { Badge } from "@/shared/ui/badge";
 import Link from "next/link";
-import { ExchangeDialog } from "@/features/sales/components";
+import { Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { findSaleForExchangeAction } from "@/server/actions/sales";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
-import { Sale } from "@/shared/lib/types";
 
 export function ExchangesClient({ initialExchanges }: { initialExchanges: any[] }) {
   const t = useT();
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const [isSearching, setIsSearching] = useState(false);
-  const [exchangeSale, setExchangeSale] = useState<Sale | null>(null);
 
   const filtered = initialExchanges.filter((ex) => {
     const s = search.toLowerCase();
@@ -43,7 +42,7 @@ export function ExchangesClient({ initialExchanges }: { initialExchanges: any[] 
       try {
         const sale = await findSaleForExchangeAction(search);
         if (sale) {
-          setExchangeSale(sale as any);
+          router.push(`/dashboard/sales/create?exchangeSaleId=${sale.id}`);
           setSearch(""); // clear search on success
         } else {
           toast.error("No sale found matching that invoice or serial number.");
@@ -147,10 +146,6 @@ export function ExchangesClient({ initialExchanges }: { initialExchanges: any[] 
         </div>
       </div>
 
-      <ExchangeDialog 
-        sale={exchangeSale} 
-        onClose={() => setExchangeSale(null)} 
-      />
     </div>
   );
 }

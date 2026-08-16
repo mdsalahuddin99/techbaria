@@ -56,6 +56,15 @@ export function useSupplierLedgerQuery(id: string, page = 1) {
   });
 }
 
+export function useSupplierProfileQuery(id?: string) {
+  const { session, status } = useAuth();
+  return useQuery({
+    queryKey: [...supplierKeys.all, "profile", id],
+    queryFn: () => suppliersApi.getProfile(id!),
+    enabled: status !== "loading" && !!session && !!id,
+  });
+}
+
 /** Single supplier by id, from the list cache. */
 export function useSupplier(id: string | null | undefined) {
   const { data } = useSuppliersQuery();
@@ -119,11 +128,12 @@ export function useDeleteSupplier() {
 export function useRecordSupplierPayment() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (data: Omit<SupplierPayment, "id" | "date">) => {
+    mutationFn: async (data: Omit<SupplierPayment, "id" | "date"> & { method: string }) => {
       await suppliersApi.recordPayment({
         supplierId: data.supplierId,
         amount: data.amount,
-        accountId: data.accountId,
+        method: data.method,
+        accountId: data.accountId ?? undefined,
         notes: data.note,
       });
       return { success: true };

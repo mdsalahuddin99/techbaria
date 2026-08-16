@@ -76,7 +76,7 @@ export async function deleteSupplierAction(id: string) {
 /**
  * Record a payment to a supplier
  */
-export async function recordSupplierPaymentAction(input: { supplierId: string; amount: number; accountId?: string; notes?: string }) {
+export async function recordSupplierPaymentAction(input: { supplierId: string; amount: number; method: string; accountId?: string; notes?: string }) {
   const ctx = await getActionCtx();
   return suppliersService.recordPayment(ctx, input);
 }

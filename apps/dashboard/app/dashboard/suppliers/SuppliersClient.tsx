@@ -3,7 +3,7 @@
 import { usePageTitle } from "@/shared/hooks/usePageTitle";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Card } from "@/shared/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/shared/ui/card";
 import { Input } from "@/shared/ui/input";
 import { Button } from "@/shared/ui/button";
 import { LoadingButton } from "@/shared/ui/loading-button";
@@ -27,7 +27,7 @@ import { toast } from "sonner";
 import { PageHeader, EmptyState, ConfirmDialog } from "@/shared/components";
 import {
   useDeleteSupplier, useRecordSupplierPayment,
-  useInfiniteSuppliersQuery, useSupplierDeposit, useSupplierWithdraw,
+  useInfiniteSuppliersQuery, useSupplierDeposit, useSupplierWithdraw, useSupplierProfileQuery
 } from "@/features/suppliers/hooks";
 import { SupplierFormDialog } from "@/features/suppliers/SupplierFormDialog";
 import { usePurchases } from "@/features/purchases/hooks";
@@ -132,6 +132,10 @@ export function SuppliersClient({
 
   // filtered is now server-side, so suppliers is already filtered
   const filtered = suppliers;
+  const filteredDue = useMemo(
+    () => suppliers.filter((s) => s.payableBalance > 0),
+    [suppliers],
+  );
 
   const totalPayable = suppliers.reduce((sum, s) => sum + s.payableBalance, 0);
   const totalPurchased = suppliers.reduce((sum, s) => sum + s.totalPurchased, 0);
@@ -205,9 +209,8 @@ export function SuppliersClient({
     setPayNote("");
   };
 
-  const supplierPurchases = (id: string) => purchases.filter((p) => p.supplierId === id);
-  const supplierPaymentList = (id: string) =>
-    purchases.filter((p) => p.supplierId === id).flatMap((p) => p.payments ?? []);
+  const { data: profile } = useSupplierProfileQuery(detail?.id);
+  const supplierPurchasesList = profile?.recentPurchases || [];
 
   return (
     <div className="space-y-4">
@@ -404,6 +407,47 @@ export function SuppliersClient({
         )}
       </Card>
 
+      {/* ── Due Table (suppliers with due > 0) ── */}
+      {filteredDue.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Receipt className="h-4 w-4 text-warning" />
+              Payable Balances
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table variant="premium">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Contact</TableHead>
+                  <TableHead className="text-right">Payable Amount</TableHead>
+                  <TableHead className="text-right">Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredDue.map((s) => (
+                  <TableRow key={s.id}>
+                    <TableCell className="font-medium">{s.name}</TableCell>
+                    <TableCell>{s.phone}</TableCell>
+                    <TableCell className="text-right text-warning font-semibold">{formatCurrency(s.payableBalance)}</TableCell>
+                    <TableCell className="text-right">
+                      <Button size="sm" variant="outline" className="mr-1 h-8" onClick={() => { setWalletAction("pay"); setPayOpen(s); }}>
+                        <Wallet className="h-3.5 w-3.5 mr-1" />Wallet
+                      </Button>
+                      <Button size="sm" variant="ghost" className="h-8" onClick={() => setDetail(s)}>
+                        View Details
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
       <SupplierFormDialog open={open} onOpenChange={setOpen} editing={editing} />
 
       {/* Wallet / Payment Dialog */}
@@ -533,7 +577,14 @@ export function SuppliersClient({
                 <div className="grid grid-cols-2 gap-3">
                   <Card className={`p-3 border-l-4 ${detail.payableBalance > 0 ? "border-l-warning bg-warning/5" : "border-l-muted bg-secondary/10"}`}>
                     <p className="text-xs text-muted-foreground mb-1">Payable Due</p>
-                    <p className={`text-xl font-bold ${detail.payableBalance > 0 ? "text-warning" : ""}`}>{formatCurrency(detail.payableBalance)}</p>
+                    <div className="flex justify-between items-center">
+                      <p className={`text-xl font-bold ${detail.payableBalance > 0 ? "text-warning" : ""}`}>{formatCurrency(detail.payableBalance)}</p>
+                      {detail.payableBalance > 0 && (
+                        <Button size="sm" variant="outline" className="h-8" onClick={() => { setWalletAction("pay"); setPayOpen(detail); }}>
+                          <Wallet className="h-3.5 w-3.5 mr-1" /> Pay Due
+                        </Button>
+                      )}
+                    </div>
                   </Card>
                   <Card className={`p-3 border-l-4 ${(detail.advanceBalance || 0) > 0 ? "border-l-green-500 bg-green-500/5 dark:bg-green-500/10" : "border-l-muted bg-secondary/10"}`}>
                     <p className="text-xs text-muted-foreground mb-1">Wallet Advance</p>
@@ -554,15 +605,19 @@ export function SuppliersClient({
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {supplierPurchases(detail.id).map((po) => (
+                      {supplierPurchasesList.map((po: any) => (
                         <TableRow key={po.id}>
-                          <TableCell className="py-2 text-xs font-medium">{po.poNumber}</TableCell>
+                          <TableCell className="py-2 text-xs font-medium">{po.invoiceNo}</TableCell>
                           <TableCell className="py-2 text-xs">{formatDate(po.createdAt)}</TableCell>
-                          <TableCell className="py-2 text-xs"><Badge variant="secondary" className="text-[10px] h-5">{po.status}</Badge></TableCell>
-                          <TableCell className="py-2 text-xs text-right">{formatCurrency(po.subtotal)}</TableCell>
+                          <TableCell className="py-2 text-xs">
+                            <Badge variant="secondary" className="text-[10px] h-5">
+                              {po.due > 0 ? (po.paid > 0 ? "Partial" : "Unpaid") : "Paid"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="py-2 text-xs text-right">{formatCurrency(po.total)}</TableCell>
                         </TableRow>
                       ))}
-                      {supplierPurchases(detail.id).length === 0 && (
+                      {supplierPurchasesList.length === 0 && (
                         <TableRow><TableCell colSpan={4} className="text-center text-xs text-muted-foreground py-6">No purchases yet.</TableCell></TableRow>
                       )}
                     </TableBody>

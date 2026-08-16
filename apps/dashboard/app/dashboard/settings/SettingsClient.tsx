@@ -24,7 +24,7 @@ import StaffTab from "@/features/settings/components/StaffTab";
 import WarehousesTab from "@/features/settings/components/WarehousesTab";
 import { FEATURES } from "@/config/featureFlags";
 
-function SalesmanManager({ value, onChange, onSave, saving }: { value: string[]; onChange: (v: string[]) => void; onSave: () => void; saving: boolean }) {
+function SalesmanManager({ value, onChange, onSave, saving }: { value: string[]; onChange: (v: string[]) => void; onSave: (overrides?: any) => void; saving: boolean }) {
   const [newName, setNewName] = useState("");
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editValue, setEditValue] = useState("");
@@ -103,9 +103,7 @@ function SalesmanManager({ value, onChange, onSave, saving }: { value: string[];
             const updated = [...value, newName.trim()];
             onChange(updated);
             setNewName("");
-            // We need to wait for the parent to update state before saving.
-            // A simple timeout will let the React render cycle complete.
-            setTimeout(onSave, 0);
+            onSave({ salesPersons: updated });
           } else {
             onSave();
           }
@@ -260,7 +258,7 @@ export function SettingsClient() {
             <Field label="Currency Symbol">
               <Input value={form.currencySymbol} onChange={(e) => setForm({ ...form, currencySymbol: e.target.value })} className="w-32" />
             </Field>
-            <LoadingButton onClick={save} className="bg-primary text-primary-foreground hover:bg-primary/90" loading={saving}>
+            <LoadingButton onClick={() => save()} className="bg-primary text-primary-foreground hover:bg-primary/90" loading={saving}>
               <Save className="h-4 w-4 mr-2" />Save Changes
             </LoadingButton>
           </Card>
@@ -311,7 +309,7 @@ export function SettingsClient() {
                 onCheckedChange={(c) => setForm({ ...form, hapticFeedback: c })}
               />
             </div>
-            <LoadingButton onClick={save} className="bg-primary text-primary-foreground hover:bg-primary/90" loading={saving}>
+            <LoadingButton onClick={() => save()} className="bg-primary text-primary-foreground hover:bg-primary/90" loading={saving}>
               <Save className="h-4 w-4 mr-2" />Save Changes
             </LoadingButton>
           </Card>
@@ -474,7 +472,7 @@ export function SettingsClient() {
                 onCheckedChange={(c) => setForm({ ...form, invoiceShowComputerGenerated: c })}
               />
             </div>
-            <LoadingButton onClick={save} className="bg-primary text-primary-foreground hover:bg-primary/90" loading={saving}>
+            <LoadingButton onClick={() => save()} className="bg-primary text-primary-foreground hover:bg-primary/90" loading={saving}>
               <Save className="h-4 w-4 mr-2" />Save Changes
             </LoadingButton>
           </Card>
@@ -498,7 +496,7 @@ export function SettingsClient() {
                 />
               </div>
             ))}
-            <LoadingButton onClick={save} className="bg-primary text-primary-foreground hover:bg-primary/90" loading={saving}>
+            <LoadingButton onClick={() => save()} className="bg-primary text-primary-foreground hover:bg-primary/90" loading={saving}>
               <Save className="h-4 w-4 mr-2" />Save Changes
             </LoadingButton>
           </Card>
@@ -533,7 +531,7 @@ export function SettingsClient() {
                 />
               </Field>
             </div>
-            <LoadingButton onClick={save} className="bg-primary text-primary-foreground hover:bg-primary/90" loading={saving}>
+            <LoadingButton onClick={() => save()} className="bg-primary text-primary-foreground hover:bg-primary/90" loading={saving}>
               <Save className="h-4 w-4 mr-2" />Save Changes
             </LoadingButton>
           </Card>

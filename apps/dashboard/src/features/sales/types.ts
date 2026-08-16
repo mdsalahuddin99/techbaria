@@ -10,7 +10,7 @@ export interface CartItem {
   serials?: string[];
 }
 
-export type PaymentMethod = "Cash" | "Card" | "Mobile Banking" | "Due" | "Wallet";
+export type PaymentMethod = "Cash" | "Card" | "Mobile Banking" | "Due" | "Wallet" | "Partial";
 
 /** One tender line in a (potentially split) payment. */
 export interface SalePayment {

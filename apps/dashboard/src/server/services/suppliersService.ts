@@ -10,6 +10,7 @@ import { requireRole } from "@/server/auth/rbac";
 import { paginate, type PaginationParams } from "@/server/lib/paginate";
 import type { Ctx } from "@/server/lib/ctx";
 import { auditLogService } from "./auditLogService";
+import { bulkPaySupplierDue } from "./purchases/bulkPayment";
 
 export interface SupplierCreateInput {
   name: string;
@@ -253,48 +254,16 @@ export const suppliersService = {
     };
   },
 
-  /** Record a direct payment to a supplier, reducing their payable due. */
-  async recordPayment(ctx: Ctx, input: { supplierId: string; amount: number; accountId?: string; notes?: string }) {
+  /** Record a direct payment to a supplier, reducing their payable due and updating individual purchases. */
+  async recordPayment(ctx: Ctx, input: { supplierId: string; amount: number; method: string; accountId?: string; notes?: string }) {
     requireRole(ctx, "ADMIN");
 
-    return prisma.$transaction(async (tx) => {
-      const supp = await tx.supplier.findUnique({
-        where: { id: input.supplierId },
-        select: { id: true, payable: true },
-      });
-      if (!supp) throw new ServiceError("NOT_FOUND", "Supplier not found", 404);
-
-      const newPayable = Math.max(0, Number(supp.payable) - input.amount);
-
-      await tx.supplier.update({
-        where: { id: input.supplierId },
-        data: { payable: newPayable },
-      });
-
-      if (input.accountId) {
-        await tx.financialAccount.update({
-          where: { id: input.accountId },
-          data: { balance: { decrement: input.amount } },
-        });
-      }
-
-      const payment = await tx.supplierPayment.create({
-        data: {
-          supplierId: input.supplierId,
-          amount: input.amount,
-          accountId: input.accountId || null,
-          notes: input.notes || null,
-        },
-      });
-
-      await auditLogService.log(ctx, {
-        entity: "SupplierPayment",
-        entityId: payment.id,
-        action: "CREATE",
-        diff: { amount: input.amount, accountId: input.accountId },
-      });
-
-      return payment;
+    return bulkPaySupplierDue(ctx, {
+      supplierId: input.supplierId,
+      amount: input.amount,
+      accountId: input.accountId || "WALLET", // Fallback, but bulkPaySupplierDue handles this based on method
+      method: input.method,
+      notes: input.notes,
     });
   },
 

@@ -35,7 +35,6 @@ import Invoice from "@/components/Invoice";
 import { PageHeader, EmptyState } from "@/shared/components";
 import { useInfiniteSalesQuery, useSaleMutations } from "@/features/sales/hooks";
 import { useSettings } from "@/features/settings/hooks";
-import { ExchangeDialog } from "@/features/sales/components";
 
 export function SalesClient() {
   usePageTitle("Sales");
@@ -50,7 +49,6 @@ export function SalesClient() {
   const [to, setTo] = useState("");
   const [view, setView] = useState<Sale | null>(null);
   const [invoice, setInvoice] = useState<Sale | null>(null);
-  const [exchangeSale, setExchangeSale] = useState<Sale | null>(null);
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const { delete: deleteSale } = useSaleMutations();
 
@@ -172,6 +170,7 @@ export function SalesClient() {
               <SelectItem value="Cash">Cash</SelectItem>
               <SelectItem value="Card">Card</SelectItem>
               <SelectItem value="Mobile Banking">Mobile Banking</SelectItem>
+              <SelectItem value="Partial">Partial</SelectItem>
             </SelectContent>
           </Select>
           <Select value={sort} onValueChange={(v) => setSort(v as typeof sort)}>
@@ -391,7 +390,7 @@ export function SalesClient() {
                 {view.editedAt && <Row label="Edited at" value={formatDateTime(view.editedAt)} />}
               </div>
               <div className="pt-4">
-                <Button variant="outline" className="w-full" onClick={() => setExchangeSale(view)}>
+                <Button variant="outline" className="w-full" onClick={() => router.push(`/dashboard/sales/create?exchangeSaleId=${view.id}`)}>
                   <ArrowUpDown className="h-4 w-4 mr-2" />
                   Exchange Items
                 </Button>
@@ -406,11 +405,6 @@ export function SalesClient() {
         settings={settings}
         open={!!invoice}
         onClose={() => setInvoice(null)}
-      />
-
-      <ExchangeDialog 
-        sale={exchangeSale} 
-        onClose={() => setExchangeSale(null)} 
       />
     </div>
   );

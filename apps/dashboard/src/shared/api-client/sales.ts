@@ -58,6 +58,20 @@ export const salesApi = {
     return res.data as SaleReturn;
   },
 
+  async exchange(id: string, payload: Record<string, unknown>): Promise<Sale> {
+    const res = await fetch(`/api/sales/${id}/exchange`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || err.error || "Failed to process exchange");
+    }
+    const json = await res.json();
+    return json.data as Sale;
+  },
+
   listReturns(): Promise<SaleReturn[]> {
     // Returns are currently embedded in sales data
     return this.list().then((res) =>

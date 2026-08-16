@@ -5,7 +5,7 @@ import { prisma } from "@/server/db/client";
 import { accountsService } from "@/server/services/accountsService";
 import { auth } from "@/server/auth/config";
 import { buildCtx } from "@/server/lib/ctx";
-
+import { Suspense } from "react";
 export default async function NewSalePage() {
   const session = await auth();
   const ctx = buildCtx({
@@ -27,7 +27,7 @@ export default async function NewSalePage() {
           select: { id: true, name: true, email: true, role: true },
           orderBy: { name: "asc" },
         }),
-        prisma.shop.findFirst({ select: { name: true } }),
+        prisma.shop.findFirst({ select: { name: true, settings: true } }),
       ]);
 
       return {
@@ -38,6 +38,7 @@ export default async function NewSalePage() {
         settings: {
           shopName: shop?.name ?? "AmarShop",
           currencySymbol: "৳",
+          salesPersons: (shop?.settings as any)?.salesPersons ?? [],
         },
       };
     },
@@ -47,7 +48,9 @@ export default async function NewSalePage() {
 
   return (
     <HydrationBoundary state={dehydratedState}>
-      <CreateSaleClient />
+      <Suspense fallback={null}>
+        <CreateSaleClient />
+      </Suspense>
     </HydrationBoundary>
   );
 }

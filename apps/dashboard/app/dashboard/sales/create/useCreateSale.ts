@@ -22,6 +22,7 @@ export function useCreateSale() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const editingSaleId = searchParams.get("saleId") ?? null;
+  const exchangeSaleId = searchParams.get("exchangeSaleId") ?? null;
   const cashAccounts = useAccountsByType("cash");
   const { session } = useAuth();
 
@@ -88,6 +89,12 @@ export function useCreateSale() {
   const [quickPhone, setQuickPhone] = useState("");
   const [heldOpen, setHeldOpen] = useState(false);
   const [draftPreview, setDraftPreview] = useState<HeldSaleForPrint | null>(null);
+  const [exchangeOriginalSale, setExchangeOriginalSale] = useState<Sale | null>(null);
+  const [returnQtys, setReturnQtys] = useState<Record<string, number>>({});
+  const [restock, setRestock] = useState<Record<string, boolean>>({});
+  const [exchangeReason, setExchangeReason] = useState("");
+  const [refundMethod, setRefundMethod] = useState<string>("");
+
   const vSearchRef = useRef<HTMLInputElement>(null);
 
   const voucherRowRefs = useRef<
@@ -172,6 +179,41 @@ export function useCreateSale() {
     };
   }, [editingSaleId, router]);
 
+  // ── Load original sale for exchange ─────────────────────────────────────
+  useEffect(() => {
+    if (!exchangeSaleId) return;
+    let cancelled = false;
+    (async () => {
+      setSaleLoading(true);
+      try {
+        const sale = await salesApi.getById(exchangeSaleId);
+        if (!sale || cancelled) return;
+        
+        setExchangeOriginalSale(sale);
+        if (sale.customerId) setVoucherCustomerId(sale.customerId);
+        
+        // Initialize return qtys and restock maps to empty (0 returns initially)
+        const initialQtys: Record<string, number> = {};
+        const initialRestock: Record<string, boolean> = {};
+        sale.items.forEach(item => {
+          initialQtys[item.productId] = 0;
+          initialRestock[item.productId] = true;
+        });
+        setReturnQtys(initialQtys);
+        setRestock(initialRestock);
+        
+      } catch {
+        toast.error("Failed to load sale for exchange");
+        router.replace("/dashboard/sales/create");
+      } finally {
+        if (!cancelled) setSaleLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [exchangeSaleId, router]);
+
   // ── Load draft from URL ─────────────────────────────────────────────────
   const loadDraftId = searchParams.get("loadDraft") ?? null;
   useEffect(() => {
@@ -192,11 +234,22 @@ export function useCreateSale() {
 
 
   // ── Computed totals ─────────────────────────────────────────────────────
+  const totalReturn = useMemo(() => {
+    if (!exchangeOriginalSale) return 0;
+    return exchangeOriginalSale.items.reduce((sum, item) => {
+      const qty = returnQtys[item.productId] || 0;
+      const unitDiscount = (item.discount || 0) / item.qty;
+      return sum + (item.price * qty) - (unitDiscount * qty);
+    }, 0);
+  }, [exchangeOriginalSale, returnQtys]);
+
   const subtotal = useMemo(
     () => round2(voucherRows.reduce((s, r) => s + r.price * r.qty - (r.discount || 0), 0)),
     [voucherRows],
   );
-  const invoiceTotal = round2(Math.max(0, subtotal));
+  
+  // For exchanges, invoiceTotal can be negative (which means refund)
+  const invoiceTotal = round2(exchangeSaleId ? subtotal - totalReturn : Math.max(0, subtotal));
 
   // Reset auto-apply flag when customer changes
   useEffect(() => {
@@ -428,6 +481,17 @@ export function useCreateSale() {
     setPendingAccountId(null);
   }, [session, allCustomers]);
 
+  const handleReturnChange = useCallback((productId: string, qty: number) => {
+    setReturnQtys(prev => ({ ...prev, [productId]: qty }));
+    if (qty > 0 && restock[productId] === undefined) {
+      setRestock(prev => ({ ...prev, [productId]: true }));
+    }
+  }, [restock]);
+
+  const handleRestockChange = useCallback((productId: string, shouldRestock: boolean) => {
+    setRestock(prev => ({ ...prev, [productId]: shouldRestock }));
+  }, []);
+
   // ── Context event listeners for global Command Palette ────────────────────
   useEffect(() => {
     const handleFocusProduct = () => {
@@ -539,10 +603,9 @@ export function useCreateSale() {
     }
   };
 
-  // ── Checkout ─────────────────────────────────────────────────────────────
   const handleCheckout = async () => {
-    if (voucherRows.length === 0) {
-      toast.error("Add at least one product");
+    if (voucherRows.length === 0 && (!exchangeSaleId || Object.values(returnQtys).every(q => q === 0))) {
+      toast.error("Add at least one product or select items to return");
       return;
     }
     const totalPaid = round2(payments.reduce((s, p) => s + p.amount, 0));
@@ -646,6 +709,54 @@ export function useCreateSale() {
       tenders: finalTenders,
     };
 
+    if (exchangeSaleId) {
+      if (!exchangeReason) {
+        toast.error("Please provide a reason for the exchange");
+        return;
+      }
+      const itemsToReturn = Object.entries(returnQtys)
+        .filter(([_, qty]) => qty > 0)
+        .map(([productId, qty]) => ({
+          productId,
+          qty,
+          restock: !!restock[productId],
+        }));
+        
+      const netDifference = invoiceTotal;
+      if (netDifference < 0 && !refundMethod) {
+        toast.error("Please select a refund method for the negative balance");
+        return;
+      }
+      
+      const exchangePayload = {
+        returnItems: itemsToReturn,
+        newItems: payload.items,
+        reason: exchangeReason,
+        notes: payload.notes,
+        tenders: netDifference > 0 ? finalTenders : undefined,
+        refundMethod: netDifference < 0 ? refundMethod : undefined,
+      };
+
+      setIsCheckingOut(true);
+      try {
+        const sale = await salesApi.exchange(exchangeSaleId, exchangePayload);
+        setReceipt(sale);
+        setReceiptView("invoice");
+        toast.success("Exchange processed successfully!");
+        clearVoucher();
+        queryClient.invalidateQueries({ queryKey: ["sales"] });
+        queryClient.invalidateQueries({
+          queryKey: posInitKeys.byWarehouse(selectedWarehouseId),
+          refetchType: "none",
+        });
+      } catch (err: any) {
+        toast.error(err?.message ?? "Exchange failed");
+      } finally {
+        setIsCheckingOut(false);
+      }
+      return;
+    }
+
 
     const parsed = saleCreateSchema.safeParse(payload);
     if (!parsed.success) {
@@ -714,6 +825,9 @@ export function useCreateSale() {
     resumeHeldSale, deleteHeldSale, handleCheckout, handleCameraBarcode,
     pendingMethod, setPendingMethod,
     pendingAmount, setPendingAmount,
-    pendingAccountId, setPendingAccountId
+    pendingAccountId, setPendingAccountId,
+    exchangeSaleId, exchangeOriginalSale, totalReturn,
+    returnQtys, restock, handleReturnChange, handleRestockChange,
+    exchangeReason, setExchangeReason, refundMethod, setRefundMethod
   };
 }

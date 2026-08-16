@@ -131,6 +131,18 @@ export async function addPayment(ctx: Ctx, id: string, payment: {
       where: { id },
       data: { paid: newPaid, due: newDue },
     });
+
+    // Update supplier payable balance
+    const rawPurchase2 = await tx.purchase.findFirst({
+      where: { id },
+      select: { supplierId: true },
+    });
+    if (rawPurchase2?.supplierId) {
+      await tx.supplier.update({
+        where: { id: rawPurchase2.supplierId },
+        data: { payable: { decrement: appliedAmount } },
+      });
+    }
   }, { timeout: 30000 });
 
   await auditLogService.log(ctx, {
@@ -207,6 +219,14 @@ export async function deletePayment(ctx: Ctx, purchaseId: string, paymentId: str
       where: { id: purchaseId },
       data: { paid: newPaid, due: newDue },
     });
+
+    // Revert supplier payable balance
+    if (purchase.supplierId) {
+      await tx.supplier.update({
+        where: { id: purchase.supplierId },
+        data: { payable: { increment: tender.amount } },
+      });
+    }
   }, { timeout: 30000 });
 
   await auditLogService.log(ctx, {

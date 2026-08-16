@@ -66,7 +66,10 @@ export function CreateSaleClient() {
     resumeHeldSale, deleteHeldSale, handleCheckout, handleCameraBarcode,
     pendingMethod, setPendingMethod,
     pendingAmount, setPendingAmount,
-    pendingAccountId, setPendingAccountId
+    pendingAccountId, setPendingAccountId,
+    exchangeSaleId, exchangeOriginalSale, totalReturn,
+    returnQtys, restock, handleReturnChange, handleRestockChange,
+    exchangeReason, setExchangeReason, refundMethod, setRefundMethod
   } = useCreateSale();
 
   return (
@@ -77,7 +80,11 @@ export function CreateSaleClient() {
           {/* Left Side: Title & Info */}
           <div className="flex items-center gap-3">
             <h1 className="text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2">
-              {editingSaleId ? "Edit Sale Invoice" : "New Sale Invoice"}
+              {exchangeOriginalSale 
+                ? `Process Exchange (Inv #${exchangeOriginalSale.invoiceNo})` 
+                : editingSaleId 
+                  ? "Edit Sale Invoice" 
+                  : "New Sale Invoice"}
             </h1>
             <div className="hidden sm:flex items-center gap-2 border-l pl-3 border-slate-200">
               <span className="inline-flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-wider text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
@@ -279,8 +286,70 @@ export function CreateSaleClient() {
               <>
                 <div className="border-t border-border" />
 
+                {exchangeOriginalSale && (
+                  <div className="space-y-2 mb-4 bg-red-50/50 p-2 rounded-lg border border-red-100">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-red-700 mb-2">
+                      1. Return Items (Invoice #{exchangeOriginalSale.invoiceNo})
+                    </h3>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs">
+                        <thead>
+                          <tr className="border-b border-red-200 text-red-600">
+                            <th className="pb-1 font-semibold">Item</th>
+                            <th className="pb-1 font-semibold text-right">Price</th>
+                            <th className="pb-1 font-semibold text-center w-24">Return Qty</th>
+                            <th className="pb-1 font-semibold text-center w-16">Restock</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-red-100/50">
+                          {exchangeOriginalSale.items.map((item) => (
+                            <tr key={item.productId}>
+                              <td className="py-1.5">
+                                <div className="font-medium text-slate-800">{item.name}</div>
+                                <div className="text-[10px] text-slate-500">Purchased: {item.qty}</div>
+                              </td>
+                              <td className="py-1.5 text-right font-medium tabular-nums text-slate-700">
+                                {formatCurrency(item.price)}
+                              </td>
+                              <td className="py-1.5 text-center">
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  max={item.qty}
+                                  value={returnQtys[item.productId] || ""}
+                                  onChange={(e) => handleReturnChange(item.productId, parseInt(e.target.value) || 0)}
+                                  className="h-7 text-xs w-16 mx-auto text-center"
+                                />
+                              </td>
+                              <td className="py-1.5 text-center">
+                                <input
+                                  type="checkbox"
+                                  checked={restock[item.productId] !== false}
+                                  onChange={(e) => handleRestockChange(item.productId, e.target.checked)}
+                                  disabled={!(returnQtys[item.productId] > 0)}
+                                  className="rounded border-gray-300 text-red-600 focus:ring-red-500"
+                                />
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <div className="flex justify-end pt-1 pr-1">
+                      <div className="text-xs font-bold text-red-700">
+                        Total Return Value: {formatCurrency(totalReturn)}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Line items table */}
                 <div className="space-y-1">
+                  {exchangeOriginalSale && (
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-700 mb-2 pl-2">
+                      2. New Items to Issue
+                    </h3>
+                  )}
                   {/* Line items table */}
                   <InvoiceLineItems
                     rows={voucherRows}
@@ -387,8 +456,30 @@ export function CreateSaleClient() {
 
               {/* Right Sub-column: Payment Collector */}
               <div className="lg:col-span-8 space-y-2">
-                <PaymentCollector
-                  subtotal={subtotal}
+                {exchangeOriginalSale && invoiceTotal < 0 ? (
+                  <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl h-full flex flex-col justify-center">
+                    <h3 className="font-bold text-amber-800 mb-2">Customer Refund Required</h3>
+                    <p className="text-sm text-amber-700 mb-4">
+                      The return value is greater than the new items. You need to refund 
+                      <span className="font-bold ml-1">{formatCurrency(Math.abs(invoiceTotal))}</span>.
+                    </p>
+                    <div className="space-y-1 w-full max-w-sm">
+                      <label className="text-xs font-bold uppercase text-slate-500">Refund Method</label>
+                      <Select value={refundMethod} onValueChange={setRefundMethod}>
+                        <SelectTrigger className="bg-white">
+                          <SelectValue placeholder="Select refund method..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Cash">Cash</SelectItem>
+                          <SelectItem value="Bank">Bank / Card</SelectItem>
+                          {voucherCustomerId && <SelectItem value="Wallet">Customer Wallet</SelectItem>}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                ) : (
+                  <PaymentCollector
+                    subtotal={invoiceTotal}
                   payments={payments}
                   onAddPayment={(p) => setPayments((prev) => [...prev, p])}
                   onRemovePayment={(idx) => {
@@ -411,6 +502,22 @@ export function CreateSaleClient() {
                   pendingAccountId={pendingAccountId}
                   setPendingAccountId={setPendingAccountId}
                 />
+                )}
+
+                {exchangeOriginalSale && (
+                  <div className="bg-card border border-border p-3 space-y-2 mt-2">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
+                      Reason for Exchange <span className="text-red-500">*</span>
+                    </label>
+                    <Input
+                      type="text"
+                      value={exchangeReason}
+                      onChange={(e) => setExchangeReason(e.target.value)}
+                      placeholder="e.g. Defective, Wrong Size, Changed Mind..."
+                      className="text-sm border-border bg-card rounded-[4px]"
+                    />
+                  </div>
+                )}
               </div>
             </div>
           )}

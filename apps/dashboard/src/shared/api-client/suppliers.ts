@@ -78,7 +78,7 @@ export const suppliersApi = {
     return res.json();
   },
 
-  async recordPayment(data: { supplierId: string; amount: number; accountId?: string; notes?: string }) {
+  async recordPayment(data: { supplierId: string; amount: number; method: string; accountId?: string; notes?: string }) {
     return recordSupplierPaymentAction(data);
   },
 };
