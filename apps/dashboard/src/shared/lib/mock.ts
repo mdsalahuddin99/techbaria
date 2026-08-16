@@ -116,6 +116,7 @@ export function generateMockSales(): Sale[] {
         paymentMethod: method,
         amountPaid,
         change: amountPaid - total,
+        dueAmount: 0,
         cashier: "Admin",
         editedBy: null,
         editedAt: null,
