@@ -116,7 +116,7 @@ export function SuppliersClient({
   const [payAccountId, setPayAccountId] = useState<string>("");
   const [payNote, setPayNote] = useState("");
   const [payDate, setPayDate] = useState<string>(new Date().toISOString().split("T")[0]);
-  const [walletAction, setWalletAction] = useState<"deposit" | "withdraw">("deposit");
+  const [walletAction, setWalletAction] = useState<"pay" | "deposit" | "withdraw">("pay");
 
   const accounts = useActiveAccounts(initialAccounts);
   const accountsTree = useMemo(() => flattenAccountsGroupedByType(accounts), [accounts]);
@@ -193,7 +193,7 @@ export function SuppliersClient({
       await withdrawMutation.mutateAsync({
         supplierId: payOpen.id, amount, accountId: payAccountId, notes: payNote, date: new Date(payDate).toISOString(),
       });
-    } else {
+    } else if (walletAction === "pay") {
       const method = methodFromAccountType(payAccount?.type);
       await payMutation.mutateAsync({
         supplierId: payOpen.id, amount, method, accountId: payAccountId, note: payNote, // note is without 's' here
@@ -324,7 +324,7 @@ export function SuppliersClient({
                     </div>
                   </div>
                   <div className="flex items-center gap-1 mt-2" onClick={(e) => e.stopPropagation()}>
-                    <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => { setWalletAction("deposit"); setPayOpen(s); }}>
+                    <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => { setWalletAction("pay"); setPayOpen(s); }}>
                       <Wallet className="h-3.5 w-3.5 mr-1" />Wallet
                     </Button>
                     <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openEdit(s)}>
@@ -378,7 +378,7 @@ export function SuppliersClient({
                         )}
                       </TableCell>
                       <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                        <Button size="sm" variant="outline" onClick={() => { setWalletAction("deposit"); setPayOpen(s); }} title="Wallet Deposit/Withdraw">
+                        <Button size="sm" variant="outline" onClick={() => { setWalletAction("pay"); setPayOpen(s); }} title="Pay Due / Wallet">
                           <Wallet className="h-3.5 w-3.5 mr-1" />Wallet
                         </Button>
                         <Button size="icon" variant="ghost" onClick={() => openEdit(s)} aria-label={`Edit ${s.name}`}>
@@ -417,6 +417,7 @@ export function SuppliersClient({
             </DialogDescription>
           </DialogHeader>
           <div className="flex gap-2 border-b pb-2 mb-2">
+            <Button size="sm" variant={walletAction === "pay" ? "default" : "outline"} onClick={() => setWalletAction("pay")}>Pay Due</Button>
             <Button size="sm" variant={walletAction === "deposit" ? "default" : "outline"} onClick={() => setWalletAction("deposit")}>Deposit Advance</Button>
             <Button size="sm" variant={walletAction === "withdraw" ? "default" : "outline"} onClick={() => setWalletAction("withdraw")}>Withdraw Advance</Button>
           </div>

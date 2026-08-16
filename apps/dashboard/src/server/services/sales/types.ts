@@ -55,4 +55,31 @@ export interface RefundInput {
   refundMethod: string;
 }
 
+export interface ExchangeInput {
+  originalSaleId: string;
+  returnItems: Array<{
+    productId: string;
+    qty: number;
+    restock: boolean;
+  }>;
+  newItems: Array<{
+    productId: string;
+    name?: string;
+    qty: number;
+    price: number;
+    discount?: number;
+    warrantyMonths?: number;
+    serials?: string[];
+  }>;
+  tenders: Array<{
+    type: string;
+    amount: number;
+    accountId?: string;
+    ref?: string;
+  }>;
+  refundMethod?: string;
+  reason: string;
+  notes?: string;
+}
+
 export type { StorefrontOrderCreateInput, StorefrontOrderStatus };

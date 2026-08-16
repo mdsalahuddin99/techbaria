@@ -9,6 +9,9 @@ import { useDashboardMetricsQuery } from "@/features/dashboard/hooks";
 import { Button } from "@/shared/ui/button";
 import { formatCurrency, formatDateTime } from "@/shared/lib/format";
 import { cn } from "@/shared/lib/utils";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/shared/ui/select";
 import type { Sale } from "@/shared/lib/types";
 import {
   TrendingUp,
@@ -67,7 +70,8 @@ export default function DashboardClient() {
 
   usePageTitle("Dashboard");
 
-  const { data: metrics, isLoading: isMetricsLoading, refetch } = useDashboardMetricsQuery();
+  const [period, setPeriod] = useState<"daily" | "weekly" | "monthly" | "all">("all");
+  const { data: metrics, isLoading: isMetricsLoading, refetch } = useDashboardMetricsQuery(period);
   const { data: salesData, refetch: refetchSales } = useSalesQuery();
   const sales = (salesData?.items ?? []) as Sale[];
   const recent = sales.slice(0, 5);
@@ -97,6 +101,18 @@ export default function DashboardClient() {
       icon: Wallet,
       iconBgClass: "bg-emerald-100",
       iconColorClass: "text-emerald-600",
+      subColorClass: undefined,
+      href: "/dashboard/reports",
+    },
+    {
+      id: "profit",
+      label: "Total Profit",
+      value: formatCurrency(metrics.profit.total),
+      sub: `${formatCurrency(metrics.profit.today)} today`,
+      delta: metrics.profit.delta,
+      icon: Banknote,
+      iconBgClass: "bg-indigo-100",
+      iconColorClass: "text-indigo-600",
       subColorClass: undefined,
       href: "/dashboard/reports",
     },
@@ -170,6 +186,17 @@ export default function DashboardClient() {
             <Calendar className="h-4 w-4 text-slate-400" />
             <span>{new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} (Today)</span>
           </div>
+          <Select value={period} onValueChange={(v: any) => setPeriod(v)}>
+            <SelectTrigger className="bg-white border-slate-200 shadow-sm h-9 w-[130px] font-medium text-slate-700">
+              <SelectValue placeholder="Period" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Time</SelectItem>
+              <SelectItem value="daily">Daily (Today)</SelectItem>
+              <SelectItem value="weekly">Weekly (7 Days)</SelectItem>
+              <SelectItem value="monthly">Monthly (30 Days)</SelectItem>
+            </SelectContent>
+          </Select>
           <Button variant="outline" size="sm" onClick={handleRefresh} className="bg-white border-slate-200 shadow-sm h-9 font-medium text-slate-700">
             <RefreshCcw className="h-3.5 w-3.5 mr-2 text-slate-500" /> Refresh
           </Button>
@@ -177,7 +204,7 @@ export default function DashboardClient() {
       </div>
 
       {/* ── KPI metric cards ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2 sm:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-2 sm:gap-4">
         {kpis.map((kpi, idx) => (
           <Link
             href={kpi.href}
@@ -264,7 +291,14 @@ export default function DashboardClient() {
                         </td>
                         <td className="hidden md:table-cell px-5 py-3 text-right">
                           <div className="text-[11px] text-slate-500 font-semibold">
-                            {new Date(s.date).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
+                            {(() => {
+                              const d = new Date(s.date);
+                              // If time is exactly midnight UTC, it was created without a time component
+                              if (d.getUTCHours() === 0 && d.getUTCMinutes() === 0 && d.getUTCSeconds() === 0) {
+                                return "N/A";
+                              }
+                              return d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+                            })()}
                           </div>
                         </td>
                       </tr>

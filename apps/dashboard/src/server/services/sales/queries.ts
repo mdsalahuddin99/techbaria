@@ -130,3 +130,23 @@ export async function listReturns(ctx: Ctx, params?: PaginationParams) {
     hasMore: raw.hasMore,
   };
 }
+
+/** List exchanges. */
+export async function listExchanges(ctx: Ctx, params?: PaginationParams) {
+  const where = {
+    status: "EXCHANGED",
+  };
+
+  const raw = await paginate(
+    prisma.sale,
+    { where, include: { items: true, tenders: true, customer: true, editedBy: true, user: true } } as any,
+    params,
+    { orderBy: { createdAt: "desc" } },
+  );
+
+  return {
+    items: raw.items.map(serializeSale),
+    nextCursor: raw.nextCursor,
+    hasMore: raw.hasMore,
+  };
+}

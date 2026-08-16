@@ -45,7 +45,8 @@ async function runListQuery(ctx: Ctx, params?: PaginationParams, filter?: Produc
         { AND: terms.map(term => ({ name: { contains: term, mode: "insensitive" as const } })) },
         { sku: { contains: q, mode: "insensitive" as const } },
         ...(modelIds.length > 0 ? [{ globalModelId: { in: modelIds } }] : []),
-        ...(brandIds.length > 0 ? [{ globalBrandId: { in: brandIds } }] : [])
+        ...(brandIds.length > 0 ? [{ globalBrandId: { in: brandIds } }] : []),
+        { inventoryLots: { some: { batchNo: { equals: q }, qtyRemaining: { gt: 0 } } } }
       ]
     });
   }

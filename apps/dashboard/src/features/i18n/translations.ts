@@ -50,6 +50,7 @@ export const translations = {
   "nav.audit": { en: "Stock Audit", bn: "স্টক অডিট" },
   "nav.sales": { en: "Sales History", bn: "বিক্রয় হিসাব" },
   "nav.returns": { en: "Returns & Refunds", bn: "রিটার্ন ও ফেরত" },
+  "nav.exchanges": { en: "Exchanges", bn: "এক্সচেঞ্জ" },
   "nav.warrantyLookup": { en: "Warranty Lookup", bn: "ওয়ারেন্টি খুঁজুন" },
   "nav.warrantyClaims": { en: "Warranty Claims", bn: "ওয়ারেন্টি ক্লেইম" },
   "nav.stockAudit": { en: "Stock Audit", bn: "স্টক অডিট" },

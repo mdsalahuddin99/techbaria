@@ -22,6 +22,7 @@ export interface DraftLine {
   manualQty: number;
   isBundle?: boolean;
   totalCost?: number;
+  batchNo?: string;
 }
 
 export type Tender = {
@@ -149,7 +150,14 @@ export function usePurchaseForm({
           setLines(parsed.lines);
           setCollapsedSet(new Set(parsed.lines.map((l: DraftLine) => l.productId)));
         }
-        if (parsed.tenders?.length) setTenders(parsed.tenders);
+        if (parsed.tenders?.length) {
+          const validatedTenders = parsed.tenders.map((t: Tender) => {
+            if (t.accountId === "WALLET") return t;
+            const exists = accounts.some(a => a.id === t.accountId);
+            return exists ? t : { ...t, accountId: defaultAccountId };
+          });
+          setTenders(validatedTenders);
+        }
         toast.info("Unsaved draft loaded");
       }
     } catch (e) {
@@ -361,11 +369,11 @@ export function usePurchaseForm({
       if (lines.length === 0) { toast.error("কমপক্ষে একটি product যোগ করুন"); return null; }
       
       const empty = lines.find((l) =>
-        l.trackSerials ? l.serials.length === 0 : l.manualQty <= 0
+        l.trackSerials && !l.isBundle ? l.serials.length === 0 : l.manualQty <= 0
       );
       if (empty) {
         toast.error(
-          empty.trackSerials
+          empty.trackSerials && !empty.isBundle
             ? `"${empty.name}" এর জন্য serial scan করুন`
             : `"${empty.name}" এর quantity দিন`
         );
@@ -391,7 +399,8 @@ export function usePurchaseForm({
           qty: lineUnits(l),
           cost: lineCost(l),
           salePrice: lineSale(l, (products.find((p) => p.id === l.productId)?.price) || 0),
-          serials: l.trackSerials ? l.serials : undefined,
+          serials: l.trackSerials && !l.isBundle ? l.serials : undefined,
+          batchNo: (!l.trackSerials || l.isBundle) ? l.batchNo : undefined,
           warrantyStartDate: warrantyStart,
           warrantyMonths: l.warrantyMonths || undefined,
         };

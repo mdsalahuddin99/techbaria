@@ -9,6 +9,7 @@ export const purchaseItemSchema = z.object({
   costPrice: z.number({ required_error: "Cost is required" }).min(0).optional(),
   salePrice: z.number().min(0).optional(),
   serials: z.array(z.string()).optional(),
+  batchNo: z.string().optional(),
   warrantyStartDate: z.string().optional(),
   warrantyMonths: z.number().min(1).optional(),
 }).transform((item) => ({
@@ -18,6 +19,7 @@ export const purchaseItemSchema = z.object({
   cost: item.cost ?? item.costPrice ?? 0,
   salePrice: item.salePrice,
   serials: item.serials,
+  batchNo: item.batchNo,
   warrantyStartDate: item.warrantyStartDate,
   warrantyMonths: item.warrantyMonths,
 }));

@@ -9,6 +9,11 @@ export interface DashboardMetrics {
     today: number;
     delta: number;
   };
+  profit: {
+    total: number;
+    today: number;
+    delta: number;
+  };
   orders: {
     total: number;
     today: number;
@@ -28,12 +33,12 @@ export interface DashboardMetrics {
   topProducts: Array<{ name: string; qty: number }>;
 }
 
-export function useDashboardMetricsQuery() {
+export function useDashboardMetricsQuery(period: "daily" | "weekly" | "monthly" | "all" = "all") {
   const { session, status } = useAuth();
   return useQuery({
-    queryKey: dashboardKeys.metrics(),
+    queryKey: [...dashboardKeys.metrics(), period],
     queryFn: async (): Promise<DashboardMetrics> => {
-      const res = await fetch("/api/dashboard/metrics");
+      const res = await fetch(`/api/dashboard/metrics?period=${period}`);
       if (!res.ok) throw new Error("Failed to fetch dashboard metrics");
       return res.json();
     },

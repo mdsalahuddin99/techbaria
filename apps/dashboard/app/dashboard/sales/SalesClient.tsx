@@ -35,6 +35,7 @@ import Invoice from "@/components/Invoice";
 import { PageHeader, EmptyState } from "@/shared/components";
 import { useInfiniteSalesQuery, useSaleMutations } from "@/features/sales/hooks";
 import { useSettings } from "@/features/settings/hooks";
+import { ExchangeDialog } from "@/features/sales/components";
 
 export function SalesClient() {
   usePageTitle("Sales");
@@ -45,8 +46,11 @@ export function SalesClient() {
   const [search, setSearch] = useState(initialSearch);
   const [method, setMethod] = useState("All");
   const [sort, setSort] = useState<"newest" | "oldest" | "total-desc" | "total-asc" | "due-desc" | "due-asc">("newest");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
   const [view, setView] = useState<Sale | null>(null);
   const [invoice, setInvoice] = useState<Sale | null>(null);
+  const [exchangeSale, setExchangeSale] = useState<Sale | null>(null);
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const { delete: deleteSale } = useSaleMutations();
 
@@ -86,7 +90,9 @@ export function SalesClient() {
     sortKey: sort.split("-")[0],
     sortDir: sort.split("-")[1] as "asc" | "desc",
     limit: debouncedSearch.trim() ? 1000 : 15,
-  }), [debouncedSearch, method, sort]);
+    from: from ? new Date(from).toISOString() : undefined,
+    to: to ? new Date(new Date(to).getTime() + 86399000).toISOString() : undefined,
+  }), [debouncedSearch, method, sort, from, to]);
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useInfiniteSalesQuery(queryFilter);
 
@@ -109,6 +115,8 @@ export function SalesClient() {
   }, [data, search]);
 
   const total = allSales.reduce((s, x) => s + x.total, 0);
+  const totalProfit = allSales.reduce((s, x) => s + (x.profit || 0), 0);
+  const totalDue = allSales.reduce((s, x) => s + (x.dueAmount || 0), 0);
 
   return (
     <div className="space-y-4">
@@ -117,16 +125,24 @@ export function SalesClient() {
         description="Search, review and reprint past invoices."
         actions={
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-6 w-full sm:w-auto mt-2 sm:mt-0">
-            <div className="grid grid-cols-3 gap-1.5 sm:flex sm:items-center sm:gap-3 w-full sm:w-auto mr-auto sm:mr-4">
-              <div className="bg-white/15 backdrop-blur-sm border border-white/20 px-1.5 sm:px-3 py-1.5 rounded-lg flex flex-col justify-center min-w-0">
-                <p className="text-[8px] sm:text-[10px] text-white/80 uppercase font-semibold tracking-wider truncate" title="Transactions">Transactions</p>
+            <div className="flex flex-wrap sm:flex-nowrap gap-1.5 sm:gap-3 w-full sm:w-auto mr-auto sm:mr-4">
+              <div className="flex-1 bg-white/15 backdrop-blur-sm border border-white/20 px-1.5 sm:px-3 py-1.5 rounded-lg flex flex-col justify-center min-w-[75px]">
+                <p className="text-[8px] sm:text-[10px] text-white/80 uppercase font-semibold tracking-wider truncate" title="Transactions">Sales</p>
                 <p className="text-xs sm:text-sm font-bold mt-0.5 text-white truncate">{allSales.length}</p>
               </div>
-              <div className="bg-white/15 backdrop-blur-sm border border-white/20 px-1.5 sm:px-3 py-1.5 rounded-lg flex flex-col justify-center min-w-0">
+              <div className="flex-1 bg-white/15 backdrop-blur-sm border border-white/20 px-1.5 sm:px-3 py-1.5 rounded-lg flex flex-col justify-center min-w-[75px]">
                 <p className="text-[8px] sm:text-[10px] text-white/80 uppercase font-semibold tracking-wider truncate" title="Revenue">Revenue</p>
                 <p className="text-xs sm:text-sm font-bold mt-0.5 text-white truncate">{formatCurrency(total)}</p>
               </div>
-              <div className="bg-white/15 backdrop-blur-sm border border-white/20 px-1.5 sm:px-3 py-1.5 rounded-lg flex flex-col justify-center min-w-0">
+              <div className="flex-1 bg-emerald-500/20 backdrop-blur-sm border border-emerald-400/30 px-1.5 sm:px-3 py-1.5 rounded-lg flex flex-col justify-center min-w-[75px]">
+                <p className="text-[8px] sm:text-[10px] text-emerald-100 uppercase font-semibold tracking-wider truncate" title="Profit">Profit</p>
+                <p className="text-xs sm:text-sm font-bold mt-0.5 text-emerald-50 truncate">{formatCurrency(totalProfit)}</p>
+              </div>
+              <div className="flex-1 bg-rose-500/20 backdrop-blur-sm border border-rose-400/30 px-1.5 sm:px-3 py-1.5 rounded-lg flex flex-col justify-center min-w-[75px]">
+                <p className="text-[8px] sm:text-[10px] text-rose-100 uppercase font-semibold tracking-wider truncate" title="Due Amount">Due</p>
+                <p className="text-xs sm:text-sm font-bold mt-0.5 text-rose-50 truncate">{formatCurrency(totalDue)}</p>
+              </div>
+              <div className="flex-1 bg-white/15 backdrop-blur-sm border border-white/20 px-1.5 sm:px-3 py-1.5 rounded-lg flex flex-col justify-center min-w-[75px]">
                 <p className="text-[8px] sm:text-[10px] text-white/80 uppercase font-semibold tracking-wider truncate" title="Avg Order">Avg Order</p>
                 <p className="text-xs sm:text-sm font-bold mt-0.5 text-white truncate">
                   {formatCurrency(allSales.length ? total / allSales.length : 0)}
@@ -141,34 +157,42 @@ export function SalesClient() {
         }
       />
 
-      <Card className="px-4 py-2 flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input id="sales-search-input" placeholder="Search invoice, customer name or phone…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+      <Card className="px-4 py-3">
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex items-center gap-2 border rounded-md px-2 flex-1 sm:flex-none">
+            <span className="text-[10px] font-bold text-muted-foreground uppercase">From</span>
+            <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="h-9 w-full sm:w-[130px] text-xs border-none shadow-none focus-visible:ring-0 p-0" />
+            <span className="text-[10px] font-bold text-muted-foreground uppercase border-l pl-2">To</span>
+            <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="h-9 w-full sm:w-[130px] text-xs border-none shadow-none focus-visible:ring-0 p-0" />
+          </div>
+          <Select value={method} onValueChange={setMethod}>
+            <SelectTrigger className="flex-1 sm:flex-none sm:w-48"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="All">All payment methods</SelectItem>
+              <SelectItem value="Cash">Cash</SelectItem>
+              <SelectItem value="Card">Card</SelectItem>
+              <SelectItem value="Mobile Banking">Mobile Banking</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={sort} onValueChange={(v) => setSort(v as typeof sort)}>
+            <SelectTrigger className="flex-1 sm:flex-none sm:w-48">
+              <ArrowUpDown className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="newest">Newest first</SelectItem>
+              <SelectItem value="oldest">Oldest first</SelectItem>
+              <SelectItem value="total-desc">Total (high → low)</SelectItem>
+              <SelectItem value="total-asc">Total (low → high)</SelectItem>
+              <SelectItem value="due-desc">Due (high → low)</SelectItem>
+              <SelectItem value="due-asc">Due (low → high)</SelectItem>
+            </SelectContent>
+          </Select>
+          <div className="relative w-full flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input id="sales-search-input" placeholder="Search invoice, customer name or phone…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+          </div>
         </div>
-        <Select value={method} onValueChange={setMethod}>
-          <SelectTrigger className="sm:w-48"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="All">All payment methods</SelectItem>
-            <SelectItem value="Cash">Cash</SelectItem>
-            <SelectItem value="Card">Card</SelectItem>
-            <SelectItem value="Mobile Banking">Mobile Banking</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={sort} onValueChange={(v) => setSort(v as typeof sort)}>
-          <SelectTrigger className="sm:w-48">
-            <ArrowUpDown className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="newest">Newest first</SelectItem>
-            <SelectItem value="oldest">Oldest first</SelectItem>
-            <SelectItem value="total-desc">Total (high → low)</SelectItem>
-            <SelectItem value="total-asc">Total (low → high)</SelectItem>
-            <SelectItem value="due-desc">Due (high → low)</SelectItem>
-            <SelectItem value="due-asc">Due (low → high)</SelectItem>
-          </SelectContent>
-        </Select>
       </Card>
 
       <Card>
@@ -361,9 +385,16 @@ export function SalesClient() {
                   <span>Total</span><span className="text-primary">{formatCurrency(view.total)}</span>
                 </div>
                 <Row label={view.paymentMethod} value={formatCurrency(view.amountPaid)} />
+                {view.dueAmount > 0 && <Row label="Due" value={formatCurrency(view.dueAmount)} />}
                 <Row label="Change" value={formatCurrency(view.change)} />
                 {view.editedBy && <Row label="Edited by" value={view.editedBy} />}
                 {view.editedAt && <Row label="Edited at" value={formatDateTime(view.editedAt)} />}
+              </div>
+              <div className="pt-4">
+                <Button variant="outline" className="w-full" onClick={() => setExchangeSale(view)}>
+                  <ArrowUpDown className="h-4 w-4 mr-2" />
+                  Exchange Items
+                </Button>
               </div>
             </div>
           )}
@@ -375,6 +406,11 @@ export function SalesClient() {
         settings={settings}
         open={!!invoice}
         onClose={() => setInvoice(null)}
+      />
+
+      <ExchangeDialog 
+        sale={exchangeSale} 
+        onClose={() => setExchangeSale(null)} 
       />
     </div>
   );

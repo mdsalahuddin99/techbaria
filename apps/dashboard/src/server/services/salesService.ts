@@ -7,7 +7,7 @@
  */
 import "server-only";
 
-import { list, getById, byCustomer, listReturns } from "./sales/queries";
+import { list, getById, byCustomer, listReturns, listExchanges } from "./sales/queries";
 import { create } from "./sales/create";
 import { voidSale } from "./sales/void";
 import { refund } from "./sales/refund";
@@ -15,6 +15,7 @@ import { remove } from "./sales/remove";
 import { update } from "./sales/update";
 import { collectDue } from "./sales/collectDue";
 import { bulkCollectDue } from "./sales/bulkCollectDue";
+import { exchange } from "./sales/exchange";
 import {
   createStorefrontOrder,
   listStorefrontOrders,
@@ -40,6 +41,9 @@ export const salesService = {
   /** List returns */
   listReturns,
 
+  /** List exchanges */
+  listExchanges,
+
   /** Get a single sale by ID. */
   getById,
 
@@ -63,6 +67,9 @@ export const salesService = {
 
   /** Bulk collect due across multiple sales for a customer. */
   bulkCollectDue,
+
+  /** Process an exchange for a sale. Requires MANAGER+. */
+  exchange,
 
   /** Get sales for a specific customer. */
   byCustomer,

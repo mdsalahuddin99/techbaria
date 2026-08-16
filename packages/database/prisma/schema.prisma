@@ -493,6 +493,7 @@ enum SaleStatus {
   HELD
   VOIDED
   REFUNDED
+  EXCHANGED
 }
 
 model Sale {
@@ -1041,8 +1042,10 @@ model InventoryLot {
   unitCost     Decimal    @db.Decimal(12, 2)
   sourceType   String     // "PURCHASE", "RETURN", "ADJUSTMENT", "MIGRATION"
   sourceId     String?
+  batchNo      String?
   createdAt    DateTime   @default(now())
 
   @@index([productId, qtyRemaining])
+  @@index([batchNo])
   @@index([createdAt])
 }

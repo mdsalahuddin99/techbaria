@@ -188,6 +188,7 @@ export function serializeSale(raw: PrismaSale): Sale {
     notes: raw.notes ?? undefined,
     paymentMethod: mapTenderTypeToPaymentMethod(raw.tenders?.[0]?.type),
     amountPaid: paid,
+    dueAmount: toNumber(raw.due),
     change: Math.max(0, paid - total),
     cashier: raw.user?.role ?? raw.user?.name ?? "Unknown",
     editedBy: raw.editedBy?.name ?? raw.editedBy?.email ?? null,
@@ -202,6 +203,7 @@ export function serializeSale(raw: PrismaSale): Sale {
     refundAmount: d.refundAmount ?? (raw.status === "REFUNDED" ? total : 0),
     refundMethod: d.refundMethod ?? "Cash",
     reason: d.reason ?? (raw.notes?.startsWith("REFUND: ") ? raw.notes.replace("REFUND: ", "") : raw.notes ?? ""),
+    profit: (toNumber(raw.subtotal) - toNumber(raw.discount)) - (raw.items ?? []).reduce((sum: number, i: any) => sum + toNumber(i.cost) * i.qty, 0),
   } as any;
 }
 

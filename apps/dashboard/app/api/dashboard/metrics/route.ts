@@ -15,7 +15,10 @@ export async function GET(req: Request) {
       role: (session.user as any).role,
     });
 
-    const metrics = await dashboardService.getMetrics(ctx);
+    const url = new URL(req.url);
+    const period = (url.searchParams.get("period") || "all") as "daily" | "weekly" | "monthly" | "all";
+
+    const metrics = await dashboardService.getMetrics(ctx, period);
     return NextResponse.json(metrics);
   } catch (error: any) {
     console.error("Dashboard metrics error:", error);

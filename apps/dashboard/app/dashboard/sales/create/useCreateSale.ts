@@ -625,7 +625,11 @@ export function useCreateSale() {
       warehouseId: selectedWarehouseId ?? undefined,
       discount: 0,
       channel: "POS" as const,
-      date: invoiceDate ? new Date(invoiceDate).toISOString() : undefined,
+      date: invoiceDate 
+        ? (invoiceDate === new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0] 
+            ? new Date().toISOString() 
+            : new Date(`${invoiceDate}T12:00:00`).toISOString())
+        : undefined,
       salesPerson: salesPerson || undefined,
       destination: destination || undefined,
       attention: attention || undefined,

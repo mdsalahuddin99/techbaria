@@ -155,3 +155,50 @@ export async function getBulkReceiptDataAction(reference: string) {
     invoicesAffected,
   };
 }
+
+export async function findSaleForExchangeAction(query: string) {
+  const ctx = await getActionCtx();
+  const q = query.trim();
+  
+  if (!q) return null;
+
+  const sales = await prisma.sale.findMany({
+    where: {
+      OR: [
+        { id: { startsWith: q, mode: "insensitive" } },
+        {
+          data: {
+            path: ["invoiceNo"],
+            string_contains: q,
+          },
+        },
+        {
+          items: {
+            some: {
+              serialNumbers: {
+                some: {
+                  serial: { equals: q, mode: "insensitive" },
+                },
+              },
+            },
+          },
+        },
+      ],
+    },
+    include: {
+      items: { include: { serialNumbers: true } } as any,
+      tenders: true,
+      customer: true,
+      user: true,
+      editedBy: true,
+    },
+    take: 1,
+  });
+
+  if (sales.length > 0) {
+    return salesService.getById(ctx, sales[0].id);
+  }
+  
+  return null;
+}
+

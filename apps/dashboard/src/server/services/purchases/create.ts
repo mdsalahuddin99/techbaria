@@ -54,7 +54,9 @@ export async function create(ctx: Ctx, input: PurchaseCreateInput) {
       select: { id: true },
     });
     if (accounts.length !== new Set(accountIds).size) {
-      throw new ServiceError("VALIDATION", "Invalid or unauthorized financial account", 400);
+      const foundIds = accounts.map(a => a.id);
+      const missingIds = accountIds.filter(id => !foundIds.includes(id));
+      throw new ServiceError("VALIDATION", `Invalid or unauthorized financial account: ${missingIds.join(", ")}`, 400);
     }
   }
 
@@ -266,6 +268,7 @@ export async function create(ctx: Ctx, input: PurchaseCreateInput) {
         unitCost: item.cost,
         sourceType: "PURCHASE",
         sourceId: purchaseItem?.id,
+        batchNo: item.batchNo || null,
       };
     });
     

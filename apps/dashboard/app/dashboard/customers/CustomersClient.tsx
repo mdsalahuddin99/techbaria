@@ -307,7 +307,7 @@ export function CustomersClient({
                     onClick={(e) => e.stopPropagation()}
                   >
                     <Button size="sm" variant="outline" className="h-8 px-2 text-xs" onClick={() => setCollectFor(c)}>
-                      <Wallet className="h-3.5 w-3.5 mr-1" /> Collect
+                      <Wallet className="h-3.5 w-3.5 mr-1" /> Wallet
                     </Button>
                     <Button size="sm" variant="outline" className="h-8 px-2 text-xs" onClick={() => setHistoryFor(c)}>
                       <History className="h-3.5 w-3.5 mr-1" /> History
@@ -398,7 +398,7 @@ export function CustomersClient({
                       <TableCell className="text-right">{c.loyaltyPoints} pts</TableCell>
                       <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                         <Button size="sm" variant="outline" className="mr-1 h-8" onClick={() => setCollectFor(c)}>
-                          <Wallet className="h-3.5 w-3.5 mr-1" />Collect
+                          <Wallet className="h-3.5 w-3.5 mr-1" />Wallet
                         </Button>
                         <Button size="icon" variant="ghost" onClick={() => setHistoryFor(c)} aria-label={`View ${c.name} history`} title="Purchase history">
                           <History className="h-4 w-4" />

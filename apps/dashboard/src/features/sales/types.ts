@@ -52,6 +52,10 @@ export interface Sale {
   editedAt: string | null;
   /** Multi-tender breakdown. Single-method sales also populate this. */
   payments?: SalePayment[];
+  /** Amount still due for this sale */
+  dueAmount: number;
+  /** Gross profit of the sale */
+  profit?: number;
 }
 
 

@@ -86,6 +86,7 @@ export function ReportsClient({
   const [from, setFrom] = useState(defaultFrom);
   const [to, setTo] = useState(defaultTo);
   const [method, setMethod] = useState<string>("All");
+  const [activePreset, setActivePreset] = useState<string | null>(initialFromDate ? null : "thisMonth"); // Assume thisMonth initially if no dates provided
 
   const [activeTab, setActiveTab] = useState("pl");
   const [searchLowStock, setSearchLowStock] = useState("");
@@ -165,13 +166,30 @@ export function ReportsClient({
       [`Date Range: ${from} to ${to}`],
       [`Payment Method: ${method}`],
       [""],
-      ["Total Revenue", metrics.totalRevenue],
+      ["Total Profit", metrics.grossProfit],
       ["Total Transactions", metrics.txnCount],
       ["Average Order Value", metrics.aov],
       [""],
-      ["-- TOP SELLING PRODUCTS --"],
-      ["Product Name", "Quantity Sold", "Generated Revenue"],
-      ...metrics.topProducts.map((p) => [p.name, p.qty, p.revenue])
+      ["-- ALL SALES --"],
+      ["Date & Time", "Product Name", "Purchase Rate", "Sale Rate", "Discount", "Payable", "Paid", "Dues"],
+      ...(metrics.allSalesList || []).map((s: any) => [
+        `${formatDate(s.date)} ${new Date(s.date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`, 
+        s.productName, 
+        s.purchaseRate, 
+        s.saleRate, 
+        s.discount, 
+        s.payable, 
+        s.paid, 
+        s.due
+      ]),
+      ["Total", "", 
+       (metrics.allSalesList || []).reduce((acc: number, s: any) => acc + s.purchaseRate, 0),
+       (metrics.allSalesList || []).reduce((acc: number, s: any) => acc + s.saleRate, 0),
+       (metrics.allSalesList || []).reduce((acc: number, s: any) => acc + s.discount, 0),
+       (metrics.allSalesList || []).reduce((acc: number, s: any) => acc + s.payable, 0),
+       (metrics.allSalesList || []).reduce((acc: number, s: any) => acc + s.paid, 0),
+       (metrics.allSalesList || []).reduce((acc: number, s: any) => acc + s.due, 0)
+      ]
     ];
     downloadCSV(`sales_report_${from}_to_${to}.csv`, rows);
     toast.success("Sales report downloaded!");
@@ -322,6 +340,7 @@ export function ReportsClient({
   };
 
   const setPreset = (preset: "today" | "yesterday" | "thisWeek" | "thisMonth" | "allTime") => {
+    setActivePreset(preset);
     const d = new Date();
     const todayStr = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
     if (preset === "today") {
@@ -366,7 +385,12 @@ export function ReportsClient({
                 key={preset}
                 size="sm"
                 variant="outline"
-                className="h-7 text-[11px] font-bold px-3 rounded-lg text-slate-700 bg-white hover:bg-slate-50 hover:text-slate-900 border-slate-200/80 hover:border-slate-300 shadow-sm shadow-slate-100/30 transition-all"
+                className={cn(
+                  "h-7 text-[11px] font-bold px-3 rounded-lg shadow-sm shadow-slate-100/30 transition-all",
+                  activePreset === preset
+                    ? "bg-indigo-600 text-white border-indigo-700 hover:bg-indigo-700 hover:text-white"
+                    : "text-slate-700 bg-white hover:bg-slate-50 hover:text-slate-900 border-slate-200/80 hover:border-slate-300"
+                )}
                 onClick={() => setPreset(preset as any)}
               >
                 {labelMap[preset as keyof typeof labelMap]}
@@ -377,9 +401,9 @@ export function ReportsClient({
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2 bg-white border border-slate-200/80 rounded-xl p-1.5 shadow-sm">
             <span className="text-[10px] font-bold text-slate-400 uppercase px-1.5">From</span>
-            <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="h-7 w-[120px] text-xs bg-transparent border-none shadow-none focus-visible:ring-0 p-0 text-slate-700 font-medium" />
+            <Input type="date" value={from} onChange={(e) => { setFrom(e.target.value); setActivePreset(null); }} className="h-7 w-[120px] text-xs bg-transparent border-none shadow-none focus-visible:ring-0 p-0 text-slate-700 font-medium" />
             <span className="text-[10px] font-bold text-slate-400 uppercase px-1.5 border-l border-slate-100">To</span>
-            <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="h-7 w-[120px] text-xs bg-transparent border-none shadow-none focus-visible:ring-0 p-0 text-slate-700 font-medium" />
+            <Input type="date" value={to} onChange={(e) => { setTo(e.target.value); setActivePreset(null); }} className="h-7 w-[120px] text-xs bg-transparent border-none shadow-none focus-visible:ring-0 p-0 text-slate-700 font-medium" />
           </div>
           {showMethod && (
             <div className="flex items-center gap-2 bg-white border border-slate-200/80 rounded-xl p-1.5 shadow-sm">
@@ -457,41 +481,41 @@ export function ReportsClient({
                   value: "pl", 
                   label: "P&L", 
                   icon: Calculator,
-                  activeClass: "data-[state=active]:bg-indigo-50/95 data-[state=active]:text-indigo-700 data-[state=active]:border-indigo-200/60 data-[state=active]:shadow-indigo-100/60",
-                  hoverClass: "hover:bg-indigo-50/40 hover:text-indigo-700 hover:border-indigo-200/30",
-                  iconColor: "text-indigo-500 group-hover:text-indigo-600"
+                  activeClass: "data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:border-indigo-700 shadow-md",
+                  hoverClass: "hover:bg-indigo-50/40 hover:text-indigo-700",
+                  iconColor: "text-indigo-500 group-data-[state=active]:text-white"
                 },
                 { 
                   value: "sales", 
                   label: "Sales", 
                   icon: Receipt,
-                  activeClass: "data-[state=active]:bg-emerald-50/95 data-[state=active]:text-emerald-700 data-[state=active]:border-emerald-200/60 data-[state=emerald-100/60",
-                  hoverClass: "hover:bg-emerald-50/40 hover:text-emerald-700 hover:border-emerald-200/30",
-                  iconColor: "text-emerald-500 group-hover:text-emerald-600"
+                  activeClass: "data-[state=active]:bg-emerald-600 data-[state=active]:text-white data-[state=active]:border-emerald-700 shadow-md",
+                  hoverClass: "hover:bg-emerald-50/40 hover:text-emerald-700",
+                  iconColor: "text-emerald-500 group-data-[state=active]:text-white"
                 },
                 { 
                   value: "inventory", 
                   label: "Inventory", 
                   icon: Boxes,
-                  activeClass: "data-[state=active]:bg-amber-50/95 data-[state=active]:text-amber-700 data-[state=active]:border-amber-200/60 data-[state=active]:shadow-amber-100/60",
-                  hoverClass: "hover:bg-amber-50/40 hover:text-amber-700 hover:border-amber-200/30",
-                  iconColor: "text-amber-500 group-hover:text-amber-600"
+                  activeClass: "data-[state=active]:bg-amber-500 data-[state=active]:text-white data-[state=active]:border-amber-600 shadow-md",
+                  hoverClass: "hover:bg-amber-50/40 hover:text-amber-700",
+                  iconColor: "text-amber-500 group-data-[state=active]:text-white"
                 },
                 { 
                   value: "dues", 
                   label: "Dues", 
                   icon: UserMinus,
-                  activeClass: "data-[state=active]:bg-violet-50/95 data-[state=active]:text-violet-700 data-[state=active]:border-violet-200/60 data-[state=active]:shadow-violet-100/60",
-                  hoverClass: "hover:bg-violet-50/40 hover:text-violet-700 hover:border-violet-200/30",
-                  iconColor: "text-violet-500 group-hover:text-violet-600"
+                  activeClass: "data-[state=active]:bg-violet-600 data-[state=active]:text-white data-[state=active]:border-violet-700 shadow-md",
+                  hoverClass: "hover:bg-violet-50/40 hover:text-violet-700",
+                  iconColor: "text-violet-500 group-data-[state=active]:text-white"
                 },
                 { 
                   value: "expenses", 
                   label: "Expenses", 
                   icon: CreditCard,
-                  activeClass: "data-[state=active]:bg-rose-50/95 data-[state=active]:text-rose-700 data-[state=active]:border-rose-200/60 data-[state=active]:shadow-rose-100/60",
-                  hoverClass: "hover:bg-rose-50/40 hover:text-rose-700 hover:border-rose-200/30",
-                  iconColor: "text-rose-500 group-hover:text-rose-600"
+                  activeClass: "data-[state=active]:bg-rose-600 data-[state=active]:text-white data-[state=active]:border-rose-700 shadow-md",
+                  hoverClass: "hover:bg-rose-50/40 hover:text-rose-700",
+                  iconColor: "text-rose-500 group-data-[state=active]:text-white"
                 },
               ].map((tab) => {
                 const Icon = tab.icon;
@@ -525,7 +549,7 @@ export function ReportsClient({
             )}
             {activeTab === "sales" && (
               <>
-                <SmallStat label="Total Revenue" value={formatCurrency(metrics.totalRevenue)} icon={TrendingUp} color="indigo" />
+                <SmallStat label="Total Profit" value={formatCurrency(metrics.grossProfit)} icon={TrendingUp} color="indigo" />
                 <SmallStat label="Transactions" value={metrics.txnCount.toString()} icon={Receipt} color="violet" />
                 <SmallStat label="Products Sold" value={metrics.topProducts.reduce((sum, p) => sum + p.qty, 0).toString()} icon={Box} color="amber" />
                 <SmallStat label="Avg Order Value" value={formatCurrency(metrics.aov)} icon={Calculator} color="emerald" />
@@ -615,9 +639,10 @@ export function ReportsClient({
                     <tbody>
                       <PLRow label="Total Expense" value={formatCurrency(metrics.expenseTotal)} badgeVariant="danger" />
                       
-                      <PLRow label="Sales" isHeading />
-                      <PLRow label="Total Sales" value={formatCurrency(metrics.totalSales)} bgClass="bg-slate-50/50" badgeVariant="highlight" />
-                      <PLRow label="Total Discount" value={formatCurrency(metrics.totalDiscountSales + metrics.couponDiscount)} />
+                      <PLRow label="SALES" isHeading />
+                      <PLRow label="Gross Sales" value={formatCurrency(metrics.totalSales + metrics.totalDiscountSales + metrics.couponDiscount)} bgClass="bg-slate-50/50" />
+                      <PLRow label="Total Discount" value={formatCurrency(metrics.totalDiscountSales + metrics.couponDiscount)} badgeVariant="danger" />
+                      <PLRow label="Net Sales" value={formatCurrency(metrics.totalSales)} badgeVariant="highlight" bgClass="bg-blue-50/30" />
                       <PLRow label="Paid Payment" value={formatCurrency(metrics.paidSales)} badgeVariant="success" />
                       <PLRow label="Sales Due" value={formatCurrency(metrics.dueSales)} badgeVariant="danger" />
 
@@ -626,6 +651,11 @@ export function ReportsClient({
                       <PLRow label="Total Discount" value={formatCurrency(metrics.totalDiscountSalesReturn + metrics.couponDiscountSalesReturn)} />
                       <PLRow label="Paid Payment" value={formatCurrency(metrics.paidSalesReturn)} badgeVariant="success" />
                       <PLRow label="Sales Return Due" value={formatCurrency(metrics.dueSalesReturn)} badgeVariant="danger" />
+
+                      <PLRow label="Cash Inflow" isHeading />
+                      <PLRow label="Cash From New Sales" value={formatCurrency(metrics.initialPaidSales)} />
+                      <PLRow label="Due Collected" value={formatCurrency(metrics.dueCollected)} badgeVariant="success" />
+                      <PLRow label="Total Cash In" value={formatCurrency(metrics.initialPaidSales + metrics.dueCollected)} badgeVariant="highlight" bgClass="bg-indigo-50/30" />
                     </tbody>
                   </table>
                 </div>
@@ -640,35 +670,59 @@ export function ReportsClient({
         <TabsContent value="sales" className="space-y-4 mt-0 print:block">
           {renderDateFilters(true, exportSales, "Sales")}
 
-
-          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-md shadow-slate-100/50 overflow-hidden print:overflow-visible print:border-none print:shadow-none">
-            <div className="px-4 py-3 border-b border-slate-100/50 flex items-center justify-between print:px-0">
-              <h3 className="text-[12px] font-bold text-slate-800 uppercase tracking-wide">Top Products</h3>
+          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-md shadow-slate-100/50 overflow-hidden print:overflow-visible flex flex-col h-[calc(100vh-280px)] min-h-[400px] print:h-auto print:max-h-none print:border-none print:shadow-none">
+            <div className="px-4 py-3 border-b border-slate-100/50 flex items-center justify-between shrink-0 print:px-0">
+              <h3 className="text-[12px] font-bold text-slate-800 uppercase tracking-wide">All Sales</h3>
               <Button size="sm" variant="ghost" className="h-7 text-xs font-medium text-slate-600 print:hidden" onClick={exportSales}>
                 <Download className="h-3.5 w-3.5 mr-1" /> CSV
               </Button>
             </div>
-            <div className="overflow-x-auto print:overflow-visible">
+            <div className="overflow-auto flex-1 print:overflow-visible scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent">
               <table className="w-full text-[13px] border-collapse">
-                <thead className="bg-slate-50/50 border-b border-slate-100">
+                <thead className="bg-slate-50/95 backdrop-blur border-b border-slate-200 sticky top-0 z-20 shadow-sm">
                   <tr className="text-slate-500">
-                    <th className="text-left px-4 py-2 text-[10px] font-bold uppercase tracking-wider">Product Name</th>
-                    <th className="text-center px-4 py-2 text-[10px] font-bold uppercase tracking-wider">Qty Sold</th>
-                    <th className="text-right px-4 py-2 text-[10px] font-bold uppercase tracking-wider">Revenue</th>
+                    <th className="text-left px-4 py-2 text-[10px] font-bold uppercase tracking-wider whitespace-nowrap">Date & Time</th>
+                    <th className="text-left px-4 py-2 text-[10px] font-bold uppercase tracking-wider min-w-[200px]">Product Name</th>
+                    <th className="text-right px-4 py-2 text-[10px] font-bold uppercase tracking-wider">Purchase Rate</th>
+                    <th className="text-right px-4 py-2 text-[10px] font-bold uppercase tracking-wider">Sale Rate</th>
+                    <th className="text-right px-4 py-2 text-[10px] font-bold uppercase tracking-wider">Discount</th>
+                    <th className="text-right px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-indigo-600">Payable</th>
+                    <th className="text-right px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-emerald-600">Paid</th>
+                    <th className="text-right px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-rose-600">Dues</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {metrics.topProducts.map((p, i) => (
-                    <tr key={i} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
-                      <td className="px-4 py-1.5 font-medium text-slate-700">{p.name}</td>
-                      <td className="px-4 py-1.5 text-center text-slate-600 font-semibold">{p.qty}</td>
-                      <td className="px-4 py-1.5 text-right font-bold text-slate-800">{formatCurrency(p.revenue)}</td>
+                  {metrics.allSalesList?.map((s: any) => (
+                    <tr key={s.id} className="border-b border-slate-50 hover:bg-slate-50/80 transition-colors">
+                      <td className="px-4 py-2.5 font-medium text-slate-700 whitespace-nowrap">
+                        {formatDate(s.date)} <span className="text-[10px] text-slate-400 ml-1">{new Date(s.date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+                      </td>
+                      <td className="px-4 py-2.5 text-slate-600 leading-tight">{s.productName}</td>
+                      <td className="px-4 py-2.5 text-right font-medium text-slate-500">{formatCurrency(s.purchaseRate)}</td>
+                      <td className="px-4 py-2.5 text-right font-medium text-slate-600">{formatCurrency(s.saleRate)}</td>
+                      <td className="px-4 py-2.5 text-right font-medium text-rose-500/80">{formatCurrency(s.discount)}</td>
+                      <td className="px-4 py-2.5 text-right font-bold text-indigo-700 bg-indigo-50/30">{formatCurrency(s.payable)}</td>
+                      <td className="px-4 py-2.5 text-right font-bold text-emerald-600 bg-emerald-50/30">{formatCurrency(s.paid)}</td>
+                      <td className="px-4 py-2.5 text-right font-bold text-rose-600 bg-rose-50/30">{formatCurrency(s.due)}</td>
                     </tr>
                   ))}
-                  {metrics.topProducts.length === 0 && (
-                    <tr><td colSpan={3} className="text-center py-6 text-slate-400 font-medium">No products sold in this range.</td></tr>
+                  {(!metrics.allSalesList || metrics.allSalesList.length === 0) && (
+                    <tr><td colSpan={8} className="text-center py-8 text-slate-400 font-medium bg-slate-50/30">No sales found in this date range.</td></tr>
                   )}
                 </tbody>
+                {metrics.allSalesList && metrics.allSalesList.length > 0 && (
+                  <tfoot className="sticky bottom-0 z-20 inset-x-0 bg-slate-100 border-t-2 border-slate-300 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] ring-1 ring-slate-200">
+                    <tr>
+                      <td colSpan={2} className="px-4 py-3 text-right font-bold text-slate-800 uppercase text-[11px] tracking-wider bg-slate-100">Total (সর্বমোট):</td>
+                      <td className="px-4 py-3 text-right font-bold text-slate-700 bg-slate-100">{formatCurrency(metrics.allSalesList.reduce((acc: number, s: any) => acc + s.purchaseRate, 0))}</td>
+                      <td className="px-4 py-3 text-right font-bold text-slate-800 bg-slate-100">{formatCurrency(metrics.allSalesList.reduce((acc: number, s: any) => acc + s.saleRate, 0))}</td>
+                      <td className="px-4 py-3 text-right font-bold text-rose-600 bg-slate-100">{formatCurrency(metrics.allSalesList.reduce((acc: number, s: any) => acc + s.discount, 0))}</td>
+                      <td className="px-4 py-3 text-right font-bold text-indigo-700 bg-indigo-50">{formatCurrency(metrics.allSalesList.reduce((acc: number, s: any) => acc + s.payable, 0))}</td>
+                      <td className="px-4 py-3 text-right font-bold text-emerald-700 bg-emerald-50">{formatCurrency(metrics.allSalesList.reduce((acc: number, s: any) => acc + s.paid, 0))}</td>
+                      <td className="px-4 py-3 text-right font-bold text-rose-700 bg-rose-50">{formatCurrency(metrics.allSalesList.reduce((acc: number, s: any) => acc + s.due, 0))}</td>
+                    </tr>
+                  </tfoot>
+                )}
               </table>
             </div>
           </div>

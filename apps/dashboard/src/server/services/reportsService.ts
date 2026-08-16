@@ -5,9 +5,11 @@ import { Prisma } from "@prisma/client";
 
 export const reportsService = {
   async getMetrics(ctx: Ctx, from: string, to: string, paymentMethod: string) {
-    const fromDate = new Date(from);
-    const toDate = new Date(to);
-    toDate.setHours(23, 59, 59, 999);
+    const [yFrom, mFrom, dFrom] = from.split('-').map(Number);
+    const fromDate = new Date(yFrom, mFrom - 1, dFrom, 0, 0, 0, 0);
+
+    const [yTo, mTo, dTo] = to.split('-').map(Number);
+    const toDate = new Date(yTo, mTo - 1, dTo, 23, 59, 59, 999);
 
     const completedSaleWhere: Prisma.SaleWhereInput = {
       createdAt: { gte: fromDate, lte: toDate },
@@ -41,11 +43,14 @@ export const reportsService = {
       rawStockVal,
       rawCogs,
       expensesAgg,
+      rawAllSales,
       rawTopProducts,
       rawTrendData,
       rawMethodData,
       expensesByCategory,
-      rawRefundDiscounts
+      rawRefundDiscounts,
+      dueCollectedAgg,
+      initialPaidSalesAgg
     ] = await Promise.all([
       prisma.sale.aggregate({
         where: completedSaleWhere,
@@ -78,6 +83,21 @@ export const reportsService = {
       prisma.expense.aggregate({
         where: { date: { gte: fromDate, lte: toDate } },
         _sum: { amount: true },
+      }),
+      prisma.sale.findMany({
+        where: completedSaleWhere,
+        select: {
+          id: true,
+          createdAt: true,
+          total: true,
+          paid: true,
+          due: true,
+          discount: true,
+          items: {
+            select: { name: true, cost: true, price: true, qty: true, discount: true }
+          }
+        },
+        orderBy: { createdAt: "desc" },
       }),
       prisma.$queryRaw<Array<{ name: string, qty: number, revenue: number }>>`
         SELECT si.name, SUM(si.qty) as qty, SUM(si.qty * si.price) as revenue
@@ -121,6 +141,23 @@ export const reportsService = {
         JOIN "Sale" s ON si."saleId" = s.id
         WHERE s."createdAt" >= ${fromDate} AND s."createdAt" <= ${toDate}
         AND s.status = 'REFUNDED'
+      `,
+      prisma.customerTransaction.aggregate({
+        where: { 
+          createdAt: { gte: fromDate, lte: toDate },
+          type: "PAYMENT"
+        },
+        _sum: { amount: true },
+      }),
+      prisma.$queryRaw<Array<{ total: number }>>`
+        SELECT SUM(st.amount) as total
+        FROM "SaleTender" st
+        JOIN "Sale" s ON st."saleId" = s.id
+        WHERE s.status = 'COMPLETED'
+          AND s."createdAt" >= ${fromDate}
+          AND s."createdAt" <= ${toDate}
+          AND st.type NOT IN ('DUE', 'WALLET')
+          AND (st.ref IS NULL OR st.ref NOT LIKE '%DUE-COLLECT%')
       `
     ]);
 
@@ -167,6 +204,24 @@ export const reportsService = {
     const paidSalesReturn = Number(refundedSalesAgg._sum.paid || 0);
     const dueSalesReturn = Number(refundedSalesAgg._sum.due || 0);
 
+    const allSalesList = rawAllSales.map(s => {
+      const saleCogs = s.items.reduce((sum, i) => sum + (Number(i.cost) * i.qty), 0);
+      const saleRate = s.items.reduce((sum, i) => sum + (Number(i.price) * i.qty), 0);
+      const itemDiscounts = s.items.reduce((sum, i) => sum + Number(i.discount), 0);
+      
+      return {
+        id: s.id,
+        date: s.createdAt.toISOString(),
+        productName: s.items.map(i => `${i.name}${i.qty > 1 ? ` (x${i.qty})` : ''}`).join(', '),
+        purchaseRate: saleCogs,
+        saleRate: saleRate,
+        discount: Number(s.discount) + itemDiscounts,
+        payable: Number(s.total),
+        paid: Number(s.paid),
+        due: Number(s.due),
+      }
+    });
+
     const topProducts = rawTopProducts.map(p => ({
       name: p.name,
       qty: Number(p.qty),
@@ -206,6 +261,9 @@ export const reportsService = {
       count: e._count.id
     }));
 
+    const dueCollected = Number(dueCollectedAgg?._sum?.amount || 0);
+    const initialPaidSales = Number(initialPaidSalesAgg[0]?.total || 0);
+
     return {
       totalRevenue,
       txnCount,
@@ -217,6 +275,7 @@ export const reportsService = {
       trend,
       byMethod,
       topProducts,
+      allSalesList,
       expensesList,
       openingStock,
       totalPurchase,
@@ -247,6 +306,8 @@ export const reportsService = {
       returnTotal,
       paidSalesReturn,
       dueSalesReturn,
+      dueCollected,
+      initialPaidSales,
     };
   },
 

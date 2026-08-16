@@ -14,6 +14,7 @@ export interface PurchaseCreateInput {
     cost: number;
     salePrice?: number;
     serials?: string[];
+    batchNo?: string;
     warrantyStartDate?: string;
     warrantyMonths?: number;
   }>;
