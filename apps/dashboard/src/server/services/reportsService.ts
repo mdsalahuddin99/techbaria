@@ -93,6 +93,8 @@ export const reportsService = {
           paid: true,
           due: true,
           discount: true,
+          customer: { select: { name: true } },
+          data: true,
           items: {
             select: { name: true, cost: true, price: true, qty: true, discount: true }
           }
@@ -209,10 +211,13 @@ export const reportsService = {
       const saleRate = s.items.reduce((sum, i) => sum + (Number(i.price) * i.qty), 0);
       const itemDiscounts = s.items.reduce((sum, i) => sum + Number(i.discount), 0);
       
+      const parsedData = s.data && typeof s.data === 'object' ? s.data as any : {};
+      const customerName = s.customer?.name || parsedData.customerName || "Walk-in Customer";
+      
       return {
         id: s.id,
         date: s.createdAt.toISOString(),
-        productName: s.items.map(i => `${i.name}${i.qty > 1 ? ` (x${i.qty})` : ''}`).join(', '),
+        customerName: customerName,
         purchaseRate: saleCogs,
         saleRate: saleRate,
         discount: Number(s.discount) + itemDiscounts,

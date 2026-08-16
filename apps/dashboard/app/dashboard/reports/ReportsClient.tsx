@@ -171,10 +171,10 @@ export function ReportsClient({
       ["Average Order Value", metrics.aov],
       [""],
       ["-- ALL SALES --"],
-      ["Date & Time", "Product Name", "Purchase Rate", "Sale Rate", "Discount", "Payable", "Paid", "Dues"],
+      ["Date & Time", "Customer Name", "Purchase Rate", "Sale Rate", "Discount", "Payable", "Paid", "Dues"],
       ...(metrics.allSalesList || []).map((s: any) => [
         `${formatDate(s.date)} ${new Date(s.date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`, 
-        s.productName, 
+        s.customerName, 
         s.purchaseRate, 
         s.saleRate, 
         s.discount, 
@@ -682,7 +682,7 @@ export function ReportsClient({
                 <thead className="bg-slate-50/95 backdrop-blur border-b border-slate-200 sticky top-0 z-20 shadow-sm">
                   <tr className="text-slate-500">
                     <th className="text-left px-4 py-2 text-[10px] font-bold uppercase tracking-wider whitespace-nowrap">Date & Time</th>
-                    <th className="text-left px-4 py-2 text-[10px] font-bold uppercase tracking-wider min-w-[200px]">Product Name</th>
+                    <th className="text-left px-4 py-2 text-[10px] font-bold uppercase tracking-wider min-w-[200px]">Customer Name</th>
                     <th className="text-right px-4 py-2 text-[10px] font-bold uppercase tracking-wider">Purchase Rate</th>
                     <th className="text-right px-4 py-2 text-[10px] font-bold uppercase tracking-wider">Sale Rate</th>
                     <th className="text-right px-4 py-2 text-[10px] font-bold uppercase tracking-wider">Discount</th>
@@ -697,7 +697,7 @@ export function ReportsClient({
                       <td className="px-4 py-2.5 font-medium text-slate-700 whitespace-nowrap">
                         {formatDate(s.date)} <span className="text-[10px] text-slate-400 ml-1">{new Date(s.date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
                       </td>
-                      <td className="px-4 py-2.5 text-slate-600 leading-tight">{s.productName}</td>
+                      <td className="px-4 py-2.5 text-slate-600 leading-tight">{s.customerName}</td>
                       <td className="px-4 py-2.5 text-right font-medium text-slate-500">{formatCurrency(s.purchaseRate)}</td>
                       <td className="px-4 py-2.5 text-right font-medium text-slate-600">{formatCurrency(s.saleRate)}</td>
                       <td className="px-4 py-2.5 text-right font-medium text-rose-500/80">{formatCurrency(s.discount)}</td>
