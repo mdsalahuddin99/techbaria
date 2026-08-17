@@ -52,6 +52,10 @@ export async function createSaleAction(input: any) {
 export async function updateSaleAction(id: string, input: any) {
   try {
     const ctx = await getActionCtx();
+    const existing = await prisma.sale.findUnique({ where: { id } });
+    if (existing && Date.now() - existing.createdAt.getTime() > 24 * 60 * 60 * 1000) {
+      throw new ServiceError("FORBIDDEN", "Invoices older than 24 hours cannot be edited", 403);
+    }
     const sale = await salesService.update(ctx, id, input);
     return { data: sale };
   } catch (err: any) {
@@ -70,9 +74,7 @@ export async function bulkCollectSaleDueAction(input: any) {
 }
 
 export async function deleteSaleAction(id: string) {
-  const ctx = await getActionCtx();
-  await salesService.remove(ctx, id);
-  return { success: true };
+  throw new ServiceError("FORBIDDEN", "Invoices cannot be deleted under any circumstances", 403);
 }
 
 export async function voidSaleAction(saleId: string, reason: string) {

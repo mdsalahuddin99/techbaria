@@ -56,6 +56,11 @@ export interface Sale {
   dueAmount: number;
   /** Gross profit of the sale */
   profit?: number;
+  /** Return number if the sale was refunded or voided */
+  returnNo?: string;
+  refundAmount?: number;
+  refundMethod?: string;
+  reason?: string;
 }
 
 

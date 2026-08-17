@@ -281,15 +281,15 @@ export async function exchange(ctx: Ctx, input: ExchangeInput) {
       } else if (netDifference < 0) {
         // Shop owes customer money
         const refundAmount = Math.abs(netDifference);
-        await salesAccounting.applyRefundBalance(tx, ctx, oldSale.id, oldSale.customerId, refundAmount);
+        const result = await salesAccounting.applyRefundBalance(tx, ctx, oldSale.id, oldSale.customerId, refundAmount, input.refundMethod);
         await salesAccounting.recordCustomerSpent(tx, oldSale.customerId, refundAmount, true);
         // Deduct from financial account if refundMethod is provided
-        if (input.refundMethod && input.refundMethod !== "WALLET") {
+        if (result.amountToRefundCash > 0 && input.refundMethod && input.refundMethod !== "WALLET") {
           const acc = await tx.financialAccount.findFirst({ where: { name: input.refundMethod } });
           if (acc) {
             await tx.financialAccount.update({
               where: { id: acc.id },
-              data: { balance: { decrement: refundAmount } },
+              data: { balance: { decrement: result.amountToRefundCash } },
             });
           }
         }

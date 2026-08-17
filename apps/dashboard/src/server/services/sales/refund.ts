@@ -96,8 +96,30 @@ export async function refund(ctx: Ctx, id: string, input: RefundInput) {
 
     // Record refund CustomerTransaction if sale had a customer
     if (sale.customerId && refundAmount > 0) {
-      await salesAccounting.applyRefundBalance(tx, ctx, sale.id, sale.customerId, refundAmount);
+      const result = await salesAccounting.applyRefundBalance(tx, ctx, sale.id, sale.customerId, refundAmount, input.refundMethod);
       await salesAccounting.recordCustomerSpent(tx, sale.customerId, refundAmount, true);
+
+      // Deduct from financial account if cash/bank refund was given
+      if (result.amountToRefundCash > 0 && input.refundMethod && input.refundMethod !== "WALLET") {
+        const acc = await tx.financialAccount.findFirst({ where: { name: input.refundMethod } });
+        if (acc) {
+          await tx.financialAccount.update({
+            where: { id: acc.id },
+            data: { balance: { decrement: result.amountToRefundCash } },
+          });
+        }
+      }
+    } else if (!sale.customerId && refundAmount > 0) {
+      // Walk-in customer refund via Cash/Bank
+      if (input.refundMethod && input.refundMethod !== "WALLET") {
+        const acc = await tx.financialAccount.findFirst({ where: { name: input.refundMethod } });
+        if (acc) {
+          await tx.financialAccount.update({
+            where: { id: acc.id },
+            data: { balance: { decrement: refundAmount } },
+          });
+        }
+      }
     }
 
     const saleData = (sale.data as Record<string, any>) || {};

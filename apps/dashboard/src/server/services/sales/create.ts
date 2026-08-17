@@ -222,7 +222,8 @@ export async function create(ctx: Ctx, input: SaleCreateInput) {
     }
 
     // Apply standard tenders (Cash, Bank, etc.) to update financial account balances
-    await salesAccounting.applySaleTenders(tx, ctx, sale.id, input.tenders);
+    const change = Math.max(0, math.sub(paid, total));
+    await salesAccounting.applySaleTenders(tx, ctx, sale.id, input.tenders, change);
 
     // Assign serials + sync stock (if tracked)
     await salesSerial.assignSerials(

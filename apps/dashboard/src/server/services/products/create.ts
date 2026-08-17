@@ -23,14 +23,41 @@ function slugify(name: string): string {
 /** Create a new product. Requires MANAGER+. */
 export async function create(ctx: Ctx, input: ProductCreateInput) {
   requireRole(ctx, "CASHIER");
-  let slug = input.slug || slugify(input.name);
-  // Ensure unique slug by appending counter if needed
-  const existing = await prisma.product.findFirst({
-    where: { slug },
-    select: { id: true },
-  });
-  if (existing) {
-    slug = `${slug}-${Date.now().toString().slice(-4)}`;
+  let slugBaseName = input.name;
+  
+  if (!input.slug) {
+    if (input.model) {
+      if (input.model.length === 25 || /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(input.model)) {
+        const m = await prisma.model.findUnique({ where: { id: input.model }, select: { name: true } });
+        if (m) slugBaseName += ` ${m.name}`;
+      } else {
+        slugBaseName += ` ${input.model}`;
+      }
+    } else if (input.brand) {
+      if (input.brand.length === 25 || /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(input.brand)) {
+        const b = await prisma.brand.findUnique({ where: { id: input.brand }, select: { name: true } });
+        if (b) slugBaseName += ` ${b.name}`;
+      } else {
+        slugBaseName += ` ${input.brand}`;
+      }
+    }
+  }
+
+  let slug = input.slug || slugify(slugBaseName);
+
+  let isUnique = false;
+  let attempt = 0;
+  while (!isUnique && attempt < 5) {
+    const existing = await prisma.product.findFirst({
+      where: { slug },
+      select: { id: true },
+    });
+    if (!existing) {
+      isUnique = true;
+    } else {
+      slug = `${slugify(slugBaseName)}-${Math.random().toString(36).slice(2, 6)}`;
+      attempt++;
+    }
   }
   const resolvedCategoryId = await resolveCategoryId(ctx, input.categoryId);
   const resolvedBrandId = await resolveBrandId(ctx, input.brand);

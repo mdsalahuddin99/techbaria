@@ -302,32 +302,86 @@ export const salesAccounting = {
     ctx: Ctx,
     saleId: string,
     customerId: string,
-    refundAmount: number
-  ): Promise<void> {
+    refundAmount: number,
+    refundMethod?: string
+  ): Promise<{ amountToDue: number; amountToWallet: number; amountToRefundCash: number }> {
     const cust = await tx.customer.findUniqueOrThrow({
       where: { id: customerId },
-      select: { balance: true },
+      select: { balance: true, due: true },
     });
     const currentBalance = Number(cust.balance);
-    const newBalance = math.add(currentBalance, refundAmount);
+    const currentDue = Number(cust.due);
+
+    let remainder = 0;
+    let amountToDue = 0;
+
+    if (currentDue > 0) {
+      if (refundAmount >= currentDue) {
+        amountToDue = currentDue;
+        remainder = math.sub(refundAmount, currentDue);
+      } else {
+        amountToDue = refundAmount;
+        remainder = 0;
+      }
+    } else {
+      remainder = refundAmount;
+    }
+
+    let amountToWallet = 0;
+    let amountToRefundCash = 0;
+    
+    // Only add to wallet if method is WALLET or none is provided (default)
+    const isWalletRefund = !refundMethod || refundMethod.toUpperCase() === "WALLET";
+    if (isWalletRefund) {
+      amountToWallet = remainder;
+    } else {
+      amountToRefundCash = remainder;
+    }
+
+    const newDue = Math.max(0, math.sub(currentDue, amountToDue));
+    const newBalance = math.add(currentBalance, amountToWallet);
 
     await tx.customer.update({
       where: { id: customerId },
-      data: { balance: newBalance },
-    });
-
-    await tx.customerTransaction.create({
-      data: {
-        customerId,
-        type: "REFUND",
-        amount: refundAmount,
-        balanceBefore: currentBalance,
-        balanceAfter: newBalance,
-        saleId,
-        reference: `REFUND-${saleId.slice(0, 8).toUpperCase()}`,
-        createdById: ctx.userId,
+      data: { 
+        due: newDue,
+        balance: newBalance 
       },
     });
+
+    if (amountToDue > 0) {
+      await tx.customerTransaction.create({
+        data: {
+          customerId,
+          type: "ADJUSTMENT",
+          amount: -amountToDue, // Negative indicates reduction in due
+          balanceBefore: currentBalance,
+          balanceAfter: currentBalance,
+          saleId,
+          reference: `REFUND-DUE-${saleId.slice(0, 8).toUpperCase()}`,
+          notes: `Refund applied to due (৳${amountToDue} reduced)`,
+          createdById: ctx.userId,
+        },
+      });
+    }
+
+    if (amountToWallet > 0) {
+      await tx.customerTransaction.create({
+        data: {
+          customerId,
+          type: "REFUND",
+          amount: amountToWallet,
+          balanceBefore: currentBalance,
+          balanceAfter: newBalance,
+          saleId,
+          reference: `REFUND-WLT-${saleId.slice(0, 8).toUpperCase()}`,
+          notes: `Refund added to wallet (৳${amountToWallet})`,
+          createdById: ctx.userId,
+        },
+      });
+    }
+
+    return { amountToDue, amountToWallet, amountToRefundCash };
   },
 
   /** Increment or decrement a customer's total spent and loyalty points */
@@ -354,16 +408,26 @@ export const salesAccounting = {
     tx: any,
     ctx: Ctx,
     saleId: string,
-    tenders: Array<{ type: string; amount: any; accountId?: string | null }>
+    tenders: Array<{ type: string; amount: any; accountId?: string | null }>,
+    change: number = 0
   ): Promise<void> {
     const validTenders = tenders.filter(
       (t) => t.accountId && t.type !== "Due" && t.type !== "Wallet" && t.type !== "DUE" && t.type !== "WALLET"
     );
+    let remainingChange = change;
     for (const t of validTenders) {
-      await tx.financialAccount.update({
-        where: { id: t.accountId },
-        data: { balance: { increment: Number(t.amount) } },
-      });
+      let effectiveAmount = Number(t.amount);
+      if (remainingChange > 0) {
+        const toDeduct = Math.min(effectiveAmount, remainingChange);
+        effectiveAmount -= toDeduct;
+        remainingChange -= toDeduct;
+      }
+      if (effectiveAmount > 0) {
+        await tx.financialAccount.update({
+          where: { id: t.accountId },
+          data: { balance: { increment: effectiveAmount } },
+        });
+      }
     }
   },
 
@@ -372,16 +436,26 @@ export const salesAccounting = {
     tx: any,
     ctx: Ctx,
     saleId: string,
-    tenders: Array<{ type: string; amount: any; accountId?: string | null }>
+    tenders: Array<{ type: string; amount: any; accountId?: string | null }>,
+    change: number = 0
   ): Promise<void> {
     const validTenders = tenders.filter(
       (t) => t.accountId && t.type !== "Due" && t.type !== "Wallet" && t.type !== "DUE" && t.type !== "WALLET"
     );
+    let remainingChange = change;
     for (const t of validTenders) {
-      await tx.financialAccount.update({
-        where: { id: t.accountId },
-        data: { balance: { decrement: Number(t.amount) } },
-      });
+      let effectiveAmount = Number(t.amount);
+      if (remainingChange > 0) {
+        const toDeduct = Math.min(effectiveAmount, remainingChange);
+        effectiveAmount -= toDeduct;
+        remainingChange -= toDeduct;
+      }
+      if (effectiveAmount > 0) {
+        await tx.financialAccount.update({
+          where: { id: t.accountId },
+          data: { balance: { decrement: effectiveAmount } },
+        });
+      }
     }
   }
 };

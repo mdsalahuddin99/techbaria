@@ -62,13 +62,13 @@ export function CustomerHistorySheet({ customer, onClose, onCollect }: CustomerH
         case "total-desc": return b.total - a.total;
         case "total-asc": return a.total - b.total;
         case "due-desc": {
-          const dueA = Math.max(0, a.total - a.amountPaid);
-          const dueB = Math.max(0, b.total - b.amountPaid);
+          const dueA = a.returnNo ? 0 : Math.max(0, a.total - a.amountPaid);
+          const dueB = b.returnNo ? 0 : Math.max(0, b.total - b.amountPaid);
           return dueB - dueA;
         }
         case "due-asc": {
-          const dueA = Math.max(0, a.total - a.amountPaid);
-          const dueB = Math.max(0, b.total - b.amountPaid);
+          const dueA = a.returnNo ? 0 : Math.max(0, a.total - a.amountPaid);
+          const dueB = b.returnNo ? 0 : Math.max(0, b.total - b.amountPaid);
           return dueA - dueB;
         }
         default: return 0;
@@ -167,7 +167,7 @@ export function CustomerHistorySheet({ customer, onClose, onCollect }: CustomerH
                     ) : (
                       <div className="space-y-3">
                         {filteredHistory.map((s) => {
-                          const due = Math.max(0, s.total - s.amountPaid);
+                          const due = s.returnNo ? 0 : Math.max(0, s.total - s.amountPaid);
                           return (
                             <div key={s.id} className="border rounded-lg p-3.5 bg-card hover:border-border/80 transition-colors shadow-sm">
                               <div className="flex items-start justify-between gap-2">

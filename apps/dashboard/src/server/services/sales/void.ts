@@ -6,6 +6,7 @@ import type { Ctx } from "@/server/lib/ctx";
 import { cache } from "@/lib/cache";
 import { salesAccounting } from "./salesAccounting";
 import { salesSerial } from "./salesSerial";
+import * as math from "@/server/lib/math";
 
 /** Void (cancel) a sale — restores stock and reverses customer due. Requires MANAGER+. */
 export async function voidSale(ctx: Ctx, id: string, reason: string) {
@@ -74,7 +75,8 @@ export async function voidSale(ctx: Ctx, id: string, reason: string) {
     }
 
     // Revert financial account balances (money out)
-    await salesAccounting.revertSaleTenders(tx, ctx, sale.id, sale.tenders);
+    const oldChange = Math.max(0, math.sub(Number(sale.paid), Number(sale.total)));
+    await salesAccounting.revertSaleTenders(tx, ctx, sale.id, sale.tenders, oldChange);
 
     const updatedSale = await tx.sale.update({
       where: { id },

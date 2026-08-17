@@ -34,12 +34,45 @@ export async function update(ctx: Ctx, id: string, input: SaleUpdateInput) {
     }
 
     // Step 1: Restock old items (reverse of create)
-    for (const item of sale.items) {
-      await tx.product.update({
-        where: { id: item.productId },
-        data: { stock: { increment: item.qty } },
-      });
-    }
+    const oldWarehouseStocks = sale.warehouseId ? await tx.warehouseStock.findMany({
+      where: { warehouseId: sale.warehouseId, productId: { in: sale.items.map((i) => i.productId) } },
+    }) : [];
+    const oldWarehouseStockMap = new Map<string, any>(oldWarehouseStocks.map((bs) => [bs.productId, bs]));
+
+    await Promise.all(sale.items.map(async (item) => {
+      const ops: Promise<unknown>[] = [
+        tx.product.update({
+          where: { id: item.productId },
+          data: { stock: { increment: item.qty } },
+        }),
+        tx.inventoryLot.create({
+          data: {
+            productId: item.productId,
+            warehouseId: sale.warehouseId || null,
+            qtyOriginal: item.qty,
+            qtyRemaining: item.qty,
+            unitCost: item.cost,
+            sourceType: "RETURN",
+            sourceId: sale.id,
+          }
+        })
+      ];
+
+      if (sale.warehouseId) {
+        const warehouseStock = oldWarehouseStockMap.get(item.productId);
+        if (warehouseStock) {
+          ops.push(tx.warehouseStock.update({
+            where: { id: warehouseStock.id },
+            data: { qty: { increment: item.qty } },
+          }));
+        } else {
+          ops.push(tx.warehouseStock.create({
+            data: { warehouseId: sale.warehouseId, productId: item.productId, qty: item.qty },
+          }));
+        }
+      }
+      return Promise.all(ops);
+    }));
 
     // Step 2: Release old serials
     const oldItemIds = sale.items.map((i) => i.id);
@@ -70,12 +103,24 @@ export async function update(ctx: Ctx, id: string, input: SaleUpdateInput) {
     }
 
     // Step 4: Deduct stock for new items
-    for (const item of input.items) {
-      await tx.product.update({
-        where: { id: item.productId },
-        data: { stock: { decrement: item.qty } },
-      });
-    }
+    await Promise.all(input.items.map(async (item) => {
+      const ops: Promise<unknown>[] = [
+        tx.product.update({
+          where: { id: item.productId },
+          data: { stock: { decrement: item.qty } },
+        }),
+      ];
+      if (warehouseId) {
+        const warehouseStock = warehouseStockMap.get(item.productId);
+        if (warehouseStock) {
+          ops.push(tx.warehouseStock.update({
+            where: { id: warehouseStock.id },
+            data: { qty: { decrement: item.qty } },
+          }));
+        }
+      }
+      return Promise.all(ops);
+    }));
 
     // Step 5: Delete old items + tenders
     await tx.saleItem.deleteMany({ where: { saleId: id } });
@@ -149,6 +194,25 @@ export async function update(ctx: Ctx, id: string, input: SaleUpdateInput) {
       );
     }
 
+    // Deplete FIFO lots for non-serialized products and calculate true COGS
+    const { inventoryLotService } = require("../inventoryLotService");
+    await Promise.all(
+      updated.items.map(async (si: any) => {
+        const product = productMap.get(si.productId);
+        if (product?.trackSerials) return; // Handled in assignSerials
+        if (product?.isService) return; // No COGS for services
+        
+        const totalFifoCost = await inventoryLotService.depleteLots(tx, si.productId, si.qty, warehouseId);
+        if (totalFifoCost > 0 && si.qty > 0) {
+          const avgUnitCost = totalFifoCost / si.qty;
+          await tx.saleItem.update({
+            where: { id: si.id },
+            data: { cost: avgUnitCost },
+          });
+        }
+      })
+    );
+
     // Step 9: Update customer due & Wallet/Advance tenders
     if (sale.customerId === input.customerId) {
       // Same customer: restore old wallet, then apply update
@@ -177,8 +241,11 @@ export async function update(ctx: Ctx, id: string, input: SaleUpdateInput) {
     }
 
     // Step 10: Revert old financial account balances, apply new ones
-    await salesAccounting.revertSaleTenders(tx, ctx, id, sale.tenders);
-    await salesAccounting.applySaleTenders(tx, ctx, id, input.tenders);
+    const oldChange = Math.max(0, math.sub(Number(sale.paid), Number(sale.total)));
+    await salesAccounting.revertSaleTenders(tx, ctx, id, sale.tenders, oldChange);
+    
+    const newChange = Math.max(0, math.sub(paid, total));
+    await salesAccounting.applySaleTenders(tx, ctx, id, input.tenders, newChange);
 
     await auditLogService.log(ctx, {
       entity: "Sale",
