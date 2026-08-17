@@ -181,7 +181,7 @@ export function ProductFormDialog({
 
     return {
       name: values.name,
-      slug: editing?.slug || values.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, ""),
+      slug: editing?.slug || (values.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || undefined),
       sku: values.sku,
       barcode: finalBarcode,
       category: values.category as Category,

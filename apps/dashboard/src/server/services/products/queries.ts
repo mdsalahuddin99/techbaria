@@ -67,7 +67,7 @@ async function runListQuery(ctx: Ctx, params?: PaginationParams, filter?: Produc
       },
     },
     params,
-    { orderBy: [{ name: "asc" as const }, { id: "asc" as const }] },
+    { orderBy: [{ createdAt: "desc" as const }, { id: "desc" as const }] },
   );
 
   return {
