@@ -26,3 +26,10 @@ export const collectDueSchema = z.object({
   reference: z.string().optional(),
   notes: z.string().optional(),
 });
+
+export const revertDueSchema = z.object({
+  amount: z.number().positive("Amount must be positive"),
+  accountId: z.string().optional().nullable(),
+  reference: z.string().optional(),
+  notes: z.string().optional(),
+});

@@ -5,7 +5,7 @@ import { buildCtx } from "@/server/lib/ctx";
 import { ServiceError } from "@/server/lib/errors";
 import { customersService, type CustomerCreatePayload, type CustomerUpdatePayload } from "@/server/services/customersService";
 import { customerLedgerService } from "@/server/services/customerLedgerService";
-import { customerCreateSchema, customerUpdateSchema, collectDueSchema } from "@/shared/validators/customer";
+import { customerCreateSchema, customerUpdateSchema, collectDueSchema, revertDueSchema } from "@/shared/validators/customer";
 import type { PaginationParams } from "@/server/lib/paginate";
 
 /**
@@ -76,6 +76,15 @@ export async function collectCustomerPaymentAction(
   const ctx = await getActionCtx();
   const valid = collectDueSchema.parse(data);
   return customerLedgerService.collectDue(ctx, customerId, valid.amount, valid.accountId, valid.reference, valid.notes);
+}
+
+export async function revertDueCollectionAction(
+  customerId: string, 
+  data: { amount: number; accountId?: string | null; reference?: string; notes?: string }
+) {
+  const ctx = await getActionCtx();
+  const valid = revertDueSchema.parse(data);
+  return customerLedgerService.revertDueCollection(ctx, customerId, valid.amount, valid.accountId || "", valid.reference, valid.notes);
 }
 
 export async function depositCustomerAdvanceAction(

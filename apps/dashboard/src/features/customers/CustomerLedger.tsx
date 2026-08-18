@@ -21,6 +21,7 @@ import { ChevronLeft, ChevronRight, Receipt, Wallet, Undo2, SlidersHorizontal, F
 import { formatCurrency, formatDate, formatDateTime } from "@/shared/lib/format";
 import { toast } from "sonner";
 import { useCustomerLedger } from "./ledgerHooks";
+import { revertDueCollectionAction } from "@/server/actions/customers";
 
 interface Props {
   customerId: string;
@@ -79,8 +80,11 @@ export function CustomerLedger({ customerId }: Props) {
                 (entry.notes?.toLowerCase().includes("advance deposit") ||
                   entry.balanceAfter > entry.balanceBefore);
 
+              const isDueReversal =
+                entry.type === "ADJUSTMENT" && entry.amount < 0 && entry.notes?.includes("Due collection reverted");
+
               const isSaleReversal =
-                entry.type === "ADJUSTMENT" && entry.amount < 0;
+                entry.type === "ADJUSTMENT" && entry.amount < 0 && !isDueReversal;
 
               const effectiveType = isLegacyDeposit
                 ? "ADJUSTMENT"
@@ -89,15 +93,16 @@ export function CustomerLedger({ customerId }: Props) {
               const meta =
                 typeMeta[effectiveType] ??
                 { label: entry.type, className: "bg-slate-50 text-slate-600 border-slate-200", icon: Receipt };
-              const Icon = isSaleReversal ? Undo2 : meta.icon;
-              const effectiveLabel = isSaleReversal ? "Sale Reversal" : meta.label;
+              
+              const Icon = (isSaleReversal || isDueReversal) ? Undo2 : meta.icon;
+              const effectiveLabel = isDueReversal ? "Due Reversal" : (isSaleReversal ? "Sale Reversal" : meta.label);
 
               const isDebit =
                 !isLegacyDeposit &&
                 (entry.type === "SALE" ||
                   entry.type === "WRITE_OFF" ||
                   (entry.type === "PAYMENT" && !isLegacyDeposit) ||
-                  isSaleReversal);
+                  isSaleReversal || isDueReversal);
 
               return (
                 <TableRow 
@@ -203,6 +208,50 @@ export function CustomerLedger({ customerId }: Props) {
                 </div>
               )}
             </div>
+            {selectedEntry.effectiveLabel === "Due Collection" && (() => {
+              const revertRef = `REVERT-${selectedEntry.id.slice(0,8).toUpperCase()}`;
+              const isAlreadyReverted = entries.some(e => e.reference === revertRef);
+              
+              if (isAlreadyReverted) {
+                return (
+                  <div className="w-full mt-4 p-3 bg-red-50 text-red-600 rounded-md text-sm text-center border border-red-100 font-medium">
+                    This due collection has already been reversed.
+                  </div>
+                );
+              }
+
+              return (
+                <Button 
+                  variant="destructive" 
+                  className="w-full mt-4" 
+                  onClick={async (e) => {
+                    const target = e.currentTarget;
+                    const originalText = target.innerText;
+                    target.innerText = "Reverting...";
+                    target.disabled = true;
+                    try {
+                      await revertDueCollectionAction(customerId, {
+                        amount: selectedEntry.amount,
+                        accountId: selectedEntry.accountId || "",
+                        reference: revertRef,
+                      });
+                      toast.success("Due collection reverted successfully.");
+                      setSelectedEntry(null);
+                      window.location.reload(); 
+                    } catch (err: any) {
+                      toast.error(err.message || "Failed to revert payment");
+                    } finally {
+                      target.innerText = originalText;
+                      target.disabled = false;
+                    }
+                  }}
+                >
+                  <Undo2 className="mr-2 h-4 w-4" />
+                  Undo Due Collection
+                </Button>
+              );
+            })()}
+            
             {selectedEntry.reference?.startsWith("BULK-COLLECT") && (
               <Button 
                 variant="outline" 

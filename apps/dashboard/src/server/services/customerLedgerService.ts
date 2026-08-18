@@ -348,6 +348,73 @@ export const customerLedgerService = {
   },
 
   /**
+   * Revert a due collection (Undo Payment).
+   * Increases `due` back — does NOT affect `balance` (wallet advance).
+   * Decreases the financial account balance (money is reversed).
+   */
+  async revertDueCollection(
+    ctx: Ctx,
+    customerId: string,
+    amount: number,
+    accountId: string,
+    reference?: string,
+    notes?: string,
+  ) {
+    authorize(ctx, ["ADMIN"]);
+    const amt = Math.abs(amount);
+
+    return prisma.$transaction(async (tx) => {
+      // Fetch both `balance` (wallet advance) and `due` so we can snapshot correctly
+      const cust = await tx.customer.findUnique({
+        where: { id: customerId },
+        select: { id: true, due: true, balance: true },
+      });
+      if (!cust) throw new ServiceError("NOT_FOUND", "Customer not found", 404);
+
+      const currentDue = Number(cust.due);
+      const currentBalance = Number(cust.balance); // wallet advance — for ledger snapshot
+      const newDue = currentDue + amt;
+
+      // Revert the due (increase it back)
+      await tx.customer.update({
+        where: { id: customerId },
+        data: { due: newDue },
+      });
+
+      // Update financial account (money out / reversed)
+      if (accountId) {
+        await tx.financialAccount.update({
+          where: { id: accountId },
+          data: { balance: { decrement: amt } },
+        });
+      }
+
+      // Record transaction
+      const transaction = await tx.customerTransaction.create({
+        data: {
+          customerId,
+          type: "ADJUSTMENT",
+          amount: -amt, // Negative to denote reversing a payment
+          balanceBefore: currentBalance,
+          balanceAfter: currentBalance, // wallet advance unchanged
+          accountId: accountId ?? null,
+          reference: reference ?? null,
+          notes: notes ?? `Due collection reverted: ${amt} (due: ${currentDue} → ${newDue})`,
+          createdById: ctx.userId,
+        },
+      });
+
+      return {
+        id: transaction.id,
+        type: transaction.type,
+        amount: Number(transaction.amount),
+        balanceBefore: Number(transaction.balanceBefore),
+        balanceAfter: Number(transaction.balanceAfter),
+      };
+    });
+  },
+
+  /**
    * Deposit advance money into customer's wallet.
    * Increases `balance` (positive advance) — does NOT affect `due`.
    * Increases the financial account balance (money comes in).
