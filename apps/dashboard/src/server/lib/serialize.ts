@@ -186,6 +186,7 @@ export function serializeSale(raw: PrismaSale): Sale {
     destination: d.destination as string | undefined,
     attention: d.attention as string | undefined,
     notes: raw.notes ?? undefined,
+    status: raw.status,
     paymentMethod: (paid > 0 && toNumber(raw.due) > 0) ? "Partial" : mapTenderTypeToPaymentMethod(raw.tenders?.[0]?.type),
     amountPaid: paid,
     dueAmount: toNumber(raw.due),

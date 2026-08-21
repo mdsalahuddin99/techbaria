@@ -302,11 +302,11 @@ function buildStandaloneInvoice(
   const timeStr = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: true });
   const printNow = new Date();
   const printStr = `${printNow.toLocaleDateString("en-GB")}  ${printNow.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: true })}`;
-  const billStatus = sale.amountPaid >= sale.total ? "PAID" : sale.amountPaid > 0 ? "PARTIAL" : "DUE";
+  const billStatus = sale.status === "REFUNDED" ? "REFUNDED" : sale.status === "VOIDED" ? "VOIDED" : sale.amountPaid >= sale.total ? "PAID" : sale.amountPaid > 0 ? "PARTIAL" : "DUE";
   const totalQty = sale.items.reduce((s, i) => s + i.qty, 0);
   const receivedShown = Math.min(sale.amountPaid, sale.total);
   const words = numberToWords(sale.total) + " Only";
-  const billStatusColor = sale.amountPaid >= sale.total ? "#16a34a" : sale.amountPaid > 0 ? "#ca8a04" : "#dc2626";
+  const billStatusColor = sale.status === "REFUNDED" ? "#6b7280" : sale.status === "VOIDED" ? "#ef4444" : sale.amountPaid >= sale.total ? "#16a34a" : sale.amountPaid > 0 ? "#ca8a04" : "#dc2626";
 
   const warrantyLabel = (m?: number) => {
     if (!m || m <= 0) return "<span style='font-size:8.5px;color:#555;line-height:1.4;'>NO<br/>WARRANTY</span>";

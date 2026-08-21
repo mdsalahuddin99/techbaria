@@ -40,6 +40,7 @@ export interface Sale {
   destination?: string;
   attention?: string;
   notes?: string;
+  status?: "COMPLETED" | "HELD" | "VOIDED" | "REFUNDED" | "EXCHANGED";
   /** Primary method (first tender) — kept for backward compatibility. */
   paymentMethod: PaymentMethod;
   /** Sum of all tendered amounts (may exceed total when cash change is given). */
@@ -52,6 +53,8 @@ export interface Sale {
   editedAt: string | null;
   /** Multi-tender breakdown. Single-method sales also populate this. */
   payments?: SalePayment[];
+  /** Amount still due for this sale */
+  dueAmount?: number;
 }
 
 

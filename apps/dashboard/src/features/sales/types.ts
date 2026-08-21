@@ -40,6 +40,7 @@ export interface Sale {
   destination?: string;
   attention?: string;
   notes?: string;
+  status?: "COMPLETED" | "HELD" | "VOIDED" | "REFUNDED" | "EXCHANGED";
   /** Primary method (first tender) — kept for backward compatibility. */
   paymentMethod: PaymentMethod;
   /** Sum of all tendered amounts (may exceed total when cash change is given). */

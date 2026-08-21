@@ -76,15 +76,27 @@ export async function refund(ctx: Ctx, id: string, input: RefundInput) {
       return sum + (saleItem ? (Number(saleItem.price) * ri.qty) - Number(saleItem.discount || 0) : 0);
     }, 0);
 
+    const amountToDue = Math.min(Number(sale.due), refundAmount);
+    const remainingRefund = refundAmount - amountToDue;
+    const newTotal = Math.max(0, Number(sale.total) - refundAmount);
+    const newDue = Math.max(0, Number(sale.due) - amountToDue);
+    const newPaid = Math.max(0, Number(sale.paid) - remainingRefund);
+
     // Record refund CustomerTransaction if sale had a customer
     if (sale.customerId && refundAmount > 0) {
-      await salesAccounting.applyRefundBalance(tx, ctx, sale.id, sale.customerId, refundAmount);
+      await salesAccounting.applyRefundBalance(tx, ctx, sale.id, sale.customerId, refundAmount, Number(sale.due));
       await salesAccounting.recordCustomerSpent(tx, sale.customerId, refundAmount, true);
     }
 
     const updatedSale = await tx.sale.update({
       where: { id },
-      data: { status: "REFUNDED", notes: `REFUND: ${input.reason}` },
+      data: { 
+        status: "REFUNDED",
+        total: newTotal,
+        paid: newPaid,
+        due: newDue,
+        notes: `REFUND: ${input.reason}` 
+      },
     });
     return updatedSale;
   }, { timeout: 30000 });

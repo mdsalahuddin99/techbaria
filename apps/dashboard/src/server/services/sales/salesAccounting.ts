@@ -299,9 +299,8 @@ export const salesAccounting = {
   /**
    * Apply customer balance changes on refund.
    *
-   * ডিউ (বকেয়া) থেকে অটো-কাট করা হয় না।
+   * ডিউ (বকেয়া) থেকে অটো-কাট করা হয় (যদি saleDue > 0)।
    * রিফান্ড পুরোটা হয় ক্যাশে ফেরত যায়, নয়তো ওয়ালেটে জমা হয়।
-   * ডিউ আদায় আলাদাভাবে ম্যানুয়ালি (Due Collection) দিয়ে হবে।
    */
   async applyRefundBalance(
     tx: any,
@@ -309,34 +308,59 @@ export const salesAccounting = {
     saleId: string,
     customerId: string,
     refundAmount: number,
-    refundMethod?: string
+    refundMethod?: string,
+    saleDue: number = 0
   ): Promise<{ amountToDue: number; amountToWallet: number; amountToRefundCash: number }> {
     const cust = await tx.customer.findUniqueOrThrow({
       where: { id: customerId },
-      select: { balance: true },
+      select: { balance: true, due: true },
     });
     const currentBalance = Number(cust.balance);
+    const currentDue = Number(cust.due);
+
+    const amountToDue = Math.min(saleDue, refundAmount);
+    const remainingRefund = refundAmount - amountToDue;
 
     let amountToWallet = 0;
     let amountToRefundCash = 0;
     
-    // Route the full refund based on method — no due adjustment
+    // Route the remaining refund based on method
     const isWalletRefund = !refundMethod || refundMethod.toUpperCase() === "WALLET";
     if (isWalletRefund) {
-      amountToWallet = refundAmount;
+      amountToWallet = remainingRefund;
     } else {
-      amountToRefundCash = refundAmount;
+      amountToRefundCash = remainingRefund;
     }
 
     const newBalance = math.add(currentBalance, amountToWallet);
+    const newDue = Math.max(0, math.sub(currentDue, amountToDue));
 
-    // Only update balance if wallet refund (cash refund doesn't change customer record)
-    if (amountToWallet > 0) {
-      await tx.customer.update({
-        where: { id: customerId },
-        data: { balance: newBalance },
+    // Update customer due and balance
+    await tx.customer.update({
+      where: { id: customerId },
+      data: { 
+        due: newDue,
+        balance: newBalance
+      },
+    });
+
+    if (amountToDue > 0) {
+      await tx.customerTransaction.create({
+        data: {
+          customerId,
+          type: "REFUND",
+          amount: amountToDue,
+          balanceBefore: currentBalance,
+          balanceAfter: currentBalance,
+          saleId,
+          reference: `REFUND-DUE-${saleId.slice(0, 8).toUpperCase()}`,
+          notes: `Refund offset outstanding due (৳${amountToDue})`,
+          createdById: ctx.userId,
+        },
       });
+    }
 
+    if (amountToWallet > 0) {
       await tx.customerTransaction.create({
         data: {
           customerId,
@@ -352,7 +376,7 @@ export const salesAccounting = {
       });
     }
 
-    return { amountToDue: 0, amountToWallet, amountToRefundCash };
+    return { amountToDue, amountToWallet, amountToRefundCash };
   },
 
   /** Increment or decrement a customer's total spent and loyalty points */

@@ -1,0 +1,295 @@
+# ই-কমার্স স্ট্যান্ডঅ্যালোন প্রজেক্ট সেপারেশন প্ল্যান
+
+Tech Baria প্রজেক্ট থেকে ই-কমার্স অংশকে আলাদা একটি স্ট্যান্ডঅ্যালোন প্রোডাক্ট হিসেবে বের করা — যাতে ক্লায়েন্টদের শুধু ই-কমার্স সল্যুশন দেওয়া যায়, POS ছাড়া।
+
+---
+
+## 📊 বর্তমান আর্কিটেকচার বিশ্লেষণ
+
+```mermaid
+graph TD
+    subgraph "Current Monorepo: tech-baria"
+        ROOT["Root (npm workspaces + Turbo)"]
+        
+        subgraph "apps/"
+            SF["storefront (port 3000)"]
+            DB["dashboard (port 3001)"]
+        end
+        
+        subgraph "packages/"
+            PKG_DB["database (Prisma schema)"]
+            PKG_UI["ui (shared components)"]
+            PKG_CFG["config"]
+        end
+        
+        SF --> PKG_DB
+        DB --> PKG_DB
+        SF --> PKG_UI
+        DB --> PKG_UI
+    end
+```
+
+### উভয় অ্যাপেই (storefront + dashboard) যা শেয়ার্ড:
+- **Prisma schema** (1052 lines, 40+ models)
+- **Server services** — প্রায় identical copies: `catalogService`, `salesService`, `customerLedgerService` ইত্যাদি
+- **Features** — উভয় অ্যাপে ২২+ feature modules (pos, sales, customers, inventory, reports ইত্যাদি)
+- **UI components** (`packages/ui`)
+
+### ই-কমার্স-ওনলি ফিচারস (রাখতে হবে):
+| Feature | বিবরণ |
+|---------|--------|
+| **Storefront pages** | Home, Shop, Product detail, Cart, Checkout, Order tracking |
+| **Catalog** | Products, Categories, Brands, Product types, Images, Variants |
+| **Orders** | Online order management, status tracking |
+| **Customers** | Registration, account, order history |
+| **Checkout** | Payment integration (bKash, Nagad, COD) |
+| **Courier** | Courier booking automation (future: Pathao, Steadfast, RedX) |
+| **Storefront CMS** | Hero slides, Site config, SEO |
+| **Admin Panel** | Product management, order management, reports |
+
+### POS-ওনলি ফিচারস (বাদ দিতে হবে):
+| Feature | বিবরণ |
+|---------|--------|
+| **POS Terminal** | Barcode scanning, quick sale, held sales |
+| **Cash Shifts** | Opening/closing balance, cashier shifts |
+| **Supplier Ledger** | Supplier due tracking, payments |
+| **Customer Due/Credit** | In-store credit, due collection, wallet |
+| **Purchases** | Physical purchase orders, restock |
+| **Stock Transfers** | Warehouse-to-warehouse transfers |
+| **Serial/IMEI Tracking** | Individual unit tracking |
+| **Financial Accounts** | Cash/bank/mobile banking accounting |
+| **Expenses** | Expense management |
+| **Warranty Claims (RMA)** | In-store warranty tracking |
+| **Labels/Barcode printing** | Physical labels |
+
+---
+
+## User Review Required
+
+> [!IMPORTANT]
+> **এটি একটি আর্কিটেকচারাল ডিসিশন** — কোড পরিবর্তন শুরু করার আগে আপনার অ্যাপ্রুভাল দরকার।
+
+> [!WARNING]
+> **ডাটাবেস শেয়ারিং বনাম আলাদা**: নিচের ২টি অপশন থেকে একটি বেছে নিতে হবে। এটি পুরো প্রজেক্টের ডিরেকশন নির্ধারণ করবে।
+
+---
+
+## Open Questions
+
+> [!IMPORTANT]
+> ### ১. ডাটাবেস স্ট্র্যাটেজি
+> **অপশন A — Shared Schema (Recommended):**
+> - একই Prisma schema রাখবো, কিন্তু e-commerce প্রজেক্টে POS-specific models গুলো থাকলেও ব্যবহার হবে না
+> - সুবিধা: দ্রুত migration, কম breaking change
+> - অসুবিধা: Schema-তে অব্যবহৃত models থাকবে
+> 
+> **অপশন B — Forked/Trimmed Schema:**
+> - POS-specific models বাদ দিয়ে একটি lean schema তৈরি হবে
+> - সুবিধা: পরিষ্কার schema, ছোট migration files
+> - অসুবিধা: ২টি schema মেইনটেইন করতে হবে, future sync কঠিন
+
+> [!IMPORTANT]
+> ### ২. অ্যাডমিন প্যানেল
+> ই-কমার্স-ওনলি প্রজেক্টে অ্যাডমিন প্যানেল কেমন হবে?
+> - **অপশন A**: শুধু product management + order management + basic reports (simplified)
+> - **অপশন B**: Full admin panel minus POS features (closer to current dashboard)
+
+> [!IMPORTANT]
+> ### ৩. Courier Automation
+> আপনি কুরিয়ার বুকিং অটোমেশন উল্লেখ করেছেন। কোন কোন কুরিয়ার সার্ভিস ইন্টিগ্রেশন চান?
+> - Pathao Courier
+> - Steadfast Courier
+> - RedX
+> - Paperfly
+> - eCourier
+> - অন্য কোন সার্ভিস?
+
+> [!IMPORTANT]
+> ### ৪. নতুন প্রজেক্ট কোথায় রাখবেন?
+> - **অপশন A**: এই monorepo-তেই নতুন app (`apps/ecommerce`)
+> - **অপশন B**: সম্পূর্ণ আলাদা GitHub repo (Recommended — যেহেতু ক্লায়েন্টদের দেবেন)
+
+---
+
+## প্রস্তাবিত আর্কিটেকচার (নতুন ই-কমার্স প্রোডাক্ট)
+
+```mermaid
+graph TD
+    subgraph "New E-commerce Product"
+        direction TB
+        
+        subgraph "Frontend (Next.js App)"
+            SF2["Storefront"]
+            ADMIN["Admin Dashboard (Lite)"]
+        end
+        
+        subgraph "Backend"
+            API["API Routes / Server Actions"]
+            SERVICES["Services Layer"]
+            PRISMA2["Prisma (E-commerce Schema)"]
+        end
+        
+        subgraph "Integrations"
+            COURIER["Courier APIs"]
+            PAY["Payment Gateway"]
+            CDN["Cloudinary"]
+        end
+        
+        SF2 --> API
+        ADMIN --> API
+        API --> SERVICES
+        SERVICES --> PRISMA2
+        SERVICES --> COURIER
+        SERVICES --> PAY
+    end
+```
+
+---
+
+## Proposed Changes
+
+### Phase 1: নতুন প্রজেক্ট তৈরি ও ফাউন্ডেশন
+
+#### [NEW] New repository / project setup
+- নতুন Next.js প্রজেক্ট তৈরি
+- Prisma schema migrate (e-commerce-only models)
+- Auth setup (next-auth)
+- Base UI components copy
+- Tailwind + design system setup
+
+#### ই-কমার্স-ওনলি Prisma Models:
+```
+✅ রাখবো:
+- User, Account, Session, VerificationToken (Auth)
+- Shop (Tenancy)
+- Category, Brand, ProductType, Model, Series, Color, Storage, Ram
+- Product, ProductImage, ProductVariant
+- Sale (STOREFRONT channel only), SaleItem, SaleTender
+- Customer (simplified - no due/credit system)
+- ProductReview, HeroSlide, SiteConfig
+- AuditLog, Notification
+- Warehouse, WarehouseStock (simplified - single warehouse)
+
+❌ বাদ দেবো:
+- CashShift (POS-only)
+- HeldSale (POS-only)
+- Purchase, PurchaseItem, PurchaseTender (POS purchasing)
+- Supplier, SupplierTransaction, SupplierPayment
+- SerialNumber (IMEI tracking)
+- InventoryLot (FIFO valuation)
+- StockAdjustment
+- Transfer, TransferItem (warehouse transfers)
+- WarrantyClaim
+- FinancialAccount, AccountTransfer
+- Expense
+- RestockOrder, RestockItem
+- CustomerTransaction (due/credit ledger)
+```
+
+---
+
+### Phase 2: ই-কমার্স স্টোরফ্রন্ট মাইগ্রেশন
+
+#### Storefront Pages (কপি + রিফ্যাক্টর):
+- `/` — Home page (hero, trending, flash deals)
+- `/shop` — Product listing with filters
+- `/p/[slug]` — Product detail
+- `/cart` — Shopping cart
+- `/checkout` — Checkout with payment
+- `/order/[id]` — Order tracking
+- `/account` — Customer account
+- `/compare` — Product comparison
+- `/wishlist` — Wishlist
+- `/track` — Order tracking
+- `/search` — Search results
+
+#### Storefront Components (কপি):
+- Home, Cart, Checkout, Compare, Filters, Layout, Product, Search
+
+---
+
+### Phase 3: লাইটওয়েট অ্যাডমিন ড্যাশবোর্ড
+
+#### Admin Features (e-commerce only):
+- **Product Management** — CRUD, images, variants, publish/unpublish
+- **Category Management** — Category tree, publish
+- **Order Management** — View orders, update status, print invoice
+- **Customer List** — View customers, order history
+- **Storefront CMS** — Hero slides, site config
+- **Basic Reports** — Sales report, product performance
+- **Settings** — Shop info, payment config
+
+---
+
+### Phase 4: কুরিয়ার ইন্টিগ্রেশন
+
+#### [NEW] Courier booking automation
+- Order → Auto/manual courier booking
+- Tracking number sync
+- Delivery status webhook
+- Courier-wise report
+- COD collection tracking
+
+---
+
+### Phase 5: পেমেন্ট ইন্টিগ্রেশন
+
+#### [NEW] Payment gateway
+- bKash checkout
+- Nagad checkout
+- SSL Commerz / AamarPay
+- COD (Cash on Delivery)
+
+---
+
+## Verification Plan
+
+### Phase 1 Verification:
+- নতুন প্রজেক্ট `npm run dev` করলে রান করে
+- Prisma schema generate ও migrate সফল
+- Auth login/signup কাজ করে
+
+### Phase 2 Verification:
+- সব storefront pages ঠিকমতো রেন্ডার হয়
+- Product listing, filtering, search কাজ করে
+- Cart ও checkout flow complete
+
+### Phase 3 Verification:
+- Admin panel থেকে product CRUD কাজ করে
+- Order management কাজ করে
+- Reports দেখায়
+
+### Phase 4-5 Verification:
+- Courier API booking সফল
+- Payment gateway integration test mode-এ কাজ করে
+
+---
+
+## টাইমলাইন আনুমানিক
+
+| Phase | সময় | বিবরণ |
+|-------|------|--------|
+| Phase 1 | ১-২ দিন | Foundation + schema + auth |
+| Phase 2 | ২-৩ দিন | Storefront migration |
+| Phase 3 | ২-৩ দিন | Admin dashboard (lite) |
+| Phase 4 | ৩-৫ দিন | Courier integration |
+| Phase 5 | ২-৩ দিন | Payment gateway |
+| **Total** | **~১০-১৬ দিন** | |
+
+---
+
+## সারসংক্ষেপ
+
+বর্তমান `tech-baria` প্রজেক্ট থেকে ই-কমার্স অংশকে আলাদা করে একটি **স্ট্যান্ডঅ্যালোন ই-কমার্স প্ল্যাটফর্ম** তৈরি হবে যেটি:
+
+1. ✅ পূর্ণ ই-কমার্স স্টোরফ্রন্ট (product, cart, checkout, order)
+2. ✅ লাইটওয়েট অ্যাডমিন প্যানেল (product, order, customer management)
+3. ✅ কুরিয়ার অটোমেশন (auto booking, tracking)
+4. ✅ পেমেন্ট গেটওয়ে (bKash, Nagad, COD)
+5. ❌ POS Terminal নেই
+6. ❌ Supplier/Purchase management নেই
+7. ❌ Due/Credit system নেই
+8. ❌ Serial/IMEI tracking নেই
+9. ❌ Financial accounting নেই
+
+**উপরের Open Questions গুলোর উত্তর দিলে কাজ শুরু করতে পারবো।**

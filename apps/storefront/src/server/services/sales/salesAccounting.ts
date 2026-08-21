@@ -302,32 +302,57 @@ export const salesAccounting = {
     ctx: Ctx,
     saleId: string,
     customerId: string,
-    refundAmount: number
+    refundAmount: number,
+    saleDue: number = 0
   ): Promise<void> {
     const cust = await tx.customer.findUniqueOrThrow({
       where: { id: customerId },
-      select: { balance: true },
+      select: { balance: true, due: true },
     });
     const currentBalance = Number(cust.balance);
-    const newBalance = math.add(currentBalance, refundAmount);
+    const currentDue = Number(cust.due);
+
+    const amountToDue = Math.min(saleDue, refundAmount);
+    const remainingRefund = refundAmount - amountToDue;
+
+    const newBalance = math.add(currentBalance, remainingRefund);
+    const newDue = Math.max(0, math.sub(currentDue, amountToDue));
 
     await tx.customer.update({
       where: { id: customerId },
-      data: { balance: newBalance },
+      data: { balance: newBalance, due: newDue },
     });
 
-    await tx.customerTransaction.create({
-      data: {
-        customerId,
-        type: "REFUND",
-        amount: refundAmount,
-        balanceBefore: currentBalance,
-        balanceAfter: newBalance,
-        saleId,
-        reference: `REFUND-${saleId.slice(0, 8).toUpperCase()}`,
-        createdById: ctx.userId,
-      },
-    });
+    if (amountToDue > 0) {
+      await tx.customerTransaction.create({
+        data: {
+          customerId,
+          type: "REFUND",
+          amount: amountToDue,
+          balanceBefore: currentBalance,
+          balanceAfter: currentBalance,
+          saleId,
+          reference: `REFUND-DUE-${saleId.slice(0, 8).toUpperCase()}`,
+          notes: `Refund offset outstanding due (৳${amountToDue})`,
+          createdById: ctx.userId,
+        },
+      });
+    }
+
+    if (remainingRefund > 0) {
+      await tx.customerTransaction.create({
+        data: {
+          customerId,
+          type: "REFUND",
+          amount: remainingRefund,
+          balanceBefore: currentBalance,
+          balanceAfter: newBalance,
+          saleId,
+          reference: `REFUND-${saleId.slice(0, 8).toUpperCase()}`,
+          createdById: ctx.userId,
+        },
+      });
+    }
   },
 
   /** Increment or decrement a customer's total spent and loyalty points */
